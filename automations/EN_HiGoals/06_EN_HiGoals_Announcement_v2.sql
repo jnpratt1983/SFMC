@@ -1,5 +1,6 @@
 /* Step 3 - EN_HiGoals_Announcement_v2
    Target: EN_HiGoalsAnnoucement_AFAMP_07312025 (Overwrite)
+   Changes (2026-10-07 b): null Customer_Number__c / account_id__c excluded (fixes "Cannot insert a NULL value into a non-nullable column").
    Changes: cohort join removed. Everything else as before. */
 SELECT
     a.account_id__c,
@@ -66,6 +67,8 @@ FROM ENT.Contact_Salesforce a
 CROSS JOIN [RI_Rewards_Settings] s
 WHERE a.email IS NOT NULL
   AND a.Cancel_Date__c IS NULL
+  AND a.Customer_Number__c IS NOT NULL   /* primary key on the target DE; 42 active contacts lack it */
+  AND a.account_id__c IS NOT NULL        /* subscriber key for sends and journey entry; 143 lack it */
   AND NOT EXISTS (SELECT 1 FROM [RI_Announcement_SendLog] l
                   WHERE l.ContactKey = a.account_id__c)
   AND (a.Policy_Effective_Date__c <= s.LaunchDate
