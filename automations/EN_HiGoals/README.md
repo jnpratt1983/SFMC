@@ -12,6 +12,7 @@ Paste each file's SQL into the matching Query Activity in Automation Studio (bus
 | 3 | RI_Transition_Flags | 05 | goal end detected from StartDate, scored against yesterday's Goal |
 | 3 | EN_HiGoals_Announcement_v2 | 06 | cohort join removed |
 | 5 | RI_Announcement_LogSent | 07 | unchanged |
+| 3 (new) | EN_HiGoals_Progress_Inject | 08 | new: selects only contacts with a reason to be messaged today into EN_HiGoalsProgress_Inject; the progress journey is injected from that DE. See RUNBOOK_progress_reinjection.md and de/EN_HiGoalsProgress_Inject.md |
 
 Audience after the change: every contact with an email and no Cancel_Date__c
 (6,311 in Salesforce on 2026-10-07: AZ 5,286 / RI 1,007 / other 18) instead of the 2,246
