@@ -1,0 +1,95 @@
+{
+ "generated_at": "2026-10-16T20:29:38.268993Z",
+ "snapshot": "2026-08-22",
+ "through": "2026-10-14",
+ "normalized_training": {
+  "rows": 61215,
+  "labels": {
+   "true": 55020,
+   "false": 6195
+  },
+  "implied_feature_snapshot": [
+   [
+    "2026-08-11",
+    2855
+   ],
+   [
+    "2026-08-10",
+    475
+   ],
+   [
+    "2026-08-16",
+    251
+   ]
+  ],
+  "label_by_cancel_month": {
+   "2026-06": {
+    "true": 493,
+    "false": 2
+   },
+   "2026-07": {
+    "true": 516,
+    "false": 6
+   },
+   "2026-08": {
+    "false": 271,
+    "true": 179
+   },
+   "2026-09": {
+    "false": 363,
+    "true": 16
+   },
+   "2026-10": {
+    "false": 163,
+    "true": 13
+   },
+   "none": {
+    "false": 5377,
+    "true": 148
+   }
+  },
+  "feature_univariate_auc": {
+   "Months_Policy_Active__c": {
+    "n": 61215,
+    "auc": 0.35
+   },
+   "Weeks_Since_Last_Trip__c": {
+    "n": 15213,
+    "auc": 0.662
+   },
+   "Lifetime_Late_Payment_Rate__c": {
+    "n": 44286,
+    "auc": 0.599
+   },
+   "Trips_Per_Month__c": {
+    "n": 43912,
+    "auc": 0.57
+   }
+  },
+  "scored_contacts": 7508,
+  "scored_contacts_training_label": {
+   "false": 6023,
+   "not in training set": 1443,
+   "true": 42
+  },
+  "most_repeated_scores": [
+   [
+    26.5893,
+    253
+   ],
+   [
+    43.5872,
+    153
+   ],
+   [
+    59.9234,
+    10
+   ]
+  ],
+  "raw_training_rows": 11012,
+  "raw_training_labels": {
+   "true": 4171,
+   "false": 6841
+  }
+ }
+}
