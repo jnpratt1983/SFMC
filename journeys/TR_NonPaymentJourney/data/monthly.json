@@ -1,0 +1,444 @@
+{
+ "2024-09": {
+  "n": 2415,
+  "cleared": 1734,
+  "cancelled": 636,
+  "open": 45,
+  "first_n": 796,
+  "first_cleared": 511,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-06": {
+  "n": 2668,
+  "cleared": 1967,
+  "cancelled": 662,
+  "open": 39,
+  "first_n": 880,
+  "first_cleared": 571,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-05": {
+  "n": 2779,
+  "cleared": 2072,
+  "cancelled": 664,
+  "open": 43,
+  "first_n": 870,
+  "first_cleared": 589,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-11": {
+  "n": 1965,
+  "cleared": 1343,
+  "cancelled": 599,
+  "open": 23,
+  "first_n": 644,
+  "first_cleared": 363,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-12": {
+  "n": 2067,
+  "cleared": 1392,
+  "cancelled": 650,
+  "open": 25,
+  "first_n": 724,
+  "first_cleared": 396,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-01": {
+  "n": 1954,
+  "cleared": 1362,
+  "cancelled": 563,
+  "open": 29,
+  "first_n": 694,
+  "first_cleared": 428,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-02": {
+  "n": 1703,
+  "cleared": 1202,
+  "cancelled": 475,
+  "open": 26,
+  "first_n": 698,
+  "first_cleared": 444,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-01": {
+  "n": 2659,
+  "cleared": 1988,
+  "cancelled": 619,
+  "open": 52,
+  "first_n": 2659,
+  "first_cleared": 1988,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-02": {
+  "n": 2591,
+  "cleared": 2064,
+  "cancelled": 492,
+  "open": 35,
+  "first_n": 1425,
+  "first_cleared": 1112,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-03": {
+  "n": 2776,
+  "cleared": 2114,
+  "cancelled": 618,
+  "open": 44,
+  "first_n": 1133,
+  "first_cleared": 782,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-04": {
+  "n": 2684,
+  "cleared": 1963,
+  "cancelled": 688,
+  "open": 33,
+  "first_n": 1015,
+  "first_cleared": 633,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2026-02": {
+  "n": 1151,
+  "cleared": 817,
+  "cancelled": 315,
+  "open": 19,
+  "first_n": 411,
+  "first_cleared": 256,
+  "sent": {
+   "T-5": 227,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-07": {
+  "n": 2822,
+  "cleared": 1997,
+  "cancelled": 791,
+  "open": 34,
+  "first_n": 1052,
+  "first_cleared": 640,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-10": {
+  "n": 2468,
+  "cleared": 1804,
+  "cancelled": 626,
+  "open": 38,
+  "first_n": 821,
+  "first_cleared": 505,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-06": {
+  "n": 1901,
+  "cleared": 1243,
+  "cancelled": 621,
+  "open": 37,
+  "first_n": 731,
+  "first_cleared": 424,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2026-05": {
+  "n": 1313,
+  "cleared": 930,
+  "cancelled": 360,
+  "open": 23,
+  "first_n": 475,
+  "first_cleared": 291,
+  "sent": {
+   "T-5": 274,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2026-07": {
+  "n": 1199,
+  "cleared": 873,
+  "cancelled": 309,
+  "open": 17,
+  "first_n": 448,
+  "first_cleared": 292,
+  "sent": {
+   "T-5": 1192,
+   "T+3": 691,
+   "T+7": 464
+  }
+ },
+ "2026-09": {
+  "n": 1187,
+  "cleared": 880,
+  "cancelled": 296,
+  "open": 11,
+  "first_n": 454,
+  "first_cleared": 296,
+  "sent": {
+   "T-5": 1123,
+   "T+3": 880,
+   "T+7": 580
+  }
+ },
+ "2026-10": {
+  "n": 637,
+  "cleared": 323,
+  "cancelled": 51,
+  "open": 263,
+  "first_n": 250,
+  "first_cleared": 127,
+  "sent": {
+   "T-5": 601,
+   "T+3": 432,
+   "T+7": 202
+  }
+ },
+ "2025-12": {
+  "n": 1513,
+  "cleared": 1057,
+  "cancelled": 437,
+  "open": 19,
+  "first_n": 549,
+  "first_cleared": 327,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-04": {
+  "n": 1988,
+  "cleared": 1307,
+  "cancelled": 658,
+  "open": 23,
+  "first_n": 857,
+  "first_cleared": 483,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-05": {
+  "n": 2047,
+  "cleared": 1340,
+  "cancelled": 679,
+  "open": 28,
+  "first_n": 796,
+  "first_cleared": 440,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-07": {
+  "n": 1973,
+  "cleared": 1260,
+  "cancelled": 683,
+  "open": 30,
+  "first_n": 775,
+  "first_cleared": 414,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-09": {
+  "n": 1633,
+  "cleared": 1066,
+  "cancelled": 544,
+  "open": 23,
+  "first_n": 550,
+  "first_cleared": 313,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-10": {
+  "n": 1531,
+  "cleared": 1055,
+  "cancelled": 450,
+  "open": 26,
+  "first_n": 550,
+  "first_cleared": 330,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2026-06": {
+  "n": 1209,
+  "cleared": 865,
+  "cancelled": 320,
+  "open": 24,
+  "first_n": 446,
+  "first_cleared": 297,
+  "sent": {
+   "T-5": 618,
+   "T+3": 504,
+   "T+7": 247
+  }
+ },
+ "2026-08": {
+  "n": 1158,
+  "cleared": 851,
+  "cancelled": 286,
+  "open": 21,
+  "first_n": 417,
+  "first_cleared": 273,
+  "sent": {
+   "T-5": 1090,
+   "T+3": 865,
+   "T+7": 563
+  }
+ },
+ "2025-03": {
+  "n": 1966,
+  "cleared": 1363,
+  "cancelled": 573,
+  "open": 30,
+  "first_n": 698,
+  "first_cleared": 405,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-08": {
+  "n": 1866,
+  "cleared": 1196,
+  "cancelled": 651,
+  "open": 19,
+  "first_n": 771,
+  "first_cleared": 397,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2024-08": {
+  "n": 2679,
+  "cleared": 1973,
+  "cancelled": 649,
+  "open": 57,
+  "first_n": 982,
+  "first_cleared": 626,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2025-11": {
+  "n": 1400,
+  "cleared": 953,
+  "cancelled": 423,
+  "open": 24,
+  "first_n": 538,
+  "first_cleared": 316,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2026-01": {
+  "n": 1386,
+  "cleared": 964,
+  "cancelled": 407,
+  "open": 15,
+  "first_n": 514,
+  "first_cleared": 304,
+  "sent": {
+   "T-5": 0,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2026-03": {
+  "n": 1306,
+  "cleared": 919,
+  "cancelled": 369,
+  "open": 18,
+  "first_n": 465,
+  "first_cleared": 260,
+  "sent": {
+   "T-5": 1300,
+   "T+3": 0,
+   "T+7": 0
+  }
+ },
+ "2026-04": {
+  "n": 1156,
+  "cleared": 825,
+  "cancelled": 303,
+  "open": 28,
+  "first_n": 385,
+  "first_cleared": 244,
+  "sent": {
+   "T-5": 1143,
+   "T+3": 25,
+   "T+7": 49
+  }
+ }
+}
