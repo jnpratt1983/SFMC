@@ -1,0 +1,2914 @@
+{
+  "label": "Churn PIT Training Set",
+  "name": "ChurnPITTrainingSet",
+  "dataSpaceName": "default",
+  "type": "BATCH",
+  "description": "Point-in-time training set: monthly snapshots of the active book labelled on preventable voluntary cancellation in the following 60/90 days",
+  "definitions": [
+    {
+      "label": "Churn PIT Training Set",
+      "name": "ChurnPITTrainingSet",
+      "version": "56.0",
+      "type": "STL",
+      "nodes": {
+        "LOAD_CAL": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Churn_Snapshot_Calendar__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "Snapshot_Date__c",
+              "Snapshot_Key__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_CAL_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "DateTime",
+                "defaultValue": "",
+                "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "formulaExpression": "Snapshot_Date__c",
+                "label": "Snap Date",
+                "name": "Snap_Date",
+                "type": "DATETIME"
+              }
+            ]
+          }
+        },
+        "T_CAL_F1": {
+          "action": "formula",
+          "sources": [
+            "T_CAL_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "Snapshot_Key__c",
+                "label": "Snap Key",
+                "name": "Snap_Key",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_CAL_F2": {
+          "action": "formula",
+          "sources": [
+            "T_CAL_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "LOAD_CON": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Contact__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "Id__c",
+              "AccountId__c",
+              "Account_Id2_c__c",
+              "Customer_Number_c__c",
+              "CreatedDate__c",
+              "Policy_Effective_Date_c__c",
+              "Cancel_Date_c__c",
+              "Cancellation_Reason_c__c",
+              "Policy_Renewal_Date_c__c",
+              "Renewal_Offer_Date_c__c",
+              "Policy_Renewal_Rate_c__c",
+              "Lifetime_Savings_c__c",
+              "Telematic_Discount_Numeric__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "FILTER_CON": {
+          "action": "filter",
+          "sources": [
+            "LOAD_CON"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Id__c",
+                "operands": [
+                  "003"
+                ],
+                "operator": "STARTS_WITH",
+                "type": "TEXT"
+              },
+              {
+                "field": "Policy_Effective_Date_c__c",
+                "operands": [],
+                "operator": "IS_NOT_NULL",
+                "type": "DATE"
+              }
+            ],
+            "filterBooleanLogic": "1 AND 2"
+          }
+        },
+        "T_CON_K_F0": {
+          "action": "formula",
+          "sources": [
+            "FILTER_CON"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_BOOK": {
+          "action": "join",
+          "sources": [
+            "T_CON_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_BOOK_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_BOOK"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Policy_Effective_Date_c__c &lt;= &quot;Cal.Snap_Date&quot; and CreatedDate__c &lt;= &quot;Cal.Snap_Date&quot; and (Cancel_Date_c__c is null or Cancel_Date_c__c &gt; &quot;Cal.Snap_Date&quot;) then 1 else 0 end",
+                "label": "In book at snapshot",
+                "name": "In_Book",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "FILTER_BOOK": {
+          "action": "filter",
+          "sources": [
+            "T_BOOK_F0"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "In_Book",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F0": {
+          "action": "formula",
+          "sources": [
+            "FILTER_BOOK"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_Date_c__c &gt; &quot;Cal.Snap_Date&quot; and Cancel_Date_c__c &lt;= &quot;Cal.Snap_Date&quot; + INTERVAL 60 DAY then 1 else 0 end",
+                "label": "Cancel within 60d",
+                "name": "Cancel_In_60d",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F1": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_Date_c__c &gt; &quot;Cal.Snap_Date&quot; and Cancel_Date_c__c &lt;= &quot;Cal.Snap_Date&quot; + INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Cancel within 90d",
+                "name": "Cancel_In_90d",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F2": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancellation_Reason_c__c in (&#x27;Due to high premium&#x27;,&#x27;Replacement of insurance carrier&#x27;,&#x27;Insured request - other&#x27;,&#x27;App issue / UX&#x27;,&#x27;Due to poor customer service&#x27;,&#x27;Due to poor claims service&#x27;) then 1 else 0 end",
+                "label": "Preventable voluntary reason",
+                "name": "Preventable",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F3": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_In_60d = 1 and Preventable = 1 then 1 else 0 end",
+                "label": "Label 60d",
+                "name": "Label_60",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F4": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_In_90d = 1 and Preventable = 1 then 1 else 0 end",
+                "label": "Label 90d",
+                "name": "Label_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F5": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_In_60d = 1 and Preventable = 0 then 1 else 0 end",
+                "label": "Censored (non-pay, company, unpreventable in window)",
+                "name": "Censored",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F6": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_In_90d = 1 then Cancellation_Reason_c__c else null end",
+                "label": "Reason (evaluation only)",
+                "name": "Reason",
+                "precision": 255,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F7": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F6"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "concat(Id__c, &#x27;_&#x27;, &quot;Cal.Snap_Key&quot;)",
+                "label": "Row key",
+                "name": "Row_Key",
+                "precision": 40,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F8": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F7"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "datediff(&quot;Cal.Snap_Date&quot;, CreatedDate__c)",
+                "label": "Tenure days",
+                "name": "Tenure_Days",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F9": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F8"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "datediff(&quot;Cal.Snap_Date&quot;, Policy_Effective_Date_c__c)",
+                "label": "Days since policy effective",
+                "name": "Policy_Days",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F10": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F9"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "case when Tenure_Days &lt; 180 then &#x27;lt6mo&#x27; when Tenure_Days &lt; 365 then &#x27;6to12mo&#x27; when Tenure_Days &lt; 730 then &#x27;1to2y&#x27; else &#x27;2yplus&#x27; end",
+                "label": "Tenure bucket",
+                "name": "Tenure_Bucket",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F11": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F10"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "pmod(Policy_Days, 182)",
+                "label": "Days into term (estimated from 6-month terms)",
+                "name": "Days_Into_Term_Est",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F12": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F11"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "182 - pmod(Policy_Days, 182)",
+                "label": "Days to term end (estimated)",
+                "name": "Days_To_Term_End_Est",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F13": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F12"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Policy_Renewal_Date_c__c &gt;= &quot;Cal.Snap_Date&quot; then datediff(Policy_Renewal_Date_c__c, &quot;Cal.Snap_Date&quot;) else null end",
+                "label": "Days to renewal (CURRENT VALUE: valid for latest snapshot only)",
+                "name": "Days_To_Renewal",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F14": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F13"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Renewal_Offer_Date_c__c &lt;= &quot;Cal.Snap_Date&quot; then datediff(&quot;Cal.Snap_Date&quot;, Renewal_Offer_Date_c__c) else null end",
+                "label": "Days since renewal offer (CURRENT VALUE)",
+                "name": "Days_Since_Renewal_Offer",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "LOAD_APP": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "MobileApp_c_00D3h0000068eod__dlm",
+              "type": "dataModelObject"
+            },
+            "fields": [
+              "Account_Id__c",
+              "Event_Timestamp_UTC__c",
+              "Event_Name__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_APP_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_APP"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_APP_CAL": {
+          "action": "join",
+          "sources": [
+            "T_APP_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_APP_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_APP_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Event_Timestamp_UTC__c &lt;= &quot;Cal.Snap_Date&quot; then 1 else 0 end",
+                "label": "Event before snapshot",
+                "name": "App_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_APP_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_APP_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Event_Timestamp_UTC__c &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 30 DAY and Event_Timestamp_UTC__c &lt;= &quot;Cal.Snap_Date&quot; then 1 else 0 end",
+                "label": "App event in 30d",
+                "name": "App_30",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_APP_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_APP_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Event_Timestamp_UTC__c &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 90 DAY and Event_Timestamp_UTC__c &lt;= &quot;Cal.Snap_Date&quot; then 1 else 0 end",
+                "label": "App event in 90d",
+                "name": "App_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_APP_W_F3": {
+          "action": "formula",
+          "sources": [
+            "T_APP_W_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "&quot;Cal.Snap_Key&quot;",
+                "label": "Snap key (app)",
+                "name": "Snap_Key_App",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_APP": {
+          "action": "filter",
+          "sources": [
+            "T_APP_W_F3"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "App_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_APP_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_APP"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_APP_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_APP_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "SUM",
+                "label": "App events 30d",
+                "name": "App_Events_30d",
+                "source": "App_30"
+              },
+              {
+                "action": "SUM",
+                "label": "App events 90d",
+                "name": "App_Events_90d",
+                "source": "App_90"
+              },
+              {
+                "action": "MAX",
+                "label": "Last app event",
+                "name": "Last_App_Event",
+                "source": "Event_Timestamp_UTC__c"
+              }
+            ],
+            "groupings": [
+              "Account_Id__c",
+              "Snap_Key_App"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "App_Events_30d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              },
+              {
+                "name": "App_Events_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "LOAD_EMAIL": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "IndividualEmailResults__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "et4ae5_Contact_c__c",
+              "et4ae5_DateSent_c__c",
+              "et4ae5_DateOpened_c__c",
+              "et4ae5_Opened_c__c",
+              "et4ae5_Clicked_c__c",
+              "et4ae5_NumberOfUniqueClicks_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "FILTER_EMAIL0": {
+          "action": "filter",
+          "sources": [
+            "LOAD_EMAIL"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "et4ae5_Contact_c__c",
+                "operands": [
+                  "003"
+                ],
+                "operator": "STARTS_WITH",
+                "type": "TEXT"
+              },
+              {
+                "field": "et4ae5_DateSent_c__c",
+                "operands": [],
+                "operator": "IS_NOT_NULL",
+                "type": "DATETIME"
+              }
+            ],
+            "filterBooleanLogic": "1 AND 2"
+          }
+        },
+        "T_EMAIL_K_F0": {
+          "action": "formula",
+          "sources": [
+            "FILTER_EMAIL0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_EMAIL_CAL": {
+          "action": "join",
+          "sources": [
+            "T_EMAIL_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_EMAIL_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_EMAIL_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_DateSent_c__c &lt;= &quot;Cal.Snap_Date&quot; then 1 else 0 end",
+                "label": "Send before snapshot",
+                "name": "Email_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_DateSent_c__c &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Sent in 90d",
+                "name": "Email_Sent_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_Opened_c__c = true and coalesce(et4ae5_DateOpened_c__c, et4ae5_DateSent_c__c) &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 30 DAY and coalesce(et4ae5_DateOpened_c__c, et4ae5_DateSent_c__c) &lt;= &quot;Cal.Snap_Date&quot; then 1 else 0 end",
+                "label": "Opened in 30d",
+                "name": "Email_Open_30",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F3": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_Opened_c__c = true and coalesce(et4ae5_DateOpened_c__c, et4ae5_DateSent_c__c) &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 90 DAY and coalesce(et4ae5_DateOpened_c__c, et4ae5_DateSent_c__c) &lt;= &quot;Cal.Snap_Date&quot; then 1 else 0 end",
+                "label": "Opened in 90d",
+                "name": "Email_Open_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F4": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_Clicked_c__c = true and et4ae5_DateSent_c__c &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Clicked in 90d (attributed to send date)",
+                "name": "Email_Click_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F5": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "DateTime",
+                "defaultValue": "",
+                "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "formulaExpression": "case when et4ae5_Opened_c__c = true and et4ae5_DateOpened_c__c &lt;= &quot;Cal.Snap_Date&quot; then et4ae5_DateOpened_c__c else et4ae5_DateSent_c__c end",
+                "label": "Email event date (open if before snapshot, else send)",
+                "name": "Email_Event_Date",
+                "type": "DATETIME"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F6": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "&quot;Cal.Snap_Key&quot;",
+                "label": "Snap key (email)",
+                "name": "Snap_Key_Email",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_EMAIL": {
+          "action": "filter",
+          "sources": [
+            "T_EMAIL_W_F6"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Email_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_EMAIL_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_EMAIL"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_EMAIL_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_EMAIL_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "SUM",
+                "label": "Emails sent 90d",
+                "name": "Email_Sends_90d",
+                "source": "Email_Sent_90"
+              },
+              {
+                "action": "SUM",
+                "label": "Email opens 30d",
+                "name": "Email_Opens_30d",
+                "source": "Email_Open_30"
+              },
+              {
+                "action": "SUM",
+                "label": "Email opens 90d",
+                "name": "Email_Opens_90d",
+                "source": "Email_Open_90"
+              },
+              {
+                "action": "SUM",
+                "label": "Email clicks 90d",
+                "name": "Email_Clicks_90d",
+                "source": "Email_Click_90"
+              },
+              {
+                "action": "MAX",
+                "label": "Last email event",
+                "name": "Last_Email_Event",
+                "source": "Email_Event_Date"
+              }
+            ],
+            "groupings": [
+              "et4ae5_Contact_c__c",
+              "Snap_Key_Email"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "Email_Sends_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              },
+              {
+                "name": "Email_Opens_30d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              },
+              {
+                "name": "Email_Opens_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              },
+              {
+                "name": "Email_Clicks_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "LOAD_TICKET": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Zen_Desk_Ticket_Gold__dlm",
+              "type": "dataModelObject"
+            },
+            "fields": [
+              "Customer_Number_c__c",
+              "Created_at_c__c",
+              "Ticket_type_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_TKT_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_TICKET"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_TKT_CAL": {
+          "action": "join",
+          "sources": [
+            "T_TKT_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_TKT_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_TKT_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Created_at_c__c &lt;= &quot;Cal.Snap_Date&quot; then 1 else 0 end",
+                "label": "Ticket before snapshot",
+                "name": "Tkt_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_TKT_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_TKT_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Created_at_c__c &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 90 DAY and Created_at_c__c &lt;= &quot;Cal.Snap_Date&quot; then 1 else 0 end",
+                "label": "Ticket in 90d",
+                "name": "Tkt_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_TKT_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_TKT_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "&quot;Cal.Snap_Key&quot;",
+                "label": "Snap key (ticket)",
+                "name": "Snap_Key_Tkt",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_TKT": {
+          "action": "filter",
+          "sources": [
+            "T_TKT_W_F2"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Tkt_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_TKT_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_TKT"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_TKT_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_TKT_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "SUM",
+                "label": "Tickets 90d",
+                "name": "Tickets_90d",
+                "source": "Tkt_90"
+              },
+              {
+                "action": "MAX",
+                "label": "Last ticket",
+                "name": "Last_Ticket",
+                "source": "Created_at_c__c"
+              }
+            ],
+            "groupings": [
+              "Customer_Number_c__c",
+              "Snap_Key_Tkt"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "Tickets_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "JOIN_F_APP": {
+          "action": "join",
+          "sources": [
+            "T_LABELS_F14",
+            "AGG_APP_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Account_Id2_c__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "Account_Id__c",
+              "Snap_Key_App"
+            ],
+            "rightQualifier": "App"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "App.Account_Id__c",
+                "App.Snap_Key_App"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "JOIN_F_EMAIL": {
+          "action": "join",
+          "sources": [
+            "JOIN_F_APP",
+            "AGG_EMAIL_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Id__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "et4ae5_Contact_c__c",
+              "Snap_Key_Email"
+            ],
+            "rightQualifier": "Email"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Email.et4ae5_Contact_c__c",
+                "Email.Snap_Key_Email"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "JOIN_F_TKT": {
+          "action": "join",
+          "sources": [
+            "JOIN_F_EMAIL",
+            "AGG_TKT_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Customer_Number_c__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "Customer_Number_c__c",
+              "Snap_Key_Tkt"
+            ],
+            "rightQualifier": "Tkt"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Tkt.Customer_Number_c__c",
+                "Tkt.Snap_Key_Tkt"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_FINAL_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_F_TKT"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(&quot;App.App_Events_30d&quot;, 0)",
+                "label": "App events 30d (final)",
+                "name": "App_Events_30d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F1": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(&quot;App.App_Events_90d&quot;, 0)",
+                "label": "App events 90d (final)",
+                "name": "App_Events_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F2": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when &quot;App.Last_App_Event&quot; is null then 9999 else datediff(&quot;Cal.Snap_Date&quot;, &quot;App.Last_App_Event&quot;) end",
+                "label": "Days since last app event",
+                "name": "Days_Since_Last_App_Event",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F3": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(&quot;Email.Email_Sends_90d&quot;, 0)",
+                "label": "Emails sent 90d (final)",
+                "name": "Email_Sends_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F4": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(&quot;Email.Email_Opens_30d&quot;, 0)",
+                "label": "Email opens 30d (final)",
+                "name": "Email_Opens_30d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F5": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(&quot;Email.Email_Opens_90d&quot;, 0)",
+                "label": "Email opens 90d (final)",
+                "name": "Email_Opens_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F6": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(&quot;Email.Email_Clicks_90d&quot;, 0)",
+                "label": "Email clicks 90d (final)",
+                "name": "Email_Clicks_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F7": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F6"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when coalesce(&quot;Email.Email_Sends_90d&quot;, 0) = 0 then null else coalesce(&quot;Email.Email_Opens_90d&quot;, 0) / &quot;Email.Email_Sends_90d&quot; end",
+                "label": "Email open rate 90d",
+                "name": "Email_Open_Rate_90d",
+                "precision": 5,
+                "scale": 4,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F8": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F7"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when &quot;Email.Last_Email_Event&quot; is null then 9999 else datediff(&quot;Cal.Snap_Date&quot;, &quot;Email.Last_Email_Event&quot;) end",
+                "label": "Days since last email event",
+                "name": "Days_Since_Last_Email_Event",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F9": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F8"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(&quot;Tkt.Tickets_90d&quot;, 0)",
+                "label": "Tickets 90d (final)",
+                "name": "Tickets_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F10": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F9"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when &quot;Tkt.Last_Ticket&quot; is null then 9999 else datediff(&quot;Cal.Snap_Date&quot;, &quot;Tkt.Last_Ticket&quot;) end",
+                "label": "Days since last ticket",
+                "name": "Days_Since_Last_Ticket",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F11": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F10"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "DateTime",
+                "defaultValue": "",
+                "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "formulaExpression": "greatest(&quot;App.Last_App_Event&quot;, &quot;Email.Last_Email_Event&quot;, &quot;Tkt.Last_Ticket&quot;)",
+                "label": "Max feature date (audit: must be <= Snap_Date)",
+                "name": "Max_Feature_Date",
+                "type": "DATETIME"
+              }
+            ]
+          }
+        },
+        "OUTPUT0": {
+          "action": "outputD360",
+          "sources": [
+            "T_FINAL_F11"
+          ],
+          "parameters": {
+            "dedupOrder": [],
+            "fieldsMappings": [
+              {
+                "sourceField": "Row_Key",
+                "targetField": "Row_Key__c"
+              },
+              {
+                "sourceField": "Id__c",
+                "targetField": "Contact_Id__c"
+              },
+              {
+                "sourceField": "Cal.Snap_Date",
+                "targetField": "Snapshot_Date__c"
+              },
+              {
+                "sourceField": "Cal.Snap_Key",
+                "targetField": "Snapshot_Key__c"
+              },
+              {
+                "sourceField": "Label_60",
+                "targetField": "Label_60__c"
+              },
+              {
+                "sourceField": "Label_90",
+                "targetField": "Label_90__c"
+              },
+              {
+                "sourceField": "Censored",
+                "targetField": "Censored__c"
+              },
+              {
+                "sourceField": "Reason",
+                "targetField": "Reason__c"
+              },
+              {
+                "sourceField": "Tenure_Days",
+                "targetField": "Tenure_Days__c"
+              },
+              {
+                "sourceField": "Tenure_Bucket",
+                "targetField": "Tenure_Bucket__c"
+              },
+              {
+                "sourceField": "Policy_Days",
+                "targetField": "Policy_Days__c"
+              },
+              {
+                "sourceField": "Days_Into_Term_Est",
+                "targetField": "Days_Into_Term_Est__c"
+              },
+              {
+                "sourceField": "Days_To_Term_End_Est",
+                "targetField": "Days_To_Term_End_Est__c"
+              },
+              {
+                "sourceField": "Days_To_Renewal",
+                "targetField": "Days_To_Renewal__c"
+              },
+              {
+                "sourceField": "Days_Since_Renewal_Offer",
+                "targetField": "Days_Since_Renewal_Offer__c"
+              },
+              {
+                "sourceField": "Policy_Renewal_Rate_c__c",
+                "targetField": "Policy_Renewal_Rate__c"
+              },
+              {
+                "sourceField": "Lifetime_Savings_c__c",
+                "targetField": "Lifetime_Savings__c"
+              },
+              {
+                "sourceField": "Telematic_Discount_Numeric__c",
+                "targetField": "Telematics_Discount__c"
+              },
+              {
+                "sourceField": "App_Events_30d_F",
+                "targetField": "App_Events_30d__c"
+              },
+              {
+                "sourceField": "App_Events_90d_F",
+                "targetField": "App_Events_90d__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_App_Event",
+                "targetField": "Days_Since_Last_App_Event__c"
+              },
+              {
+                "sourceField": "Email_Sends_90d_F",
+                "targetField": "Email_Sends_90d__c"
+              },
+              {
+                "sourceField": "Email_Opens_30d_F",
+                "targetField": "Email_Opens_30d__c"
+              },
+              {
+                "sourceField": "Email_Opens_90d_F",
+                "targetField": "Email_Opens_90d__c"
+              },
+              {
+                "sourceField": "Email_Clicks_90d_F",
+                "targetField": "Email_Clicks_90d__c"
+              },
+              {
+                "sourceField": "Email_Open_Rate_90d",
+                "targetField": "Email_Open_Rate_90d__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_Email_Event",
+                "targetField": "Days_Since_Last_Email_Event__c"
+              },
+              {
+                "sourceField": "Tickets_90d_F",
+                "targetField": "Tickets_90d__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_Ticket",
+                "targetField": "Days_Since_Last_Ticket__c"
+              },
+              {
+                "sourceField": "Max_Feature_Date",
+                "targetField": "Max_Feature_Date__c"
+              }
+            ],
+            "name": "Churn_PIT_Training_Set__dll",
+            "type": "dataLakeObject",
+            "writeMode": "OVERWRITE"
+          }
+        }
+      },
+      "outputDataObjects": [
+        {
+          "category": "Other",
+          "label": "Churn PIT Training Set",
+          "name": "Churn_PIT_Training_Set__dll",
+          "namespace": "",
+          "type": "dataLakeObject",
+          "fields": [
+            {
+              "isPrimaryKey": true,
+              "label": "Row Key",
+              "name": "Row_Key__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Contact Id",
+              "name": "Contact_Id__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Snapshot Date",
+              "name": "Snapshot_Date__c",
+              "type": "DateTime"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Snapshot Key",
+              "name": "Snapshot_Key__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Label 60",
+              "name": "Label_60__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Label 90",
+              "name": "Label_90__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Censored",
+              "name": "Censored__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Reason",
+              "name": "Reason__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Tenure Days",
+              "name": "Tenure_Days__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Tenure Bucket",
+              "name": "Tenure_Bucket__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Policy Days",
+              "name": "Policy_Days__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Into Term Est",
+              "name": "Days_Into_Term_Est__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days To Term End Est",
+              "name": "Days_To_Term_End_Est__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days To Renewal",
+              "name": "Days_To_Renewal__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Renewal Offer",
+              "name": "Days_Since_Renewal_Offer__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Policy Renewal Rate",
+              "name": "Policy_Renewal_Rate__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Lifetime Savings",
+              "name": "Lifetime_Savings__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Telematics Discount",
+              "name": "Telematics_Discount__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "App Events 30d",
+              "name": "App_Events_30d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "App Events 90d",
+              "name": "App_Events_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last App Event",
+              "name": "Days_Since_Last_App_Event__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Sends 90d",
+              "name": "Email_Sends_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Opens 30d",
+              "name": "Email_Opens_30d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Opens 90d",
+              "name": "Email_Opens_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Clicks 90d",
+              "name": "Email_Clicks_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Open Rate 90d",
+              "name": "Email_Open_Rate_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last Email Event",
+              "name": "Days_Since_Last_Email_Event__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Tickets 90d",
+              "name": "Tickets_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last Ticket",
+              "name": "Days_Since_Last_Ticket__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Max Feature Date",
+              "name": "Max_Feature_Date__c",
+              "type": "DateTime"
+            }
+          ]
+        }
+      ],
+      "ui": {
+        "nodes": {
+          "LOAD_CAL": {
+            "label": "Snapshot calendar",
+            "type": "LOAD_DATASET",
+            "top": 60,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_CAL": {
+            "label": "Calendar keys",
+            "description": "Snapshot date, key, and a constant join key for the cross join",
+            "type": "TRANSFORM",
+            "top": 60,
+            "left": 392,
+            "graph": {
+              "T_CAL_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap Date"
+              },
+              "T_CAL_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap Key"
+              },
+              "T_CAL_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_CAL_F0",
+                "target": "T_CAL_F1"
+              },
+              {
+                "source": "T_CAL_F1",
+                "target": "T_CAL_F2"
+              }
+            ]
+          },
+          "LOAD_CON": {
+            "label": "Contact",
+            "type": "LOAD_DATASET",
+            "top": 250,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "FILTER_CON": {
+            "label": "Contacts with a policy",
+            "type": "FILTER",
+            "top": 250,
+            "left": 392
+          },
+          "T_CON_K": {
+            "label": "Contact join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 250,
+            "left": 672,
+            "graph": {
+              "T_CON_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_BOOK": {
+            "label": "Contact x snapshot",
+            "type": "JOIN",
+            "top": 250,
+            "left": 952
+          },
+          "T_BOOK": {
+            "label": "Active-book flag",
+            "description": "Policy in force on the snapshot date and not yet cancelled",
+            "type": "TRANSFORM",
+            "top": 250,
+            "left": 1232,
+            "graph": {
+              "T_BOOK_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "In book at snapshot"
+              }
+            },
+            "connectors": []
+          },
+          "FILTER_BOOK": {
+            "label": "Keep in-book rows",
+            "type": "FILTER",
+            "top": 250,
+            "left": 1512
+          },
+          "T_LABELS": {
+            "label": "Labels and tenure",
+            "description": "60/90-day preventable-voluntary labels, censoring flag, tenure and term-position features",
+            "type": "TRANSFORM",
+            "top": 250,
+            "left": 1792,
+            "graph": {
+              "T_LABELS_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cancel within 60d"
+              },
+              "T_LABELS_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cancel within 90d"
+              },
+              "T_LABELS_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Preventable voluntary reason"
+              },
+              "T_LABELS_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Label 60d"
+              },
+              "T_LABELS_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Label 90d"
+              },
+              "T_LABELS_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Censored (non-pay, company, unpreventable in window)"
+              },
+              "T_LABELS_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Reason (evaluation only)"
+              },
+              "T_LABELS_F7": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Row key"
+              },
+              "T_LABELS_F8": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Tenure days"
+              },
+              "T_LABELS_F9": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since policy effective"
+              },
+              "T_LABELS_F10": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Tenure bucket"
+              },
+              "T_LABELS_F11": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days into term (estimated from 6-month terms)"
+              },
+              "T_LABELS_F12": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days to term end (estimated)"
+              },
+              "T_LABELS_F13": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days to renewal (CURRENT VALUE: valid for latest snapshot only)"
+              },
+              "T_LABELS_F14": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since renewal offer (CURRENT VALUE)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_LABELS_F0",
+                "target": "T_LABELS_F1"
+              },
+              {
+                "source": "T_LABELS_F1",
+                "target": "T_LABELS_F2"
+              },
+              {
+                "source": "T_LABELS_F2",
+                "target": "T_LABELS_F3"
+              },
+              {
+                "source": "T_LABELS_F3",
+                "target": "T_LABELS_F4"
+              },
+              {
+                "source": "T_LABELS_F4",
+                "target": "T_LABELS_F5"
+              },
+              {
+                "source": "T_LABELS_F5",
+                "target": "T_LABELS_F6"
+              },
+              {
+                "source": "T_LABELS_F6",
+                "target": "T_LABELS_F7"
+              },
+              {
+                "source": "T_LABELS_F7",
+                "target": "T_LABELS_F8"
+              },
+              {
+                "source": "T_LABELS_F8",
+                "target": "T_LABELS_F9"
+              },
+              {
+                "source": "T_LABELS_F9",
+                "target": "T_LABELS_F10"
+              },
+              {
+                "source": "T_LABELS_F10",
+                "target": "T_LABELS_F11"
+              },
+              {
+                "source": "T_LABELS_F11",
+                "target": "T_LABELS_F12"
+              },
+              {
+                "source": "T_LABELS_F12",
+                "target": "T_LABELS_F13"
+              },
+              {
+                "source": "T_LABELS_F13",
+                "target": "T_LABELS_F14"
+              }
+            ]
+          },
+          "LOAD_APP": {
+            "label": "Mobile app events",
+            "type": "LOAD_DATASET",
+            "top": 440,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_APP_K": {
+            "label": "App join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 440,
+            "left": 392,
+            "graph": {
+              "T_APP_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_APP_CAL": {
+            "label": "App x snapshot",
+            "type": "JOIN",
+            "top": 440,
+            "left": 672
+          },
+          "T_APP_W": {
+            "label": "App windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 440,
+            "left": 952,
+            "graph": {
+              "T_APP_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Event before snapshot"
+              },
+              "T_APP_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "App event in 30d"
+              },
+              "T_APP_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "App event in 90d"
+              },
+              "T_APP_W_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (app)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_APP_W_F0",
+                "target": "T_APP_W_F1"
+              },
+              {
+                "source": "T_APP_W_F1",
+                "target": "T_APP_W_F2"
+              },
+              {
+                "source": "T_APP_W_F2",
+                "target": "T_APP_W_F3"
+              }
+            ]
+          },
+          "FILTER_APP": {
+            "label": "Events before snapshot",
+            "type": "FILTER",
+            "top": 440,
+            "left": 1232
+          },
+          "AGG_APP": {
+            "label": "App per contact-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 440,
+            "left": 1512,
+            "graph": {
+              "AGG_APP_EXTRACT": null,
+              "AGG_APP_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_APP_EXTRACT",
+                "target": "AGG_APP_AGG"
+              }
+            ]
+          },
+          "LOAD_EMAIL": {
+            "label": "Individual Email Results",
+            "type": "LOAD_DATASET",
+            "top": 630,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "FILTER_EMAIL0": {
+            "label": "Contact sends only",
+            "type": "FILTER",
+            "top": 630,
+            "left": 392
+          },
+          "T_EMAIL_K": {
+            "label": "Email join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 630,
+            "left": 672,
+            "graph": {
+              "T_EMAIL_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_EMAIL_CAL": {
+            "label": "Email x snapshot",
+            "type": "JOIN",
+            "top": 630,
+            "left": 952
+          },
+          "T_EMAIL_W": {
+            "label": "Email windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 630,
+            "left": 1232,
+            "graph": {
+              "T_EMAIL_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Send before snapshot"
+              },
+              "T_EMAIL_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Sent in 90d"
+              },
+              "T_EMAIL_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Opened in 30d"
+              },
+              "T_EMAIL_W_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Opened in 90d"
+              },
+              "T_EMAIL_W_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Clicked in 90d (attributed to send date)"
+              },
+              "T_EMAIL_W_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email event date (open if before snapshot, else send)"
+              },
+              "T_EMAIL_W_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (email)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_EMAIL_W_F0",
+                "target": "T_EMAIL_W_F1"
+              },
+              {
+                "source": "T_EMAIL_W_F1",
+                "target": "T_EMAIL_W_F2"
+              },
+              {
+                "source": "T_EMAIL_W_F2",
+                "target": "T_EMAIL_W_F3"
+              },
+              {
+                "source": "T_EMAIL_W_F3",
+                "target": "T_EMAIL_W_F4"
+              },
+              {
+                "source": "T_EMAIL_W_F4",
+                "target": "T_EMAIL_W_F5"
+              },
+              {
+                "source": "T_EMAIL_W_F5",
+                "target": "T_EMAIL_W_F6"
+              }
+            ]
+          },
+          "FILTER_EMAIL": {
+            "label": "Sends before snapshot",
+            "type": "FILTER",
+            "top": 630,
+            "left": 1512
+          },
+          "AGG_EMAIL": {
+            "label": "Email per contact-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 630,
+            "left": 1792,
+            "graph": {
+              "AGG_EMAIL_EXTRACT": null,
+              "AGG_EMAIL_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_EMAIL_EXTRACT",
+                "target": "AGG_EMAIL_AGG"
+              }
+            ]
+          },
+          "LOAD_TICKET": {
+            "label": "Zendesk tickets",
+            "type": "LOAD_DATASET",
+            "top": 820,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_TKT_K": {
+            "label": "Ticket join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 820,
+            "left": 392,
+            "graph": {
+              "T_TKT_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_TKT_CAL": {
+            "label": "Ticket x snapshot",
+            "type": "JOIN",
+            "top": 820,
+            "left": 672
+          },
+          "T_TKT_W": {
+            "label": "Ticket windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 820,
+            "left": 952,
+            "graph": {
+              "T_TKT_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Ticket before snapshot"
+              },
+              "T_TKT_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Ticket in 90d"
+              },
+              "T_TKT_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (ticket)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_TKT_W_F0",
+                "target": "T_TKT_W_F1"
+              },
+              {
+                "source": "T_TKT_W_F1",
+                "target": "T_TKT_W_F2"
+              }
+            ]
+          },
+          "FILTER_TKT": {
+            "label": "Tickets before snapshot",
+            "type": "FILTER",
+            "top": 820,
+            "left": 1232
+          },
+          "AGG_TKT": {
+            "label": "Tickets per contact-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 820,
+            "left": 1512,
+            "graph": {
+              "AGG_TKT_EXTRACT": null,
+              "AGG_TKT_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_TKT_EXTRACT",
+                "target": "AGG_TKT_AGG"
+              }
+            ]
+          },
+          "JOIN_F_APP": {
+            "label": "+ app",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2072
+          },
+          "JOIN_F_EMAIL": {
+            "label": "+ email",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2352
+          },
+          "JOIN_F_TKT": {
+            "label": "+ tickets",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2632
+          },
+          "T_FINAL": {
+            "label": "Final features",
+            "description": "Null-safe counts, recency, and the leakage audit column",
+            "type": "TRANSFORM",
+            "top": 250,
+            "left": 2912,
+            "graph": {
+              "T_FINAL_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "App events 30d (final)"
+              },
+              "T_FINAL_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "App events 90d (final)"
+              },
+              "T_FINAL_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since last app event"
+              },
+              "T_FINAL_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Emails sent 90d (final)"
+              },
+              "T_FINAL_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email opens 30d (final)"
+              },
+              "T_FINAL_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email opens 90d (final)"
+              },
+              "T_FINAL_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email clicks 90d (final)"
+              },
+              "T_FINAL_F7": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email open rate 90d"
+              },
+              "T_FINAL_F8": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since last email event"
+              },
+              "T_FINAL_F9": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Tickets 90d (final)"
+              },
+              "T_FINAL_F10": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since last ticket"
+              },
+              "T_FINAL_F11": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Max feature date (audit: must be <= Snap_Date)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_FINAL_F0",
+                "target": "T_FINAL_F1"
+              },
+              {
+                "source": "T_FINAL_F1",
+                "target": "T_FINAL_F2"
+              },
+              {
+                "source": "T_FINAL_F2",
+                "target": "T_FINAL_F3"
+              },
+              {
+                "source": "T_FINAL_F3",
+                "target": "T_FINAL_F4"
+              },
+              {
+                "source": "T_FINAL_F4",
+                "target": "T_FINAL_F5"
+              },
+              {
+                "source": "T_FINAL_F5",
+                "target": "T_FINAL_F6"
+              },
+              {
+                "source": "T_FINAL_F6",
+                "target": "T_FINAL_F7"
+              },
+              {
+                "source": "T_FINAL_F7",
+                "target": "T_FINAL_F8"
+              },
+              {
+                "source": "T_FINAL_F8",
+                "target": "T_FINAL_F9"
+              },
+              {
+                "source": "T_FINAL_F9",
+                "target": "T_FINAL_F10"
+              },
+              {
+                "source": "T_FINAL_F10",
+                "target": "T_FINAL_F11"
+              }
+            ]
+          },
+          "OUTPUT0": {
+            "label": "Churn_PIT_Training_Set",
+            "type": "OUTPUT",
+            "top": 250,
+            "left": 3192
+          }
+        },
+        "connectors": [
+          {
+            "source": "LOAD_CAL",
+            "target": "T_CAL"
+          },
+          {
+            "source": "LOAD_CON",
+            "target": "FILTER_CON"
+          },
+          {
+            "source": "FILTER_CON",
+            "target": "T_CON_K"
+          },
+          {
+            "source": "T_CON_K",
+            "target": "JOIN_BOOK"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_BOOK"
+          },
+          {
+            "source": "JOIN_BOOK",
+            "target": "T_BOOK"
+          },
+          {
+            "source": "T_BOOK",
+            "target": "FILTER_BOOK"
+          },
+          {
+            "source": "FILTER_BOOK",
+            "target": "T_LABELS"
+          },
+          {
+            "source": "LOAD_APP",
+            "target": "T_APP_K"
+          },
+          {
+            "source": "T_APP_K",
+            "target": "JOIN_APP_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_APP_CAL"
+          },
+          {
+            "source": "JOIN_APP_CAL",
+            "target": "T_APP_W"
+          },
+          {
+            "source": "T_APP_W",
+            "target": "FILTER_APP"
+          },
+          {
+            "source": "FILTER_APP",
+            "target": "AGG_APP"
+          },
+          {
+            "source": "LOAD_EMAIL",
+            "target": "FILTER_EMAIL0"
+          },
+          {
+            "source": "FILTER_EMAIL0",
+            "target": "T_EMAIL_K"
+          },
+          {
+            "source": "T_EMAIL_K",
+            "target": "JOIN_EMAIL_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_EMAIL_CAL"
+          },
+          {
+            "source": "JOIN_EMAIL_CAL",
+            "target": "T_EMAIL_W"
+          },
+          {
+            "source": "T_EMAIL_W",
+            "target": "FILTER_EMAIL"
+          },
+          {
+            "source": "FILTER_EMAIL",
+            "target": "AGG_EMAIL"
+          },
+          {
+            "source": "LOAD_TICKET",
+            "target": "T_TKT_K"
+          },
+          {
+            "source": "T_TKT_K",
+            "target": "JOIN_TKT_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_TKT_CAL"
+          },
+          {
+            "source": "JOIN_TKT_CAL",
+            "target": "T_TKT_W"
+          },
+          {
+            "source": "T_TKT_W",
+            "target": "FILTER_TKT"
+          },
+          {
+            "source": "FILTER_TKT",
+            "target": "AGG_TKT"
+          },
+          {
+            "source": "T_LABELS",
+            "target": "JOIN_F_APP"
+          },
+          {
+            "source": "AGG_APP",
+            "target": "JOIN_F_APP"
+          },
+          {
+            "source": "JOIN_F_APP",
+            "target": "JOIN_F_EMAIL"
+          },
+          {
+            "source": "AGG_EMAIL",
+            "target": "JOIN_F_EMAIL"
+          },
+          {
+            "source": "JOIN_F_EMAIL",
+            "target": "JOIN_F_TKT"
+          },
+          {
+            "source": "AGG_TKT",
+            "target": "JOIN_F_TKT"
+          },
+          {
+            "source": "JOIN_F_TKT",
+            "target": "T_FINAL"
+          },
+          {
+            "source": "T_FINAL",
+            "target": "OUTPUT0"
+          }
+        ],
+        "hiddenColumns": []
+      }
+    }
+  ]
+}
