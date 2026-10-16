@@ -1,191 +1,215 @@
-# Runbook: retrain the churn model with point-in-time labels
+# Runbook: retrain the churn model on voluntary churn with point-in-time labels
 
-Companion to `2026-10-16_churn_score_validation.md`. Goal: replace the training set behind
-"Predicted Did Cancel" (Einstein Studio / Model Builder, output `Did_Cancel_prediction__c`)
-with one where every row is a customer *as of a date* and the label is whether they cancelled
-in the 60 days after that date. Nothing after the snapshot date may appear in the features.
+Companion to `2026-10-16_churn_score_validation.md`. Revised 2026-10-16 after Insurance
+(Jennifer Kellett, with Sandy) chose option 2 from the DS-3265 thread: **retrain the churn
+model without non-pay**, so the score targets voluntary churn and credit-based signals
+(Payment Stability Score, credit score, prior-coverage lapse) stay out of retention targeting.
+Insurance is to be consulted on retention-strategy work while the book is reset.
 
-Sources in Data Cloud today: `Bill__dlm` (invoice, due, payment, `Nonpay_Cancel_Notice_Created_At_c__c`,
-`Nonpay_Cleared_At_c__c`, `Nonpay_Cancelled_At_c__c`, `Contact__c`), Contact via the Salesforce
-data stream (`CreatedDate`, `Cancel_Date__c`, `Current_Term_Effective_Date__c`, `Current_Term_Expiration_Date__c`),
-`ssot__EmailEngagement__dlm`, `MobileApp_c_00D3h0000068eod__dlm`, `Zen_Desk_Ticket_Gold__dlm`,
-`Forsta_Survey_Response__dlm`. Driving stats (`Monthly_Driving_Stat__c`) are **not** a DMO yet;
-the current training set's trip features came from Contact snapshot fields, which are current
-values, not point-in-time. Stream the driving object if trip recency is to stay a feature.
+Two things change versus the old model, and both are label-side:
 
-## Step 0. Prototype locally first (half a day)
+1. Every row is a customer *as of a date*; the label is what they did in the 60 days after.
+   Nothing dated after the snapshot may appear in a feature.
+2. The positive class is **preventable voluntary cancellation only**. Non-pay, company
+   cancels and unpreventable exits are censored, not negatives.
 
-Build the training set with `sf data query` and fit a plain logistic regression or gradient
-boosting before touching Data Cloud. If the local model does not beat tenure alone (AUC 0.68 on
-the 2026-08-22 holdout) the feature set is wrong and no amount of Model Builder will fix it.
-`scripts/churn_score_validation.py` already pulls Contact, ContactHistory and the DMOs; extend
-it with the Bill, email, app and ticket pulls below.
+Sources in Data Cloud today: Contact via the Salesforce stream (`CreatedDate`, `Cancel_Date__c`,
+`Cancellation_Reason__c`, term and renewal fields), `ssot__EmailEngagement__dlm`,
+`MobileApp_c_00D3h0000068eod__dlm`, `Zen_Desk_Ticket_Gold__dlm`, `Forsta_Survey_Response__dlm`.
+`Bill__dlm` exists but is **not used** in this design (see step 4). Driving stats
+(`Monthly_Driving_Stat__c`) are not a DMO yet; stream them, because telematics savings and
+score trend are the strongest non-payment signals available.
 
-## Step 1. Pick the snapshot calendar
+## Why the label has to change, in numbers
 
-- Snapshot dates: the 1st of every month, 2025-01-01 through 2026-08-01. That gives 20
-  snapshots; the last one with a full 60-day outcome window is 2026-08-01 (window closes
-  2026-09-30). Bill data goes back to 2024 and `Cancel_Date__c` values go back further, so
-  earlier snapshots are possible; start with 20 and extend if the model is data-starved.
-- Horizon: **60 days primary**, because the batch is monthly and the journey acts within a
-  month. Carry a `label_90` column too; it is free and smooths the rarer reasons.
-- Holdout by time, not by random split: train on snapshots 2025-01 through 2026-04, validate on
-  2026-05 through 2026-08. Model Builder's default split is random across rows and will leak
-  the same customer across train and test; see step 6.
+2026 cancellations through Oct 14, whole book (7,765):
 
-## Step 2. Define the active book at each snapshot
+| Reason group | Count | Share | Treatment |
+|---|---|---|---|
+| Non-payment of premium (+ "Unable to make next months payment") | 3,375 | 43% | censored |
+| Company Cancel | 1,572 | 20% | censored |
+| Preventable voluntary: Due to high premium, Replacement of insurance carrier, Insured request - other, App issue / UX, poor service | 2,148 | 28% | **positive** |
+| Unpreventable voluntary: Sold vehicle, No longer driving, Moved out of state, Total loss, Moved to a new residence | 670 | 9% | censored |
 
-A contact is in the book at snapshot `S` when:
+Preventable voluntary runs about 230 a month, so a 60-day label gives roughly a 6% positive
+rate on a 7,500-contact book. Both existing models score 0.51 AUC on this class; it is the
+hard one, and it is now the only one.
+
+## Step 0. Prototype locally first
+
+Build the training set with `sf data query` and fit a logistic regression or gradient boosting
+before touching Data Cloud. The baseline to beat is tenure alone on the voluntary label; compute
+it on the first pull and write it down. `scripts/churn_score_validation.py` has the Contact and
+history pulls; add the email, app and ticket pulls.
+
+## Step 1. Snapshot calendar
+
+- Snapshots on the 1st of every month from **2024-07-01** through 2026-08-01 (26 snapshots).
+  The positive class is small, so go back as far as `Cancel_Date__c` and
+  `Cancellation_Reason__c` are populated; check both before 2025.
+- Horizon: 60 days primary, 90 days as a second column.
+- Holdout by time: train on snapshots through 2026-04, validate on 2026-05 through 2026-08.
+
+## Step 2. Active book at snapshot S
 
 ```
 CreatedDate <= S
 AND (Cancel_Date__c IS NULL OR Cancel_Date__c > S)
-AND at least one Bill__dlm row with Invoice_Date_c__c <= S      -- proof a policy existed
+AND policy evidence dated <= S   -- first invoice date or term effective date, whichever is streamed
 ```
 
-Do not use `PolicyStatus__c`, `canceled__c`, `Pending_Cancel_Flag__c` or `Policy_Status_Policy__c`
-to define the book: they are current values and would admit the future. Known gap:
-`Cancel_Date__c` keeps only the latest cancellation, so a customer who cancelled, came back and is
-active again looks active for the whole history. Accept it, or stream the policy history object
-if one exists.
+Do not use `PolicyStatus__c`, `canceled__c`, `Pending_Cancel_Flag__c`, `Policy_Status_Policy__c`
+or `Customer_Persona__c`: current values, they would admit the future. Known gap:
+`Cancel_Date__c` keeps only the latest cancellation, so re-purchasers look continuously active.
 
-Expect roughly 7,000 to 8,000 contacts per snapshot and 150,000 rows total.
-
-## Step 3. Labels
+## Step 3. Labels and censoring
 
 ```
-label_60 = Cancel_Date__c > S AND Cancel_Date__c <= S + 60 days
-label_90 = Cancel_Date__c > S AND Cancel_Date__c <= S + 90 days
-reason   = Cancellation_Reason__c when label_60, else NULL     -- for evaluation only, never a feature
+cancel_in_window = Cancel_Date__c > S AND Cancel_Date__c <= S + 60 days
+label_60 = 1   if cancel_in_window AND Cancellation_Reason__c in PREVENTABLE_VOLUNTARY
+label_60 = 0   if NOT cancel_in_window                       -- survived the window
+row dropped    if cancel_in_window AND reason in (NONPAY, COMPANY, UNPREVENTABLE, blank)
 ```
 
-Everyone else in the book at `S` is a negative. **Drop the current training set's 55,020
-all-time cancellation rows entirely.** They are what inverted tenure. Positive rate will be
-about 15% at 60 days, which is a normal base rate and needs no rebalancing.
+Censoring (dropping) is deliberate: a customer cancelled for non-pay on day 20 never had the
+chance to leave voluntarily, and calling them "stayed" teaches the model that non-pay
+behaviour predicts loyalty. Keep `reason` as a column for evaluation only.
 
-## Step 4. Features, all computed strictly from data dated before `S`
+Drop the old training set's 55,020 all-time cancellation rows entirely.
+
+## Step 4. Features, all dated strictly before S
+
+**Excluded on purpose:** every payment-derived field. No non-pay notices, late-payment rates,
+days past due, invoice counts, Payment Stability Score, credit score, prior-coverage lapse.
+Two reasons: the label no longer needs them, and a score built on them would reconstruct the
+credit-based gate Insurance wants kept out of targeting. If voluntary AUC falls short in
+step 7, the only payment feature worth a compliance conversation is the 180-day late rate;
+do not add it without sign-off.
 
 | Group | Feature | Source and rule |
 |---|---|---|
-| Tenure | `tenure_days` | `S - CreatedDate`. The strongest single signal; it must be in. |
-| Tenure | `tenure_bucket` | <6mo, 6-12mo, 1-2y, 2y+. Lets a tree split cleanly on the first-year cliff. |
-| Term age | `days_into_term`, `days_to_term_end` | Term effective/expiration as of `S`. `Current_Term_*` on Contact are current values, so for historical snapshots derive the term from the first invoice date plus six-month terms, or stream policy term history. Renewal timing drives voluntary churn, which both models currently miss. |
-| Non-pay | `nonpay_notices_90d`, `nonpay_notices_365d` | Count of `Bill__dlm` rows with `Nonpay_Cancel_Notice_Created_At_c__c` in `(S-90d, S]` and `(S-365d, S]`. |
-| Non-pay | `days_since_last_nonpay_notice` | `S` minus the latest notice before `S`; large sentinel when none. |
-| Non-pay | `open_nonpay_at_snapshot` | Latest notice before `S` has no `Nonpay_Cleared_At_c__c <= S`. This is the single best short-horizon feature. |
-| Billing | `late_rate_lifetime`, `late_rate_180d` | Share of invoices with `Payment_Date_c__c > Invoice_Due_Date_c__c + 3 days`, invoices dated before `S` only. |
-| Billing | `avg_days_past_due_180d`, `invoices_90d`, `avg_bill_amount_180d` | Same window rule. |
-| Email | `email_opens_30d`, `email_opens_90d`, `email_clicks_90d`, `email_sends_90d` | `ssot__EmailEngagement__dlm`, engagement date `<= S`. Keep the ratio open/sent too. |
-| App | `app_events_30d`, `app_events_90d`, `days_since_last_app_event` | `MobileApp_c_..__dlm` joined on `Account_Id__c = Contact.Account_Id2__c`, event timestamp `<= S`. |
-| Support | `tickets_90d`, `days_since_last_ticket` | `Zen_Desk_Ticket_Gold__dlm`, `Created_at_c__c <= S`, joined on customer number. |
-| Driving | `trips_per_month_last_cycle`, `weeks_since_last_trip`, `score_trend_3cycles` | Only once `Monthly_Driving_Stat__c` is streamed; cycles with `cycle_end <= S`. Until then leave driving out rather than use current-value Contact fields. |
-| Survey | `nps_latest_before_S` | `Forsta_Survey_Response__dlm`; null for most rows, that is fine. |
+| Tenure | `tenure_days`, `tenure_bucket` | `S - CreatedDate`; buckets <6mo, 6-12mo, 1-2y, 2y+. Still the strongest single signal. |
+| Renewal | `days_to_term_end`, `days_since_renewal_offer`, `renewal_rate_change_pct` | "Due to high premium" and "Replacement of carrier" are 78% of the positive class, and both happen around renewal. Contact holds `Current_Term_Expiration_Date__c`, `Renewal_Offer_Date__c`, `Policy_Renewal_Rate__c`, `Term_Renewal_Rate__c`, `Yesterday_Renewal_Rate_Increase_PCT__c` as **current values**; turn on field history or stream term history so they can be rebuilt as of S. Without this the model will not see voluntary churn. |
+| Savings | `telematics_discount`, `savings_per_month`, `lifetime_savings_at_S` | Discount and savings fields; point-in-time needs driving cycles streamed. |
+| Driving | `trips_per_month_last_cycle`, `weeks_since_last_trip`, `score_trend_3cycles` | `Monthly_Driving_Stat__c` once streamed, cycles with end date <= S. A falling score erodes the discount, which precedes "high premium" exits. |
+| Email | `email_opens_30d`, `email_opens_90d`, `email_clicks_90d`, open/sent ratio | `ssot__EmailEngagement__dlm`, engagement date <= S. |
+| App | `app_events_30d`, `app_events_90d`, `days_since_last_app_event` | Mobile app DMO on `Account_Id__c = Contact.Account_Id2__c`. |
+| Support | `tickets_90d`, `days_since_last_ticket`, `ticket_type_last` | `Zen_Desk_Ticket_Gold__dlm`, created <= S. Keep billing-type tickets as a count only; do not pull payment status from them. |
+| Survey | `nps_latest_before_S`, `days_since_nps` | `Forsta_Survey_Response__dlm`. |
+| Household | `policies_in_household_at_S` | Count of active contacts on the same Account at S. |
+| Claims | `claim_in_180d` | Only if a claims object is streamed; `Claim_Flag__c` on the old set was a current value. |
 
 Never include: `Cancellation_Reason__c`, `canceled__c`, `Cancel_Date__c`, `Pending_Cancel_Flag__c`,
-`PolicyStatus__c`, `Customer_Persona__c` (it is derived from the old churn score),
-`Churn_Risk_Score__c`, `Normalized_Churn_Risk_Score__c`, anything with a timestamp after `S`.
+`PolicyStatus__c`, `Customer_Persona__c`, either existing churn score, anything timestamped after S.
 
-Window rule to apply everywhere: `event_date > S - N days AND event_date <= S`.
+Window rule everywhere: `event_date > S - N days AND event_date <= S`.
 
-## Step 5. Build it in Data Cloud
+## Step 5. Build in Data Cloud
 
-1. **Snapshot calendar table.** A small CSV data stream `Churn_Snapshot_Calendar` with one row
-   per snapshot date, or generate it inside the transform with a `VALUES` list. Monthly refresh
-   adds the next date.
-2. **Batch Data Transform** `Churn_PIT_Training_Set`: cross join the calendar to Contact, apply the
-   step 2 filter, left-join each feature aggregate (one CTE per source, grouped by contact and
-   snapshot with the window rule), compute labels. Output DLO/DMO `Churn_PIT_Training_Set__dlm`
-   with primary key `contact_id || '_' || snapshot_date`. Schedule it monthly on the 2nd, after
-   the Salesforce stream has refreshed.
-3. **Scoring transform** `Churn_PIT_Scoring_Set`: identical SQL with a single snapshot = run date
-   and no label columns. Same column names and types as the training DMO; Model Builder
-   requires that.
-4. **Sanity checks on the training DMO before training** (run from `sf data query`):
-   - rows per snapshot roughly flat at 7,000 to 8,000; positive rate 12 to 18% every month;
-   - no row where any feature's underlying max date exceeds its snapshot (add a `max_feature_date`
-     audit column in the transform and assert `<= snapshot_date`);
-   - univariate AUC of `tenure_days` against `label_60` must come out near **0.32** (shorter tenure,
-     higher churn), not 0.65. If it is above 0.5 the label or the book filter is wrong.
+1. **Calendar**: CSV data stream `Churn_Snapshot_Calendar` with one row per snapshot date.
+2. **Batch Data Transform** `Churn_PIT_Training_Set`: cross join calendar to Contact, apply step 2,
+   left-join one CTE per feature source with the window rule, compute `cancel_in_window`,
+   `label_60`, `label_90`, `reason`, and a `censored` flag; filter `censored = 0` in a final
+   step (keep the unfiltered output as a second DMO for audit). Primary key
+   `contact_id || '_' || snapshot_date`. Schedule monthly on the 2nd.
+3. **Scoring transform** `Churn_PIT_Scoring_Set`: same SQL, one snapshot = run date, no labels,
+   **no censoring** (everyone active is scored; the journey decides who enters).
+4. **Checks before training** (from `sf data query`):
+   - rows per snapshot flat near 7,000; positives 5 to 8% every month;
+   - audit column `max_feature_date <= snapshot_date` on every row;
+   - tenure univariate AUC against `label_60` well below 0.5 (shorter tenure, more churn);
+   - no payment-derived column in the output schema. Grep the column list.
 
-Skeleton for one feature CTE (Data Cloud SQL; adapt names after a `SELECT FIELDS(ALL) ... LIMIT 1`):
+Skeleton (adapt names after `SELECT FIELDS(ALL) FROM <dmo> LIMIT 1`):
 
 ```sql
 WITH cal AS (SELECT snapshot_date FROM Churn_Snapshot_Calendar__dlm),
 book AS (
-  SELECT c.Id__c AS contact_id, cal.snapshot_date, c.CreatedDate__c, c.Cancel_Date__c
+  SELECT c.Id__c AS contact_id, cal.snapshot_date, c.CreatedDate__c, c.Cancel_Date__c, c.Cancellation_Reason__c
   FROM Contact__dlm c CROSS JOIN cal
   WHERE c.CreatedDate__c <= cal.snapshot_date
     AND (c.Cancel_Date__c IS NULL OR c.Cancel_Date__c > cal.snapshot_date)
 ),
-nonpay AS (
-  SELECT b.Contact__c AS contact_id, cal.snapshot_date,
-         COUNT(CASE WHEN b.Nonpay_Cancel_Notice_Created_At_c__c > cal.snapshot_date - INTERVAL '90' DAY THEN 1 END) AS nonpay_notices_90d,
-         MAX(b.Nonpay_Cancel_Notice_Created_At_c__c) AS last_notice
-  FROM Bill__dlm b CROSS JOIN cal
-  WHERE b.Nonpay_Cancel_Notice_Created_At_c__c <= cal.snapshot_date
-  GROUP BY b.Contact__c, cal.snapshot_date
-)
-SELECT book.contact_id, book.snapshot_date,
-       DATEDIFF(day, book.CreatedDate__c, book.snapshot_date) AS tenure_days,
-       COALESCE(nonpay.nonpay_notices_90d, 0) AS nonpay_notices_90d,
-       CASE WHEN book.Cancel_Date__c > book.snapshot_date
-             AND book.Cancel_Date__c <= book.snapshot_date + INTERVAL '60' DAY THEN 1 ELSE 0 END AS label_60
-FROM book LEFT JOIN nonpay USING (contact_id, snapshot_date);
+app AS (
+  SELECT m.Account_Id__c AS account_uuid, cal.snapshot_date,
+         COUNT(CASE WHEN m.Event_Timestamp_UTC__c > cal.snapshot_date - INTERVAL '90' DAY THEN 1 END) AS app_events_90d,
+         MAX(m.Event_Timestamp_UTC__c) AS last_app_event
+  FROM MobileApp_c_00D3h0000068eod__dlm m CROSS JOIN cal
+  WHERE m.Event_Timestamp_UTC__c <= cal.snapshot_date
+  GROUP BY m.Account_Id__c, cal.snapshot_date
+),
+labelled AS (
+  SELECT book.*,
+    CASE WHEN Cancel_Date__c > snapshot_date AND Cancel_Date__c <= snapshot_date + INTERVAL '60' DAY THEN 1 ELSE 0 END AS cancel_in_window,
+    CASE WHEN Cancellation_Reason__c IN ('Due to high premium','Replacement of insurance carrier','Insured request - other',
+                                         'App issue / UX','Due to poor customer service','Due to poor claims service') THEN 1 ELSE 0 END AS preventable
+  FROM book)
+SELECT contact_id, snapshot_date,
+       DATEDIFF(day, CreatedDate__c, snapshot_date) AS tenure_days,
+       COALESCE(app.app_events_90d, 0) AS app_events_90d,
+       CASE WHEN cancel_in_window = 1 AND preventable = 1 THEN 1 ELSE 0 END AS label_60,
+       CASE WHEN cancel_in_window = 1 AND preventable = 0 THEN 1 ELSE 0 END AS censored,
+       Cancellation_Reason__c AS reason
+FROM labelled LEFT JOIN app ON ... ;
 ```
 
 ## Step 6. Train in Einstein Studio (Model Builder)
 
-1. New model, "Build from scratch", data source `Churn_PIT_Training_Set__dlm` **filtered to
-   snapshot_date <= 2026-04-01** (save the filter as a segment or a second transform output,
-   `Churn_PIT_Training_Set_Train__dlm`). Goal: predict `label_60`, type binary classification,
-   maximise the "1" class.
-2. Exclude from the feature list: `contact_id`, `snapshot_date`, `label_90`, `reason`, any audit
-   column. Everything else in step 4 stays in.
-3. Leave the algorithm on auto (XGBoost). No class weighting needed at 15% positives.
-4. Train. Note the reported AUC but do not trust it: Model Builder's internal split is random
-   across rows, so the same customer appears in several snapshots on both sides.
-5. Run a prediction job against the held-out snapshots (2026-05-01 through 2026-08-01) into
+1. New model from `Churn_PIT_Training_Set__dlm` filtered to `snapshot_date <= 2026-04-01` and
+   `censored = 0`. Goal: predict `label_60`, binary classification, maximise class 1.
+2. Exclude `contact_id`, `snapshot_date`, `label_90`, `reason`, `censored`, audit columns.
+3. Algorithm on auto. At 6% positives consider the class-weight option if the top decile is
+   under-populated; otherwise leave it.
+4. Ignore the in-tool AUC (random row split leaks customers across snapshots).
+5. Prediction job on the holdout snapshots (2026-05 through 2026-08) into
    `Churn_PIT_Holdout_Scores__dlm`.
 
-## Step 7. Validate on the holdout before anyone sees the score
+## Step 7. Validate on the holdout
 
-Pull `Churn_PIT_Holdout_Scores__dlm` joined to `label_60` and `reason`, and run the same tests as
-the 2026-10-16 report (the AUC and decile code in `scripts/churn_score_validation.py` applies
-unchanged):
+Join holdout scores to `label_60`, `reason`, tenure. Use the AUC and decile code from
+`scripts/churn_score_validation.py`.
 
 | Test | Pass line |
 |---|---|
-| Overall AUC on holdout, 60-day | >= 0.72, and at least 0.04 above tenure alone on the same rows |
-| AUC within each tenure bucket | >= 0.62 in every bucket, including 1-2y where both current models are at 0.50 |
-| AUC by reason | Non-pay >= 0.75; Company Cancel >= 0.70; voluntary >= 0.60 (the one both models miss today) |
-| Decile cancel rates | Monotonic top to bottom; top decile >= 2.5x base |
-| Calibration | Mean predicted probability within 2 points of observed rate in each decile |
-| Month-to-month stability | Top-decile membership overlap >= 60% between consecutive snapshots |
+| Overall AUC, 60-day preventable voluntary label | >= 0.68 and at least 0.05 above tenure alone on the same rows (both current models: 0.51) |
+| AUC within each tenure bucket | >= 0.60 in all four, including 1-2y |
+| AUC by sub-reason | High premium >= 0.70; Replacement of carrier >= 0.65; Insured request >= 0.60 |
+| Decile cancel rates | Monotonic; top decile >= 2.5x base |
+| Calibration | Mean predicted probability within 1 point of observed per decile (base is ~6%) |
+| Stability | Top-decile overlap >= 60% between consecutive snapshots |
+| **Compliance proxy check** | Spearman between the new score and Payment Stability Score (once the DS-3265 field sync lands) and credit score < 0.2; share of contacts with a non-pay notice in the prior 90 days inside the top decile within 5 points of their book share. If either fails the score is a credit proxy and goes back to step 4. |
 
-If voluntary churn still sits near 0.5, the term-age features are the missing piece; go back to
-step 4 and get real term dates rather than derived ones.
+If "high premium" stays below 0.65, the renewal-rate features are not point-in-time yet. Fix
+the data, not the model.
 
-## Step 8. Deploy and keep the old score until proven
+## Step 8. Deploy
 
-1. Write the production prediction job to a new Contact field, `Churn_Risk_Score_PIT__c`
-   (probability times 100, two decimals), not over `Normalized_Churn_Risk_Score__c`. Run it on
-   the 1st, after the scoring transform.
-2. **Enable field history on the new field** before the first write. Contact had 18 tracked
-   fields changing in the last 30 days against a limit of 20; confirm the real count in Setup
-   and retire one if needed.
-3. Set bands from the scoring run's distribution, not 67/34: High = top decile, Moderate = next
-   two deciles. Publish the cut points with the batch so the journey and `Customer_Persona__c`
-   use the same numbers.
-4. Run two production batches, re-validate each with the script, then switch
-   `Customer360PersonaBatch`, the Wave dataset and the Churn Risk activation journey to the new
-   field in one change. Stop the old prediction jobs after that.
+1. Production prediction job writes to a new field `Voluntary_Churn_Risk_Score__c`
+   (probability x 100, two decimals). Leave `Normalized_Churn_Risk_Score__c` and
+   `Churn_Risk_Score__c` untouched until cutover. Run on the 1st after the scoring transform.
+2. Enable field history on the new field **before** the first write (Contact showed 18 tracked
+   fields changing in the last 30 days against a limit of 20; confirm in Setup).
+3. Bands from the distribution: High = top decile, Moderate = next two. Publish the cut points
+   with the batch.
+4. Journey entry filter belongs to the journey, not the score: Insurance has not yet said
+   whether chronic non-payers are in or out of retention, so score everyone and keep the
+   exclusion (recent non-pay notice) as a journey criterion that can be toggled.
+5. Two production batches, re-validate each, then switch `Customer360PersonaBatch`, the Wave
+   dataset and the Churn Risk activation journey in one change. Retire the old prediction jobs.
 
 ## Step 9. Monthly after go-live
 
-- Day 2: training transform appends last month's snapshot; label window for the newest
-  snapshot is still open, so training uses snapshots at least 60 days old.
-- Quarterly: retrain on all closed snapshots, repeat step 7, promote only if it beats the live
-  model on the same holdout.
-- Each batch: append the raw-by-batch row with `scripts/churn_score_validation.py` and watch
-  the within-tenure AUC. A drop below 0.60 is the signal that something upstream changed
-  (a stream stopped, a field was repurposed) before it is a modelling problem.
+- Day 2: training transform appends last month's snapshot; train only on snapshots with a
+  closed 60-day window.
+- Each batch: append the raw-by-batch row with `scripts/churn_score_validation.py`, now against
+  the voluntary label, and re-run the compliance proxy check.
+- Quarterly retrain; promote only if it beats the live model on the same holdout.
+
+## Open questions for Insurance
+
+1. Are chronic non-payers (two or more notices in 12 months) excluded from retention outreach
+   altogether, or only from the churn journey? Determines the journey entry filter in step 8.4.
+2. Is a 180-day late-payment rate acceptable as a feature if the compliance proxy check in
+   step 7 passes, or is any payment-derived input off the table?
+3. Does "Insured request - other" count as preventable? It is 4% of cancels and the reason text
+   is unstructured; it is in the positive class here pending their view.
