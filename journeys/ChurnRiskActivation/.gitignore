@@ -1,2 +1,3 @@
 cache/
-*.csv
+scripts/cache/
+scripts/*.csv
