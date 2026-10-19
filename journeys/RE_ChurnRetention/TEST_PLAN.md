@@ -2,7 +2,9 @@
 
 Short version: the model can be proven in weeks, the journey mechanics in a month, but a
 statistically significant churn reduction needs a randomized holdout and **9 to 12 months at the
-widest sensible audience**, or about 20 months at pilot scale. Nothing shorter is honest at
+widest sensible audience**, or about 20 months at the entry rule as written. Scope is Arizona
+and Rhode Island, which is the whole book (85% and 15% of upcoming renewals; one contact in
+California), so there is no smaller pilot to run first and no larger audience to widen to later. Nothing shorter is honest at
 HiRoad's volumes. The plan below is staged so each gate answers one question and you are never
 waiting a year to learn that the entry rule was wrong.
 
@@ -10,10 +12,10 @@ waiting a year to learn that the entry rule was wrong.
 
 | Quantity | Value | Source |
 |---|---|---|
-| Renewals per month (term ends) | ~1,250 | active contacts by `Current_Term_Expiration_Date__c`, Nov 2026 to Mar 2027 |
+| Renewals per month (term ends) | ~1,250 (AZ ~1,050, RI ~190) | active contacts by `Current_Term_Expiration_Date__c` and `MailingState`, Nov 2026 to Mar 2027 |
 | Entry rule share (High band 10% + Moderate 20% x tenure under 12 months 42%) | ~18% | score deciles and tenure mix on the Aug 22 book |
-| After non-pay-in-90-days and opt-out exclusions (~30%) | ~150 entrants/month, all states | non-pay notice volume (~1,500/month) |
-| Arizona-only pilot | ~100 entrants/month | assumption, confirm from `MailingState` |
+| After non-pay-in-90-days and opt-out exclusions (~30%) | ~150 entrants/month (AZ ~130, RI ~20) | non-pay notice volume (~1,500/month) |
+| 2026 preventable voluntary cancels by state | AZ 1,715, RI 338 | `Cancellation_Reason__c`, Jan to Oct 14 |
 | Preventable voluntary cancel rate among entrants, T-45 to T+30 | 12 to 15% | top-decile lift ~2.5x on a ~6% 60-day base |
 | Outcome lag per entrant | 75 days | entry T-45, outcome read at T+30 |
 | Plausible journey effect | 15 to 25% relative reduction | typical for renewal-window retention programs; 35% would be exceptional |
@@ -25,16 +27,18 @@ every figure to get calendar time.
 
 | Entrants / month | Base rate | Effect | 50/50 holdout | 80/20 holdout |
 |---|---|---|---|---|
-| 100 (AZ pilot) | 15% | 25% | 25 mo | 41 mo |
-| 150 (all states, entry rule as written) | 15% | 25% | 17 mo | 27 mo |
+| 150 (AZ + RI, entry rule as written) | 15% | 25% | 17 mo | 27 mo |
 | 150 | 15% | 15% | 49 mo | 78 mo |
-| 250 (all states, all Moderate band) | 15% | 25% | 10 mo | 16 mo |
-| 400 (all states, Moderate + High, no tenure gate) | 12% | 25% | ~8 mo | ~13 mo |
+| 250 (AZ + RI, all Moderate band) | 15% | 25% | 10 mo | 16 mo |
+| 400 (AZ + RI, Moderate + High, no tenure gate) | 12% | 25% | ~8 mo | ~13 mo |
 | 400 | 12% | 35% | ~4 mo | ~6 mo |
 
 Reading it: a 15% effect is not provable at any audience we can assemble. A 25% effect is
-provable in about a year if the audience is widened to the full Moderate and High bands across
-all states with a 50/50 split. Widening further dilutes the base rate and does not help.
+provable in about a year if the audience is widened to the full Moderate and High bands in both
+states with a 50/50 split. Widening further dilutes the base rate and does not help. **Rhode
+Island on its own (~20 to 60 entrants a month) will never reach significance**; randomize within
+state so both are represented, report AZ and RI separately as descriptives, and test on the
+combined population.
 
 ## The staged plan
 
@@ -71,7 +75,9 @@ journey does.
 **Design.** Randomized 50/50 split at entry using Journey Builder's Random Split as the first
 activity. The holdout path has no sends and the same exit criteria, so both arms are tracked in
 `RE_ChurnRetention_History` with an `Arm` column. Widen entry to the full Moderate and High bands
-in all states to reach ~400 entrants a month; keep the non-pay exclusion. Holdout contacts still
+in both states to reach ~400 entrants a month; keep the non-pay exclusion. Stratify the random
+split by state (two Random Split activities behind a state decision split, or one split with the
+state recorded) so the AZ:RI mix is identical in both arms. Holdout contacts still
 get every servicing communication, which is the argument to make to compliance: this is
 discretionary marketing, not a required notice, so the 2026-10-02 bar on non-pay holdouts should
 not apply. Get that answer in writing before launch.
@@ -79,7 +85,7 @@ not apply. Get that answer in writing before launch.
 **Primary metric.** Preventable voluntary cancellation by T+30 after term end, per entrant.
 Secondary: any cancellation by T+30; renewal recorded by T+7.
 
-**Analysis.** Two-proportion test, stratified by tenure bucket and band. Interim looks at month
+**Analysis.** Two-proportion test, stratified by state, tenure bucket and band. Interim looks at month
 4 and month 8 of entries with O'Brien-Fleming boundaries (stop early only for an effect of 35%
 or more); final read at month 12 of entries, so about month 14 to 15 in calendar time.
 
@@ -99,7 +105,7 @@ bars; report it as an estimate, not a proof.
 | Month | What |
 |---|---|
 | 0 | Gate 0. Compliance decision on the holdout. MC Connect fields synced. |
-| 1 | Launch in all states with the 50/50 split. Gate 1 checks weekly. |
+| 1 | Launch in AZ and RI with the 50/50 split. Gate 1 checks weekly. |
 | 2 to 3 | Gate 2 after batches 1 and 2. Leading indicators from month 2. |
 | 4 to 5 | First interim look at churn (entries from months 1 to 4; outcomes through month 6.5). |
 | 8 to 9 | Second interim look. |
@@ -114,5 +120,5 @@ analysis can be split before and after.
 - A bigger effect: at 35% relative, 400 entrants a month proves out in about 4 months of entries.
 - A higher base rate: if the model's top decile reaches 20% churn, every figure above drops by
   about a third. Gate 0 tells you which base rate to plan on before launch.
-- Nothing else. Adding states, bands or channels beyond the Moderate line lowers the base rate
-  faster than it adds volume.
+- Nothing else. There are no more states to add, and bands or channels beyond the Moderate
+  line lower the base rate faster than they add volume.

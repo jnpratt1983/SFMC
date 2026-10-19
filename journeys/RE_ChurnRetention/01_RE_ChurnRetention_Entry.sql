@@ -32,6 +32,7 @@ FROM ENT.Contact_Salesforce c
 CROSS JOIN [RE_ChurnRetention_Config] cfg
 WHERE
     c.Driver_Role__c = 'PNI'
+    AND c.MailingState IN ('AZ', 'RI')
     AND ISNULL(c.canceled__c, 'false') NOT IN ('true', '1', 'Yes', 'Y')
     AND c.Cancel_Date__c IS NULL
     AND ISNULL(c.Pending_Cancel_Flag__c, 'false') NOT IN ('true', '1', 'Yes', 'Y')
