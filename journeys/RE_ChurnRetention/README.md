@@ -42,7 +42,7 @@ Track is assigned in SQL from `Voluntary_Churn_Top_Factors__c`:
 | Track | Top factor contains | Steps |
 |---|---|---|
 | `PRICE` | Renewal, Savings, Discount, Premium | T-45 email (savings earned, how the discount carries into the new term). T-30 SMS where consented. T-21 second email, different angle (what the discount is worth over the next term), only to non-openers of T-45. T+7 after renewal: thank-you. |
-| `ENGAGE` | App, Trip, Driving | T-45 email plus app push on HiGoals and the discount. T-35 second push. T-21 email to non-openers. No SMS. |
+| `ENGAGE` | App, Trip, Driving | T-45 email plus app push. T-35 second push. T-21 email to non-openers. No SMS. Content differs by state: RI leads with HiGoals rewards progress; AZ (no HiGoals) leads with the safe-driving discount and trip tips. |
 | `SERVICE` | Ticket, Support | No marketing email while a ticket is open. Wait until the open ticket count is zero (daily check against the Zendesk sync), then join `PRICE` at the next step. No task is created. |
 | `DEFAULT` | anything else or blank | `PRICE` emails only. |
 
@@ -51,7 +51,7 @@ Track is assigned in SQL from `Voluntary_Churn_Top_Factors__c`:
 - Name `RE_ChurnRetention_<Month>2026`. Entry source: `RE_ChurnRetention_Entry`, scheduled
   daily after the automation. Re-entry: **single entry across all versions**. No trailing waits
   (the non-pay journey's trailing waits are why 63% of its traced contacts were stuck).
-- First split: `Track`. Second split: channel, reusing the "Email Only / Email & SMS / SMS Only /
+- First split: `MailingState` (AZ / RI) for content; second split: `Track`; third split: channel, reusing the "Email Only / Email & SMS / SMS Only /
   Remainder" multi-criteria split from `AC_ReviewQuoteStepJourney` keyed on
   `HasOptedOutOfEmail`, `et4ae5__HasOptedOutOfMobile__c`, `SMS_Policy_Opt_In__c`.
 - Email sends use Einstein STO (24 hours). SMS between 09:00 and 19:00 local.
