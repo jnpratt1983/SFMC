@@ -41,10 +41,10 @@ Track is assigned in SQL from `Voluntary_Churn_Top_Factors__c`:
 
 | Track | Top factor contains | Steps |
 |---|---|---|
-| `PRICE` | Renewal, Savings, Discount, Premium | T-45 email (savings earned, how the discount carries into the new term). T-30 SMS where consented. T-21 Salesforce task "Retention call" if no open or click and still High. T+7 after renewal: thank-you. |
-| `ENGAGE` | App, Trip, Driving | T-45 email plus app push on HiGoals and the discount. T-35 second push. T-21 task only if still High. No SMS. |
-| `SERVICE` | Ticket, Support | No marketing email. Create a CX task with the open ticket, wait for `Tickets_Open = 0`, then join `PRICE` at the next step. |
-| `DEFAULT` | anything else or blank | `PRICE` emails only, no call task. |
+| `PRICE` | Renewal, Savings, Discount, Premium | T-45 email (savings earned, how the discount carries into the new term). T-30 SMS where consented. T-21 second email, different angle (what the discount is worth over the next term), only to non-openers of T-45. T+7 after renewal: thank-you. |
+| `ENGAGE` | App, Trip, Driving | T-45 email plus app push on HiGoals and the discount. T-35 second push. T-21 email to non-openers. No SMS. |
+| `SERVICE` | Ticket, Support | No marketing email while a ticket is open. Wait until the open ticket count is zero (daily check against the Zendesk sync), then join `PRICE` at the next step. No task is created. |
+| `DEFAULT` | anything else or blank | `PRICE` emails only. |
 
 ## Journey Builder settings
 
@@ -55,9 +55,9 @@ Track is assigned in SQL from `Voluntary_Churn_Top_Factors__c`:
   Remainder" multi-criteria split from `AC_ReviewQuoteStepJourney` keyed on
   `HasOptedOutOfEmail`, `et4ae5__HasOptedOutOfMobile__c`, `SMS_Policy_Opt_In__c`.
 - Email sends use Einstein STO (24 hours). SMS between 09:00 and 19:00 local.
-- Call task: the "Call Lead- Next Best Action" Sales Cloud activity pattern, subject
-  "Retention call: renewal in 21 days", assigned to the retention queue, with the track and the
-  top factors in the description. No score value in the task.
+- No call tasks and no Sales Cloud activities: the journey is email, SMS and push only
+  (decision 2026-10-19, no call resources). If that changes, the T-21 step is where a task
+  would go, using the "Call Lead- Next Best Action" activity pattern.
 - **Exit criteria**, evaluated daily: contact is in `RE_ChurnRetention_Exit`. The exit DE holds
   anyone who cancelled, went pending cancel, received a new non-pay notice after entry (the
   non-pay journey takes over), or renewed (`Current_Term_Effective_Date__c` >= the term end
@@ -91,8 +91,7 @@ Track is assigned in SQL from `Voluntary_Churn_Top_Factors__c`:
    (already synced), `DNR_Flag__c`. The entry query fails on the first missing field, which is
    the intended smoke test.
 2. The three DEs and the config DE created from `de/`.
-3. Retention queue and the task-creation activity agreed with the CX lead.
-4. Model holdout pass, Insurance content review, pilot state (Arizona first, matching the
+3. Model holdout pass, Insurance content review, pilot state (Arizona first, matching the
    Data Science payment-stability scope).
 
 ## Interim option if the model is late
