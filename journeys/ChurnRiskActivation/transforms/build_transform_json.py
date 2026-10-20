@@ -18,8 +18,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 WITH_OFFERS = "--without-offers" not in sys.argv
 WITH_DRIVING = "--with-driving" in sys.argv   # needs the Monthly_Driving_Stat__c data stream (lake object name below)
 DRIVING_DLO = "Monthly_Driving_Stat_c_00D3h0000068eod__dll"   # the Renewal_Offer__c lake object must exist before the offers branch can be posted
+SCORING = "--scoring" in sys.argv               # one snapshot = now(); writes Churn_PIT_Scoring_Set__dll; labels are meaningless and left in place
 WITH_BILLS = "--with-bills" in sys.argv       # price history from Bill__c: net and gross premium; NO payment fields. HiRoad credit is ~0 on 99% of bills, so it is not carried.
-SUFFIX = "" if WITH_OFFERS else ".nooffers"
+SUFFIX = ("" if WITH_OFFERS else ".nooffers") + (".scoring" if "--scoring" in sys.argv else "")
 SNAP = '"Cal.Snap_Date"'
 SNAPKEY = '"Cal.Snap_Key"'
 PREVENTABLE = "('Due to high premium','Replacement of insurance carrier','Insured request - other','App issue / UX','Due to poor customer service','Due to poor claims service')"
@@ -74,12 +75,15 @@ def ui_link(a, b): ui_conn.append({"source": a, "target": b})
 
 # ---------------------------------------------------------------- calendar (row 0)
 load("LOAD_CAL", "Churn_Snapshot_Calendar__dll", "dataLakeObject", ["Snapshot_Date__c", "Snapshot_Key__c"], "Snapshot calendar", 60, 112)
-cal_last = transform("T_CAL", "LOAD_CAL", [
-    date_field("Snap_Date", "to_timestamp(Snapshot_Date__c)", "Snap Date (timestamp so it compares with event datetimes)"),
-    text_field("Snap_Key", "date_format(Snapshot_Date__c, 'yyyyMM')", "Snap Key (yyyyMM, derived from the date; the stream's Snapshot_Key__c landed as Number)", 10),
+if SCORING:
+    filt("FILTER_CAL", "LOAD_CAL", [{"field": "Snapshot_Key__c", "operands": ["202407"], "operator": "EQUAL", "type": "NUMBER"}], "One calendar row", 60, 252)
+    ui_link("LOAD_CAL", "FILTER_CAL")
+cal_last = transform("T_CAL", "FILTER_CAL" if SCORING else "LOAD_CAL", [
+    date_field("Snap_Date", "now()" if SCORING else "to_timestamp(Snapshot_Date__c)", "Snap Date (scoring: run time)" if SCORING else "Snap Date (timestamp so it compares with event datetimes)"),
+    text_field("Snap_Key", "date_format(now(), 'yyyyMM')" if SCORING else "date_format(Snapshot_Date__c, 'yyyyMM')", "Snap Key (yyyyMM)", 10),
     num_field("xk", "1", "Cross-join key"),
 ], "Calendar keys", 60, 392, "Snapshot date, key, and a constant join key for the cross join")
-ui_link("LOAD_CAL", "T_CAL")
+ui_link("FILTER_CAL" if SCORING else "LOAD_CAL", "T_CAL")
 
 # ---------------------------------------------------------------- contact book (row 1)
 load("LOAD_CON", "Contact__dll", "dataLakeObject", ["Id__c", "AccountId__c", "account_id_c__c", "Customer_Number_c__c", "CreatedDate__c", "Policy_Effective_Date_c__c",
@@ -347,14 +351,15 @@ mappings = [
     ("Max_Feature_Date", "Max_Feature_Date__c"), *([("Offer_After_Snapshot", "Offer_After_Snapshot__c")] if WITH_OFFERS else []),
 ]
 nodes["OUTPUT0"] = {"action": "outputD360", "sources": [final], "parameters": {"dedupOrder": [], "fieldsMappings": [{"sourceField": s, "targetField": t} for s, t in mappings],
-                    "name": "Churn_PIT_Training_Set__dll", "type": "dataLakeObject", "writeMode": "OVERWRITE"}}
-ui_nodes["OUTPUT0"] = {"label": "Churn_PIT_Training_Set", "type": "OUTPUT", "top": 250, "left": 3192}
+                    "name": "Churn_PIT_Scoring_Set__dll" if SCORING else "Churn_PIT_Training_Set__dll", "type": "dataLakeObject", "writeMode": "OVERWRITE"}}
+ui_nodes["OUTPUT0"] = {"label": "Churn_PIT_Scoring_Set" if SCORING else "Churn_PIT_Training_Set", "type": "OUTPUT", "top": 250, "left": 3192}
 ui_link("T_FINAL", "OUTPUT0")
 
 types = {"Mailing_State__c": "Text", "Driver_Role__c": "Text", "Renewal_Rating_Version__c": "Text", "Row_Key__c": "Text", "Contact_Id__c": "Text", "Snapshot_Date__c": "DateTime", "Snapshot_Key__c": "Text", "Reason__c": "Text", "Tenure_Bucket__c": "Text", "Max_Feature_Date__c": "DateTime"}
 out_fields = [{"isPrimaryKey": t == "Row_Key__c", "label": t[:-3].replace("_", " "), "name": t, "type": types.get(t, "Number")} for s, t in mappings]
-definition = {"label": "Churn PIT Training Set", "name": "ChurnPITTrainingSet", "version": "56.0", "type": "STL", "nodes": nodes,
-              "outputDataObjects": [{"category": "Other", "label": "Churn PIT Training Set", "name": "Churn_PIT_Training_Set__dll", "type": "dataLakeObject", "fields": out_fields}],
+LBL, NM, OUT = ("Churn PIT Scoring Set", "ChurnPITScoringSet", "Churn_PIT_Scoring_Set__dll") if SCORING else ("Churn PIT Training Set", "ChurnPITTrainingSet", "Churn_PIT_Training_Set__dll")
+definition = {"label": LBL, "name": NM, "version": "56.0", "type": "STL", "nodes": nodes,
+              "outputDataObjects": [{"category": "Other", "label": LBL, "name": OUT, "type": "dataLakeObject", "fields": out_fields}],
               "ui": {"nodes": ui_nodes, "connectors": ui_conn, "hiddenColumns": []}}
 
 # sanity: every source exists
@@ -371,8 +376,8 @@ def escape_formulas(obj):
         return {k: (html.escape(v, quote=True).replace("'", "&#39;") if k == "formulaExpression" else escape_formulas(v)) for k, v in obj.items()}
     if isinstance(obj, list): return [escape_formulas(x) for x in obj]
     return obj
-api_body = {"label": "Churn PIT Training Set", "name": "ChurnPITTrainingSet", "dataSpaceName": "default", "type": "BATCH",
-            "description": "Point-in-time training set: monthly snapshots of the active book labelled on preventable voluntary cancellation in the following 60/90 days",
+api_body = {"label": LBL, "name": NM, "dataSpaceName": "default", "type": "BATCH",
+            "description": ("Scoring set: the active book as of the run date with the same features as the training set" if SCORING else "Point-in-time training set: monthly snapshots of the active book labelled on preventable voluntary cancellation in the following 60/90 days"),
             "definitions": [definition]}  # the POST validator wants raw SQL; the GET response shows it HTML-escaped
 json.dump(api_body, open(os.path.join(HERE, f"Churn_PIT_Training_Set{SUFFIX}.api.json"), "w"), indent=2)
 

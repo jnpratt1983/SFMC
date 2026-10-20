@@ -60,7 +60,7 @@
                 "businessType": "Text",
                 "defaultValue": "",
                 "formulaExpression": "date_format(Snapshot_Date__c, 'yyyyMM')",
-                "label": "Snap Key (yyyyMM, derived from the date; the stream's Snapshot_Key__c landed as Number)",
+                "label": "Snap Key (yyyyMM)",
                 "name": "Snap_Key",
                 "precision": 10,
                 "type": "TEXT"
@@ -3830,7 +3830,7 @@
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Snap Key (yyyyMM, derived from the date; the stream's Snapshot_Key__c landed as Number)"
+                "label": "Snap Key (yyyyMM)"
               },
               "T_CAL_F2": {
                 "parameters": {

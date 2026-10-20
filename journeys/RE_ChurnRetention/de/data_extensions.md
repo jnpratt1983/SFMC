@@ -7,8 +7,8 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 | Field | Type | Notes |
 |---|---|---|
 | ConfigKey | Text(20), PK | `current` |
-| HighCut | Decimal(5,2) | start of the top decile from the latest batch |
-| ModerateCut | Decimal(5,2) | start of decile 3 |
+| HighCut | Decimal(5,2) | start of the v3 top decile from the latest batch (58.29 on the Aug 2026 holdout) |
+| ModerateCut | Decimal(5,2) | start of decile 3 (reporting only; entry does not use it) |
 | BatchDate | Date | scoring batch the cuts came from |
 
 ## RE_ChurnRetention_Entry (Overwrite daily; journey entry source)
@@ -26,7 +26,7 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 | et4ae5__HasOptedOutOfMobile__c | Text(10) |
 | SMS_Policy_Opt_In__c | Text(10) |
 | Score | Decimal(5,2) |
-| Band | Text(10) |
+| Band | Text(10): HIGH (model tier) or OFFER (price tier) |
 | TopFactors | Text(255) |
 | Track | Text(10) |
 | TermEndAtEntry | Date |
