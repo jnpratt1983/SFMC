@@ -79,7 +79,7 @@ cal_last = transform("T_CAL", "LOAD_CAL", [
 ui_link("LOAD_CAL", "T_CAL")
 
 # ---------------------------------------------------------------- contact book (row 1)
-load("LOAD_CON", "Contact__dll", "dataLakeObject", ["Id__c", "AccountId__c", "Account_Id2_c__c", "Customer_Number_c__c", "CreatedDate__c", "Policy_Effective_Date_c__c",
+load("LOAD_CON", "Contact__dll", "dataLakeObject", ["Id__c", "AccountId__c", "account_id_c__c", "Customer_Number_c__c", "CreatedDate__c", "Policy_Effective_Date_c__c",
      "Cancel_Date_c__c", "Cancellation_Reason_c__c", "Policy_Renewal_Date_c__c", "Renewal_Offer_Date_c__c", "Policy_Renewal_Rate_c__c",
      "Lifetime_Savings_c__c", "Telematic_Discount_Numeric__c", "Current_Term_Effective_Date_c__c", "Current_Term_Expiration_Date_c__c",
      "Last_App_Open_Date_c__c", "Monthly_Safe_Driving_Discount_c__c"], "Contact", 250, 112)
@@ -98,7 +98,7 @@ filt("FILTER_BOOK", book, [{"field": "In_Book", "operands": ["1"], "operator": "
 ui_link("JOIN_BOOK", "T_BOOK"); ui_link("T_BOOK", "FILTER_BOOK")
 if WITH_OFFERS:
     # ---------------------------------------------------------------- renewal offers (row F): Renewal_Offer__c captured by the Account flow, point-in-time
-    load("LOAD_OFFER", "Renewal_Offer_c_00D3h0000068eod__dll", "dataLakeObject", ["Account_c__c", "Offer_Date_c__c", "Increase_Amount_Dollars_c__c", "Policy_Renewal_Rate_c__c", "Prior_Rate_c__c", "Increase_Percent_c__c", "Rating_Version_c__c"], "Renewal offers", 1010, 112)
+    load("LOAD_OFFER", "Renewal_Offer_c_00D3h0000068eod__dll", "dataLakeObject", ["Account_c__c", "Offer_Date_c__c", "Increase_Amount_Dollars_c__c", "Policy_Renewal_Rate_c__c", "Rating_Version_c__c"], "Renewal offers", 1010, 112)
     off_k = transform("T_OFFER_K", "LOAD_OFFER", [num_field("xk", "1", "Cross-join key")], "Offer join key", 1010, 392)
     ui_link("LOAD_OFFER", "T_OFFER_K")
     join("JOIN_OFFER_CAL", off_k, cal_last, ["xk"], ["xk"], "Cal", "INNER", "Offer x snapshot", 1010, 672, drop=["Cal.xk", "Cal.Snapshot_Date__c", "Cal.Snapshot_Key__c"])
@@ -137,7 +137,7 @@ labels = transform("T_LABELS", "JOIN_ACCT" if WITH_OFFERS else "FILTER_BOOK", [
     num_field("Days_Since_Last_App_Open", f"case when Last_App_Open_Date_c__c is null or Last_App_Open_Date_c__c > {SNAP} then null else datediff({SNAP}, Last_App_Open_Date_c__c) end", "Days since last app open (Contact field; null if after snapshot)"),
     *([num_field("Renewal_Offer_Change_Dollars", '"Acct.Off.Increase_Amount_Dollars_c__c"', "Renewal offer change $ (latest offer in the 60 days before the snapshot; point-in-time from Renewal_Offer__c)", 10, 2)] if WITH_OFFERS else []),
     *([num_field("Renewal_Offer_Rate", '"Acct.Off.Policy_Renewal_Rate_c__c"', "Renewal offer monthly rate", 10, 2)] if WITH_OFFERS else []),
-    *([num_field("Renewal_Offer_Change_Pct", '"Acct.Off.Increase_Percent_c__c"', "Renewal offer change %", 10, 2)] if WITH_OFFERS else []),
+    *([num_field("Renewal_Offer_Change_Pct", 'case when "Acct.Off.Policy_Renewal_Rate_c__c" - coalesce("Acct.Off.Increase_Amount_Dollars_c__c", 0) > 0 then 100 * coalesce("Acct.Off.Increase_Amount_Dollars_c__c", 0) / ("Acct.Off.Policy_Renewal_Rate_c__c" - coalesce("Acct.Off.Increase_Amount_Dollars_c__c", 0)) else null end', "Renewal offer change % (computed; the Salesforce formula fields arrive null through the connector)", 10, 2)] if WITH_OFFERS else []),
     *([num_field("Days_Since_Renewal_Offer_PIT", f'case when "Acct.Latest_Offer_Date" is null then null else datediff({SNAP}, "Acct.Latest_Offer_Date") end', "Days since the latest offer (point-in-time)")] if WITH_OFFERS else []),
     *([text_field("Renewal_Rating_Version", '"Acct.Off.Rating_Version_c__c"', "Rating version on the offer", 40)] if WITH_OFFERS else []),
     num_field("Days_Since_Renewal_Offer", f"case when Renewal_Offer_Date_c__c <= {SNAP} then datediff({SNAP}, Renewal_Offer_Date_c__c) else null end", "Days since renewal offer (CURRENT VALUE)"),
@@ -212,7 +212,7 @@ tk_agg = aggregate("AGG_TKT", "FILTER_TKT", ["Customer_Number_c__c", "Snap_Key_T
 ui_link("FILTER_TKT", "AGG_TKT")
 
 # ---------------------------------------------------------------- assemble (row 1, right side)
-join("JOIN_F_APP", labels, app_agg, ["Account_Id2_c__c", "Cal.Snap_Key"], ["Account_Id_c__c", "Snap_Key_App"], "App", "LEFT_OUTER", "+ app", 250, 2072, drop=["App.Account_Id_c__c", "App.Snap_Key_App"])
+join("JOIN_F_APP", labels, app_agg, ["account_id_c__c", "Cal.Snap_Key"], ["Account_Id_c__c", "Snap_Key_App"], "App", "LEFT_OUTER", "+ app", 250, 2072, drop=["App.Account_Id_c__c", "App.Snap_Key_App"])
 ui_link("T_LABELS", "JOIN_F_APP"); ui_link("AGG_APP", "JOIN_F_APP")
 join("JOIN_F_EMAIL", "JOIN_F_APP", em_agg, ["Id__c", "Cal.Snap_Key"], ["et4ae5_Contact_c__c", "Snap_Key_Email"], "Email", "LEFT_OUTER", "+ email", 250, 2352, drop=["Email.et4ae5_Contact_c__c", "Email.Snap_Key_Email"])
 ui_link("JOIN_F_APP", "JOIN_F_EMAIL"); ui_link("AGG_EMAIL", "JOIN_F_EMAIL")

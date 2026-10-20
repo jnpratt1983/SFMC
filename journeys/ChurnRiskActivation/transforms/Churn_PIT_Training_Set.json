@@ -93,7 +93,7 @@
         "fields": [
           "Id__c",
           "AccountId__c",
-          "Account_Id2_c__c",
+          "account_id_c__c",
           "Customer_Number_c__c",
           "CreatedDate__c",
           "Policy_Effective_Date_c__c",
@@ -241,8 +241,6 @@
           "Offer_Date_c__c",
           "Increase_Amount_Dollars_c__c",
           "Policy_Renewal_Rate_c__c",
-          "Prior_Rate_c__c",
-          "Increase_Percent_c__c",
           "Rating_Version_c__c"
         ],
         "sampleDetails": {
@@ -856,8 +854,8 @@
           {
             "businessType": "Number",
             "defaultValue": "",
-            "formulaExpression": "\"Acct.Off.Increase_Percent_c__c\"",
-            "label": "Renewal offer change %",
+            "formulaExpression": "case when \"Acct.Off.Policy_Renewal_Rate_c__c\" - coalesce(\"Acct.Off.Increase_Amount_Dollars_c__c\", 0) > 0 then 100 * coalesce(\"Acct.Off.Increase_Amount_Dollars_c__c\", 0) / (\"Acct.Off.Policy_Renewal_Rate_c__c\" - coalesce(\"Acct.Off.Increase_Amount_Dollars_c__c\", 0)) else null end",
+            "label": "Renewal offer change % (computed; the Salesforce formula fields arrive null through the connector)",
             "name": "Renewal_Offer_Change_Pct",
             "precision": 10,
             "scale": 2,
@@ -1727,7 +1725,7 @@
       "parameters": {
         "joinType": "LEFT_OUTER",
         "leftKeys": [
-          "Account_Id2_c__c",
+          "account_id_c__c",
           "Cal.Snap_Key"
         ],
         "rightKeys": [
@@ -2842,7 +2840,7 @@
             "parameters": {
               "type": "BASE_FORMULA_UI"
             },
-            "label": "Renewal offer change %"
+            "label": "Renewal offer change % (computed; the Salesforce formula fields arrive null through the connector)"
           },
           "T_LABELS_F20": {
             "parameters": {
