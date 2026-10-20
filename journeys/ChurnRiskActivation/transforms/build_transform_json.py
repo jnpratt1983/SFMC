@@ -82,12 +82,12 @@ ui_link("LOAD_CAL", "T_CAL")
 load("LOAD_CON", "Contact__dll", "dataLakeObject", ["Id__c", "AccountId__c", "account_id_c__c", "Customer_Number_c__c", "CreatedDate__c", "Policy_Effective_Date_c__c",
      "Cancel_Date_c__c", "Cancellation_Reason_c__c", "Policy_Renewal_Date_c__c", "Renewal_Offer_Date_c__c", "Policy_Renewal_Rate_c__c",
      "Lifetime_Savings_c__c", "Telematic_Discount_Numeric__c", "Current_Term_Effective_Date_c__c", "Current_Term_Expiration_Date_c__c",
-     "Last_App_Open_Date_c__c", "Monthly_Safe_Driving_Discount_c__c"], "Contact", 250, 112)
+     "Last_App_Open_Date_c__c", "Monthly_Safe_Driving_Discount_c__c", "Email__c", "MailingState__c", "Driver_Role_c__c"], "Contact", 250, 112)
 filt("FILTER_CON", "LOAD_CON", [
     {"field": "Id__c", "operands": ["003"], "operator": "STARTS_WITH", "type": "TEXT"},
     {"field": "Policy_Effective_Date_c__c", "operands": [], "operator": "IS_NOT_NULL", "type": "DATETIME"}], "Contacts with a policy", 250, 392, "1 AND 2")
 ui_link("LOAD_CON", "FILTER_CON")
-con_k = transform("T_CON_K", "FILTER_CON", [num_field("xk", "1", "Cross-join key")], "Contact join key", 250, 672)
+con_k = transform("T_CON_K", "FILTER_CON", [num_field("xk", "1", "Cross-join key"), text_field("Email_Key", "lower(Email__c)", "Email key (lowercased)", 254)], "Contact join keys", 250, 672)
 ui_link("FILTER_CON", "T_CON_K")
 join("JOIN_BOOK", con_k, cal_last, ["xk"], ["xk"], "Cal", "INNER", "Contact x snapshot", 250, 952, drop=["Cal.xk", "Cal.Snapshot_Date__c", "Cal.Snapshot_Key__c"])
 ui_link("T_CON_K", "JOIN_BOOK"); ui_link("T_CAL", "JOIN_BOOK")
@@ -165,12 +165,14 @@ app_agg = aggregate("AGG_APP", "FILTER_APP", ["Account_Id_c__c", "Snap_Key_App"]
 ui_link("FILTER_APP", "AGG_APP")
 
 # ---------------------------------------------------------------- email engagement (row 3): Individual Email Results (Marketing Cloud Connect)
-load("LOAD_EMAIL", "IndividualEmailResults__dll", "dataLakeObject", ["et4ae5_Contact_c__c", "et4ae5_DateSent_c__c", "et4ae5_DateOpened_c__c", "et4ae5_Opened_c__c", "et4ae5_Clicked_c__c", "et4ae5_NumberOfUniqueClicks_c__c"], "Individual Email Results", 630, 112)
+load("LOAD_EMAIL", "IndividualEmailResults__dll", "dataLakeObject", ["et4ae5_Email_c__c", "et4ae5_DateSent_c__c", "et4ae5_DateOpened_c__c", "et4ae5_Opened_c__c", "et4ae5_Clicked_c__c", "et4ae5_NumberOfUniqueClicks_c__c"], "Individual Email Results", 630, 112)
+# keyed on the email address, not the contact lookup: most customer-period sends sit on the lead record
+# (2024: 87k recoverable by address vs 5k by lookup; 2025: 106k vs 3.7k)
 filt("FILTER_EMAIL0", "LOAD_EMAIL", [
-    {"field": "et4ae5_Contact_c__c", "operands": ["003"], "operator": "STARTS_WITH", "type": "TEXT"},
-    {"field": "et4ae5_DateSent_c__c", "operands": [], "operator": "IS_NOT_NULL", "type": "DATETIME"}], "Contact sends only", 630, 392, "1 AND 2")
+    {"field": "et4ae5_Email_c__c", "operands": [], "operator": "IS_NOT_NULL", "type": "TEXT"},
+    {"field": "et4ae5_DateSent_c__c", "operands": [], "operator": "IS_NOT_NULL", "type": "DATETIME"}], "Sends with an address", 630, 392, "1 AND 2")
 ui_link("LOAD_EMAIL", "FILTER_EMAIL0")
-em_k = transform("T_EMAIL_K", "FILTER_EMAIL0", [num_field("xk", "1", "Cross-join key")], "Email join key", 630, 672)
+em_k = transform("T_EMAIL_K", "FILTER_EMAIL0", [num_field("xk", "1", "Cross-join key"), text_field("Email_Key_I", "lower(et4ae5_Email_c__c)", "Email key (lowercased)", 254)], "Email join keys", 630, 672)
 ui_link("FILTER_EMAIL0", "T_EMAIL_K")
 join("JOIN_EMAIL_CAL", em_k, cal_last, ["xk"], ["xk"], "Cal", "INNER", "Email x snapshot", 630, 952, drop=["Cal.xk", "Cal.Snapshot_Date__c", "Cal.Snapshot_Key__c"])
 ui_link("T_EMAIL_K", "JOIN_EMAIL_CAL"); ui_link("T_CAL", "JOIN_EMAIL_CAL")
@@ -185,7 +187,7 @@ em_f = transform("T_EMAIL_W", "JOIN_EMAIL_CAL", [
 ], "Email windows", 630, 1232)
 filt("FILTER_EMAIL", em_f, [{"field": "Email_Before_Snap", "operands": ["1"], "operator": "EQUAL", "type": "NUMBER"}], "Sends before snapshot", 630, 1512)
 ui_link("JOIN_EMAIL_CAL", "T_EMAIL_W"); ui_link("T_EMAIL_W", "FILTER_EMAIL")
-em_agg = aggregate("AGG_EMAIL", "FILTER_EMAIL", ["et4ae5_Contact_c__c", "Snap_Key_Email"], [
+em_agg = aggregate("AGG_EMAIL", "FILTER_EMAIL", ["Email_Key_I", "Snap_Key_Email"], [
     {"action": "SUM", "label": "Emails sent 90d", "name": "Email_Sends_90d", "source": "Email_Sent_90"},
     {"action": "SUM", "label": "Email opens 30d", "name": "Email_Opens_30d", "source": "Email_Open_30"},
     {"action": "SUM", "label": "Email opens 90d", "name": "Email_Opens_90d", "source": "Email_Open_90"},
@@ -214,7 +216,7 @@ ui_link("FILTER_TKT", "AGG_TKT")
 # ---------------------------------------------------------------- assemble (row 1, right side)
 join("JOIN_F_APP", labels, app_agg, ["account_id_c__c", "Cal.Snap_Key"], ["Account_Id_c__c", "Snap_Key_App"], "App", "LEFT_OUTER", "+ app", 250, 2072, drop=["App.Account_Id_c__c", "App.Snap_Key_App"])
 ui_link("T_LABELS", "JOIN_F_APP"); ui_link("AGG_APP", "JOIN_F_APP")
-join("JOIN_F_EMAIL", "JOIN_F_APP", em_agg, ["Id__c", "Cal.Snap_Key"], ["et4ae5_Contact_c__c", "Snap_Key_Email"], "Email", "LEFT_OUTER", "+ email", 250, 2352, drop=["Email.et4ae5_Contact_c__c", "Email.Snap_Key_Email"])
+join("JOIN_F_EMAIL", "JOIN_F_APP", em_agg, ["Email_Key", "Cal.Snap_Key"], ["Email_Key_I", "Snap_Key_Email"], "Email", "LEFT_OUTER", "+ email", 250, 2352, drop=["Email.Email_Key_I", "Email.Snap_Key_Email"])
 ui_link("JOIN_F_APP", "JOIN_F_EMAIL"); ui_link("AGG_EMAIL", "JOIN_F_EMAIL")
 join("JOIN_F_TKT", "JOIN_F_EMAIL", tk_agg, ["Customer_Number_c__c", "Cal.Snap_Key"], ["Customer_Number_c__c", "Snap_Key_Tkt"], "Tkt", "LEFT_OUTER", "+ tickets", 250, 2632, drop=["Tkt.Customer_Number_c__c", "Tkt.Snap_Key_Tkt"])
 ui_link("JOIN_F_EMAIL", "JOIN_F_TKT"); ui_link("AGG_TKT", "JOIN_F_TKT")
@@ -239,6 +241,7 @@ mappings = [
     ("Row_Key", "Row_Key__c"), ("Id__c", "Contact_Id__c"), ("Cal.Snap_Date", "Snapshot_Date__c"), ("Cal.Snap_Key", "Snapshot_Key__c"),
     ("Label_60", "Label_60__c"), ("Label_90", "Label_90__c"), ("Censored", "Censored__c"), ("Reason", "Reason__c"),
     ("Tenure_Days", "Tenure_Days__c"), ("Tenure_Bucket", "Tenure_Bucket__c"), ("Policy_Days", "Policy_Days__c"),
+    ("MailingState__c", "Mailing_State__c"), ("Driver_Role_c__c", "Driver_Role__c"),
     ("Days_Into_Term_Est", "Days_Into_Term_Est__c"), ("Days_To_Term_End_Est", "Days_To_Term_End_Est__c"),
     ("Days_To_Renewal", "Days_To_Renewal__c"), ("Days_Since_Renewal_Offer", "Days_Since_Renewal_Offer__c"),
     ("Days_Into_Term", "Days_Into_Term__c"), ("Days_To_Term_End", "Days_To_Term_End__c"), ("Days_Since_Last_App_Open", "Days_Since_Last_App_Open__c"),
@@ -257,7 +260,7 @@ nodes["OUTPUT0"] = {"action": "outputD360", "sources": [final], "parameters": {"
 ui_nodes["OUTPUT0"] = {"label": "Churn_PIT_Training_Set", "type": "OUTPUT", "top": 250, "left": 3192}
 ui_link("T_FINAL", "OUTPUT0")
 
-types = {"Renewal_Rating_Version__c": "Text", "Row_Key__c": "Text", "Contact_Id__c": "Text", "Snapshot_Date__c": "DateTime", "Snapshot_Key__c": "Text", "Reason__c": "Text", "Tenure_Bucket__c": "Text", "Max_Feature_Date__c": "DateTime"}
+types = {"Mailing_State__c": "Text", "Driver_Role__c": "Text", "Renewal_Rating_Version__c": "Text", "Row_Key__c": "Text", "Contact_Id__c": "Text", "Snapshot_Date__c": "DateTime", "Snapshot_Key__c": "Text", "Reason__c": "Text", "Tenure_Bucket__c": "Text", "Max_Feature_Date__c": "DateTime"}
 out_fields = [{"isPrimaryKey": t == "Row_Key__c", "label": t[:-3].replace("_", " "), "name": t, "type": types.get(t, "Number")} for s, t in mappings]
 definition = {"label": "Churn PIT Training Set", "name": "ChurnPITTrainingSet", "version": "56.0", "type": "STL", "nodes": nodes,
               "outputDataObjects": [{"category": "Other", "label": "Churn PIT Training Set", "name": "Churn_PIT_Training_Set__dll", "type": "dataLakeObject", "fields": out_fields}],
