@@ -33,8 +33,8 @@
             "businessType": "DateTime",
             "defaultValue": "",
             "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-            "formulaExpression": "Snapshot_Date__c",
-            "label": "Snap Date",
+            "formulaExpression": "to_timestamp(Snapshot_Date__c)",
+            "label": "Snap Date (timestamp so it compares with event datetimes)",
             "name": "Snap_Date",
             "type": "DATETIME"
           }
@@ -2125,7 +2125,7 @@
             "parameters": {
               "type": "BASE_FORMULA_UI"
             },
-            "label": "Snap Date"
+            "label": "Snap Date (timestamp so it compares with event datetimes)"
           },
           "T_CAL_F1": {
             "parameters": {

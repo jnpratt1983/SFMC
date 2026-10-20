@@ -32,6 +32,8 @@ Branches cross-join each event source to the calendar on a constant key, flag th
 
 **Deployed 2026-10-20 via the API** as `ChurnPITTrainingSet` (the `.nooffers` variant, because the Renewal Offer lake object did not exist yet). To add the offers branch once the `Renewal_Offer__c` data stream exists: delete the transform (or create under a new name) and post `Churn_PIT_Training_Set.api.json`.
 
+**Updating an existing transform:** `PUT /services/data/v64.0/ssot/data-transforms/ChurnPITTrainingSet` with the same body validates and replaces the definition in place (only while its status is ACTIVE or ERROR, not PROCESSING). Run with `POST .../actions/run --body @empty.json` (the CLI needs a body), cancel with `.../actions/cancel`, and read failures from `GET .../run-history?limit=3` (`errorMessage` per run; the detail endpoint only says the run failed).
+
 Option A, API:
 
 ```
@@ -40,7 +42,7 @@ python3 build_transform_json.py --without-offers  # writes the .nooffers variant
 sf api request rest "/services/data/v64.0/ssot/data-transforms" -o blueowl-prod -X POST --body @Churn_PIT_Training_Set.api.json
 ```
 
-What the POST validator enforces (learned 2026-10-20, one error per attempt): formulas are raw SQL (the GET response shows them HTML-escaped, do not post them that way); filter expression types are TEXT / NUMBER / DATETIME / BOOLEAN, never DATE; `outputDataObjects` entries take only label, name, type, category, fields; an aggregate node may not carry an empty `schema`; `pmod` and `greatest` are not available (use floor arithmetic and `case`); `date_format`, `datediff`, `concat`, `coalesce`, `floor`, `INTERVAL n DAY` are fine; **all inputs must be the same object type**, so this transform reads lake objects only (`__dll`), which is why mobile app and Zendesk come from `MobileApp_c_00D3h0000068eod__dll` and `Zen_Desk_Ticket__dll` rather than the DMOs.
+What the POST validator enforces (learned 2026-10-20, one error per attempt): formulas are raw SQL (the GET response shows them HTML-escaped, do not post them that way); filter expression types are TEXT / NUMBER / DATETIME / BOOLEAN, never DATE; `outputDataObjects` entries take only label, name, type, category, fields; an aggregate node may not carry an empty `schema`; `pmod` and `greatest` are not available (use floor arithmetic and `case`); `date_format`, `datediff`, `concat`, `coalesce`, `floor`, `to_timestamp`, `INTERVAL n DAY` are fine (`cast(... as timestamp)` and `timestamp()` are not); a formula over a Date column must be wrapped in `to_timestamp()` when its output type is DATETIME, or the *run* fails even though the POST passed; **all inputs must be the same object type**, so this transform reads lake objects only (`__dll`), which is why mobile app and Zendesk come from `MobileApp_c_00D3h0000068eod__dll` and `Zen_Desk_Ticket__dll` rather than the DMOs.
 
 Option B, rebuild in Data Cloud > Data Transforms > New > Batch, using `Churn_PIT_Training_Set.json` as the node-by-node spec. The `ui.nodes` block lists every visual node left to right with its label; each `TRANSFORM` node's `graph` lists the formula steps in order, and `nodes.<id>.parameters.fields[0].formulaExpression` is the formula to paste.
 

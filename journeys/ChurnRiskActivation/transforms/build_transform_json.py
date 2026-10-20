@@ -72,7 +72,7 @@ def ui_link(a, b): ui_conn.append({"source": a, "target": b})
 # ---------------------------------------------------------------- calendar (row 0)
 load("LOAD_CAL", "Churn_Snapshot_Calendar__dll", "dataLakeObject", ["Snapshot_Date__c", "Snapshot_Key__c"], "Snapshot calendar", 60, 112)
 cal_last = transform("T_CAL", "LOAD_CAL", [
-    date_field("Snap_Date", "Snapshot_Date__c", "Snap Date"),
+    date_field("Snap_Date", "to_timestamp(Snapshot_Date__c)", "Snap Date (timestamp so it compares with event datetimes)"),
     text_field("Snap_Key", "date_format(Snapshot_Date__c, 'yyyyMM')", "Snap Key (yyyyMM, derived from the date; the stream's Snapshot_Key__c landed as Number)", 10),
     num_field("xk", "1", "Cross-join key"),
 ], "Calendar keys", 60, 392, "Snapshot date, key, and a constant join key for the cross join")
