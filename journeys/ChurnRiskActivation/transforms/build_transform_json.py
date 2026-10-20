@@ -218,11 +218,11 @@ ui_link("FILTER_TKT", "AGG_TKT")
 if WITH_DRIVING:
     # ------------------------------------------------------------ driving (row G): latest cycle ended before the snapshot, and the cycle ~3 months earlier
     load("LOAD_DRV", DRIVING_DLO, "dataLakeObject", ["Contact_c__c", "cycle_start_c__c", "cycle_end_c__c", "n_trips_in_curr_month_c__c", "distance_miles_in_curr_month_c__c",
-         "subscore_display_safe_speeds_curr_month_c__c", "subscore_display_smooth_driving_curr_mon_c__c", "subscore_display_distracted_driving_curr_c__c", "subscore_display_driving_patterns_curr_m_c__c",
+         "subscore_display_safe_speeds_curr_month__c", "subscore_display_smooth_driving_curr_mon__c", "subscore_display_distracted_driving_curr__c", "subscore_display_driving_patterns_curr_m__c",
          "earn_discount_curr_month_c__c", "total_earned_discount_c__c", "driver_role_c__c"], "Monthly driving stats", 1200, 112)
     drv_k = transform("T_DRV_K", "LOAD_DRV", [
         num_field("xk", "1", "Cross-join key"),
-        num_field("Drv_Score", "(coalesce(subscore_display_safe_speeds_curr_month_c__c, 0) + coalesce(subscore_display_smooth_driving_curr_mon_c__c, 0) + coalesce(subscore_display_distracted_driving_curr_c__c, 0) + coalesce(subscore_display_driving_patterns_curr_m_c__c, 0)) / 4", "Cycle score (mean of the four display subscores)", 10, 2),
+        num_field("Drv_Score", "(coalesce(subscore_display_safe_speeds_curr_month__c, 0) + coalesce(subscore_display_smooth_driving_curr_mon__c, 0) + coalesce(subscore_display_distracted_driving_curr__c, 0) + coalesce(subscore_display_driving_patterns_curr_m__c, 0)) / 4", "Cycle score (mean of the four display subscores)", 10, 2),
     ], "Driving keys", 1200, 392)
     ui_link("LOAD_DRV", "T_DRV_K")
     join("JOIN_DRV_CAL", drv_k, cal_last, ["xk"], ["xk"], "Cal", "INNER", "Driving x snapshot", 1200, 672, drop=["Cal.xk", "Cal.Snapshot_Date__c", "Cal.Snapshot_Key__c"])
