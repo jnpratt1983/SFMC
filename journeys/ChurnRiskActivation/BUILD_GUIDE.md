@@ -90,20 +90,19 @@ censored rows; the leakage query returns 0; the `lt6mo` bucket has the highest l
 label rate is near zero for early snapshots, `Cancellation_Reason__c` was not populated back
 then; start the calendar later.
 
-## Phase 3. Expose the training set to Model Builder (30 minutes)
+## Phase 3. Expose the training set to Model Builder (30 minutes; **view transforms created via API 2026-10-20** as `ChurnPITTrain` / `ChurnPITHoldout` with `transforms/build_view_transforms.py`; the data-space and DMO steps below are still manual)
 
 Model Builder trains on data model objects, not lake objects.
 
 1. Data Cloud > Data Model > New > **Custom** > from existing DLO > pick
    `Churn_PIT_Training_Set` > label `Churn PIT Training Set` > map all fields one-to-one
    (names stay the same) > primary key `Row_Key__c` > Save. Result: `Churn_PIT_Training_Set__dlm`.
-2. Build the training view. Model Builder has no row filter, so create a second batch transform
-   `Churn PIT Training Set Train`: Input Data = `Churn_PIT_Training_Set__dlm`, one Filter node
-   with `Censored__c = 0` AND `Snapshot_Key__c <= 202604`, Output = new DLO
-   `Churn_PIT_Training_Set_Train`, then map it to a DMO the same way. Schedule it after the main
-   transform.
-3. Same pattern for the holdout: `Churn PIT Training Set Holdout` with `Censored__c = 0` AND
-   `Snapshot_Key__c >= 202605`. This is what you will score in phase 5 to validate.
+2. The train view (`Churn_PIT_Train__dll`: `Censored__c = 0` and snapshots through 202604) and the
+   holdout view (`Churn_PIT_Holdout__dll`: `Censored__c = 0` and snapshots from 202605) already exist
+   as API-created transforms reading the training lake object. After each run, add both output lake
+   objects to the `default` data space (Data Spaces > default > Add Data Lake Objects), then create a
+   custom DMO from each the same way as step 1. Model Builder trains on the train DMO; the holdout DMO
+   is what phase 5 scores. Schedule both views after the main transform.
 
 ## Phase 4. Train in Einstein Studio (1 hour plus training time)
 
