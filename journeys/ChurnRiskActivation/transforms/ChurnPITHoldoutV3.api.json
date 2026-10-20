@@ -65,7 +65,12 @@
        "Drv_Discount_Change__c",
        "Days_Since_Last_Cycle__c",
        "Drv_Cycles__c",
-       "Drv_PNI_Latest__c"
+       "Drv_PNI_Latest__c",
+       "Bill_Net_Latest__c",
+       "Bill_Net_Change_3m__c",
+       "Bill_Net_Change_3m_Pct__c",
+       "Bill_Gross_Latest__c",
+       "Bill_Count__c"
       ],
       "sampleDetails": {
        "type": "TopN"
@@ -83,7 +88,7 @@
        {
         "businessType": "Number",
         "defaultValue": "",
-        "formulaExpression": "case when Snapshot_Key__c >= '202605' and Renewal_Offer_Change_Dollars__c is not null then 1 else 0 end",
+        "formulaExpression": "case when Snapshot_Key__c >= '202605' then 1 else 0 end",
         "label": "In view",
         "name": "In_View",
         "precision": 18,
@@ -311,6 +316,26 @@
        {
         "sourceField": "Drv_PNI_Latest__c",
         "targetField": "Drv_PNI_Latest__c"
+       },
+       {
+        "sourceField": "Bill_Net_Latest__c",
+        "targetField": "Bill_Net_Latest__c"
+       },
+       {
+        "sourceField": "Bill_Net_Change_3m__c",
+        "targetField": "Bill_Net_Change_3m__c"
+       },
+       {
+        "sourceField": "Bill_Net_Change_3m_Pct__c",
+        "targetField": "Bill_Net_Change_3m_Pct__c"
+       },
+       {
+        "sourceField": "Bill_Gross_Latest__c",
+        "targetField": "Bill_Gross_Latest__c"
+       },
+       {
+        "sourceField": "Bill_Count__c",
+        "targetField": "Bill_Count__c"
        }
       ],
       "name": "Churn_PIT_Holdout_V3__dll",
@@ -600,6 +625,36 @@
        "isPrimaryKey": false,
        "label": "Drv PNI Latest",
        "name": "Drv_PNI_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Net Latest",
+       "name": "Bill_Net_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Net Change 3m",
+       "name": "Bill_Net_Change_3m__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Net Change 3m Pct",
+       "name": "Bill_Net_Change_3m_Pct__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Gross Latest",
+       "name": "Bill_Gross_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Count",
+       "name": "Bill_Count__c",
        "type": "Number"
       }
      ]

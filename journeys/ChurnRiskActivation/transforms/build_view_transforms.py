@@ -11,8 +11,8 @@ import json, os, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__)); ORG = "blueowl-prod"
 TRAIN_LAST, HOLDOUT_FIRST = "202604", "202605"
 SRC = "Churn_PIT_Training_Set__dll"
-VERSION = "V3" if "--v3" in sys.argv else ("V2" if "--v2" in sys.argv else "")   # --v2: drops leakage columns; --v3: renewal window only
-OFFER_ONLY = VERSION == "V3"
+VERSION = "V3" if "--v3" in sys.argv else ("V2" if "--v2" in sys.argv else "")   # --v2: drops leakage columns; --v3: email counts dropped too
+OFFER_ONLY = "--offers-only" in sys.argv   # restrict to rows with a renewal offer in the prior 60 days
 # Driver_Role__c is populated only on contacts still active today (label 0 wherever it is set): leakage, never carried.
 DROP = {"Driver_Role__c"} | ({"Email_Opens_90d__c", "Email_Sends_90d__c", "Email_Opens_30d__c", "Email_Clicks_90d__c"} if VERSION == "V3" else set())
 
@@ -56,6 +56,9 @@ views = [
 for name, label, exprs, out_dlo in views:
     d = definition(name, label, exprs, out_dlo)
     json.dump(d, open(os.path.join(HERE, f"{name}.api.json"), "w"), indent=1)
+    if "--put" in sys.argv:
+        r = api(f"/services/data/v64.0/ssot/data-transforms/{name}", "PUT", d)
+        print(name, "PUT ->", (f"updated {r['name']}" if isinstance(r, dict) and r.get("name") else r))
     if "--post" in sys.argv:
         r = api("/services/data/v64.0/ssot/data-transforms", "POST", d)
         print(name, "POST ->", (f"created {r['name']} {r.get('status')}" if isinstance(r, dict) and r.get("name") else r))
