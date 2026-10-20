@@ -28,10 +28,49 @@
             }
           }
         },
-        "T_CAL_F0": {
+        "T_CAL_CLOSED_F0": {
           "action": "formula",
           "sources": [
             "LOAD_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when to_timestamp(Snapshot_Date__c) <= now() - INTERVAL 61 DAY then 1 else 0 end",
+                "label": "Label window closed (snapshot older than 61 days)",
+                "name": "Window_Closed",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "FILTER_CAL": {
+          "action": "filter",
+          "sources": [
+            "T_CAL_CLOSED_F0"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Window_Closed",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_CAL_F0": {
+          "action": "formula",
+          "sources": [
+            "FILTER_CAL"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -3843,6 +3882,28 @@
               "dataspace": "default"
             }
           },
+          "T_CAL_CLOSED": {
+            "label": "Closed windows only",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 60,
+            "left": 252,
+            "graph": {
+              "T_CAL_CLOSED_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Label window closed (snapshot older than 61 days)"
+              }
+            },
+            "connectors": []
+          },
+          "FILTER_CAL": {
+            "label": "Snapshots with a closed 60-day window",
+            "type": "FILTER",
+            "top": 60,
+            "left": 322
+          },
           "T_CAL": {
             "label": "Calendar keys",
             "description": "Snapshot date, key, and a constant join key for the cross join",
@@ -5288,6 +5349,14 @@
         "connectors": [
           {
             "source": "LOAD_CAL",
+            "target": "T_CAL_CLOSED"
+          },
+          {
+            "source": "T_CAL_CLOSED",
+            "target": "FILTER_CAL"
+          },
+          {
+            "source": "FILTER_CAL",
             "target": "T_CAL"
           },
           {

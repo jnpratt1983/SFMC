@@ -78,12 +78,17 @@ load("LOAD_CAL", "Churn_Snapshot_Calendar__dll", "dataLakeObject", ["Snapshot_Da
 if SCORING:
     filt("FILTER_CAL", "LOAD_CAL", [{"field": "Snapshot_Key__c", "operands": ["202407"], "operator": "EQUAL", "type": "NUMBER"}], "One calendar row", 60, 252)
     ui_link("LOAD_CAL", "FILTER_CAL")
-cal_last = transform("T_CAL", "FILTER_CAL" if SCORING else "LOAD_CAL", [
+cal_pre = "FILTER_CAL" if SCORING else "LOAD_CAL"
+if not SCORING:
+    cal_closed = transform("T_CAL_CLOSED", "LOAD_CAL", [num_field("Window_Closed", "case when to_timestamp(Snapshot_Date__c) <= now() - INTERVAL 61 DAY then 1 else 0 end", "Label window closed (snapshot older than 61 days)")], "Closed windows only", 60, 252)
+    filt("FILTER_CAL", cal_closed, [{"field": "Window_Closed", "operands": ["1"], "operator": "EQUAL", "type": "NUMBER"}], "Snapshots with a closed 60-day window", 60, 322)
+    ui_link("LOAD_CAL", "T_CAL_CLOSED"); ui_link("T_CAL_CLOSED", "FILTER_CAL"); cal_pre = "FILTER_CAL"
+cal_last = transform("T_CAL", cal_pre, [
     date_field("Snap_Date", "now()" if SCORING else "to_timestamp(Snapshot_Date__c)", "Snap Date (scoring: run time)" if SCORING else "Snap Date (timestamp so it compares with event datetimes)"),
     text_field("Snap_Key", "date_format(now(), 'yyyyMM')" if SCORING else "date_format(Snapshot_Date__c, 'yyyyMM')", "Snap Key (yyyyMM)", 10),
     num_field("xk", "1", "Cross-join key"),
 ], "Calendar keys", 60, 392, "Snapshot date, key, and a constant join key for the cross join")
-ui_link("FILTER_CAL" if SCORING else "LOAD_CAL", "T_CAL")
+ui_link(cal_pre, "T_CAL")
 
 # ---------------------------------------------------------------- contact book (row 1)
 load("LOAD_CON", "Contact__dll", "dataLakeObject", ["Id__c", "AccountId__c", "account_id_c__c", "Customer_Number_c__c", "CreatedDate__c", "Policy_Effective_Date_c__c",
@@ -394,7 +399,7 @@ json.dump(api_body, open(os.path.join(HERE, f"Churn_PIT_Training_Set{SUFFIX}.api
 with open(os.path.join(HERE, "Churn_Snapshot_Calendar.csv"), "w", newline="") as f:
     w = csv.writer(f); w.writerow(["Snapshot_Date", "Snapshot_Key"])
     y, m = 2024, 7
-    while (y, m) <= (2026, 8):
+    while (y, m) <= (2028, 12):
         w.writerow([date(y, m, 1).isoformat(), f"{y}{m:02d}"]); m += 1
         if m == 13: y, m = y + 1, 1
 print("nodes:", len(nodes), "| ui nodes:", len(ui_nodes), "| connectors:", len(ui_conn), "| output fields:", len(out_fields))

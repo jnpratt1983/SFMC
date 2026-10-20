@@ -208,7 +208,7 @@ Model Builder trains on data model objects, not lake objects.
 | When | What |
 |---|---|
 | 1st | Contact stream refresh, scoring transform, prediction job, write-back, band cut points |
-| 2nd | Calendar row for the new month, training transform, train/holdout views |
+| 2nd | Training transform (the calendar is pre-loaded through 2028; new snapshots activate once their window closes), train/holdout views; Contact write-back runs on this machine by launchd at 07:00 Chicago |
 | Each batch | Validation script row, compliance proxy check, top-decile overlap with last month |
 | Quarterly | Retrain on all closed snapshots as vN+1; promote only if it beats the live model on the same holdout |
 
