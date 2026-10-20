@@ -34,6 +34,8 @@ Branches cross-join each event source to the calendar on a constant key, flag th
 
 **Updating an existing transform:** `PUT /services/data/v64.0/ssot/data-transforms/ChurnPITTrainingSet` with the same body validates and replaces the definition in place (only while its status is ACTIVE or ERROR, not PROCESSING). Run with `POST .../actions/run --body @empty.json` (the CLI needs a body), cancel with `.../actions/cancel`, and read failures from `GET .../run-history?limit=3` (`errorMessage` per run; the detail endpoint only says the run failed).
 
+**After the first run of an API-created transform, add its output lake object to the default data space** (Data Cloud > Data Spaces > default > Add Data Lake Objects). Outputs created through the API are left out of every data space (`dataSpaceInfo: []`), so they are invisible to SOQL and to `ssot/queryv2` until added, even though the run reports its row count. Outputs created in the canvas get the data space automatically.
+
 Option A, API:
 
 ```
