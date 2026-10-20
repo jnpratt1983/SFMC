@@ -62,3 +62,15 @@ Copy the transform, point `LOAD_CAL` at a one-row calendar for the run date (or 
 - Censored rows are 43% non-pay, 10% company cancel, the rest unpreventable, as designed.
 - **Source coverage is uneven.** Individual Email Results holds 17.5k contact sends in 2022, 23k in 2023, but only 5.2k in 2024 and 3.7k in 2025, then 46.7k in 2026; the email features are near-empty for 2024 to 2025 snapshots. Zendesk tickets start in 2025. App events cover 2021 to today (2.18M rows, 57k accounts) once the join key is right.
 - First run had zero app events on every row because the join used `Account_Id2_c__c`, which is empty in `Contact__dll`; fixed to `account_id_c__c`.
+
+## Version 2 views (2026-10-20)
+
+`build_view_transforms.py --v2 --post --run` creates `ChurnPITTrainV2` / `ChurnPITHoldoutV2`
+writing `Churn_PIT_Train_V2__dll` / `Churn_PIT_Holdout_V2__dll`: same censoring and date windows
+as V1, email features keyed on address, `Mailing_State__c` added, `Driver_Role__c` dropped (leaks
+the label: only active contacts have a value). Add both outputs to the default data space and map
+each to a DMO (Data Lake Objects > object > Map Fields > new custom DMO) before training.
+
+Rule learned the hard way: before adding any Contact field as a feature, group the training set by
+its value and year and look at the label rate. A populated value with a ~0% label rate means the
+field is only written for customers who are still around.

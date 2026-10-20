@@ -107,7 +107,10 @@
           "Current_Term_Effective_Date_c__c",
           "Current_Term_Expiration_Date_c__c",
           "Last_App_Open_Date_c__c",
-          "Monthly_Safe_Driving_Discount_c__c"
+          "Monthly_Safe_Driving_Discount_c__c",
+          "Email__c",
+          "MailingState__c",
+          "Driver_Role_c__c"
         ],
         "sampleDetails": {
           "type": "TopN"
@@ -160,10 +163,30 @@
         ]
       }
     },
+    "T_CON_K_F1": {
+      "action": "formula",
+      "sources": [
+        "T_CON_K_F0"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Text",
+            "defaultValue": "",
+            "formulaExpression": "lower(Email__c)",
+            "label": "Email key (lowercased)",
+            "name": "Email_Key",
+            "precision": 254,
+            "type": "TEXT"
+          }
+        ]
+      }
+    },
     "JOIN_BOOK": {
       "action": "join",
       "sources": [
-        "T_CON_K_F0",
+        "T_CON_K_F1",
         "T_CAL_F2"
       ],
       "parameters": {
@@ -847,7 +870,7 @@
           "type": "dataLakeObject"
         },
         "fields": [
-          "et4ae5_Contact_c__c",
+          "et4ae5_Email_c__c",
           "et4ae5_DateSent_c__c",
           "et4ae5_DateOpened_c__c",
           "et4ae5_Opened_c__c",
@@ -867,11 +890,9 @@
       "parameters": {
         "filterExpressions": [
           {
-            "field": "et4ae5_Contact_c__c",
-            "operands": [
-              "003"
-            ],
-            "operator": "STARTS_WITH",
+            "field": "et4ae5_Email_c__c",
+            "operands": [],
+            "operator": "IS_NOT_NULL",
             "type": "TEXT"
           },
           {
@@ -905,10 +926,30 @@
         ]
       }
     },
+    "T_EMAIL_K_F1": {
+      "action": "formula",
+      "sources": [
+        "T_EMAIL_K_F0"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Text",
+            "defaultValue": "",
+            "formulaExpression": "lower(et4ae5_Email_c__c)",
+            "label": "Email key (lowercased)",
+            "name": "Email_Key_I",
+            "precision": 254,
+            "type": "TEXT"
+          }
+        ]
+      }
+    },
     "JOIN_EMAIL_CAL": {
       "action": "join",
       "sources": [
-        "T_EMAIL_K_F0",
+        "T_EMAIL_K_F1",
         "T_CAL_F2"
       ],
       "parameters": {
@@ -1145,7 +1186,7 @@
           }
         ],
         "groupings": [
-          "et4ae5_Contact_c__c",
+          "Email_Key_I",
           "Snap_Key_Email"
         ],
         "nodeType": "STANDARD"
@@ -1432,11 +1473,11 @@
       "parameters": {
         "joinType": "LEFT_OUTER",
         "leftKeys": [
-          "Id__c",
+          "Email_Key",
           "Cal.Snap_Key"
         ],
         "rightKeys": [
-          "et4ae5_Contact_c__c",
+          "Email_Key_I",
           "Snap_Key_Email"
         ],
         "rightQualifier": "Email"
@@ -1445,7 +1486,7 @@
         "fields": [],
         "slice": {
           "fields": [
-            "Email.et4ae5_Contact_c__c",
+            "Email.Email_Key_I",
             "Email.Snap_Key_Email"
           ],
           "ignoreMissingFields": true,
@@ -1787,6 +1828,14 @@
             "targetField": "Policy_Days__c"
           },
           {
+            "sourceField": "MailingState__c",
+            "targetField": "Mailing_State__c"
+          },
+          {
+            "sourceField": "Driver_Role_c__c",
+            "targetField": "Driver_Role__c"
+          },
+          {
             "sourceField": "Days_Into_Term_Est",
             "targetField": "Days_Into_Term_Est__c"
           },
@@ -1957,6 +2006,18 @@
           "label": "Policy Days",
           "name": "Policy_Days__c",
           "type": "Number"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Mailing State",
+          "name": "Mailing_State__c",
+          "type": "Text"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Driver Role",
+          "name": "Driver_Role__c",
+          "type": "Text"
         },
         {
           "isPrimaryKey": false,
@@ -2171,7 +2232,7 @@
         "left": 392
       },
       "T_CON_K": {
-        "label": "Contact join key",
+        "label": "Contact join keys",
         "description": "",
         "type": "TRANSFORM",
         "top": 250,
@@ -2182,9 +2243,20 @@
               "type": "BASE_FORMULA_UI"
             },
             "label": "Cross-join key"
+          },
+          "T_CON_K_F1": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
+            "label": "Email key (lowercased)"
           }
         },
-        "connectors": []
+        "connectors": [
+          {
+            "source": "T_CON_K_F0",
+            "target": "T_CON_K_F1"
+          }
+        ]
       },
       "JOIN_BOOK": {
         "label": "Contact x snapshot",
@@ -2520,13 +2592,13 @@
         }
       },
       "FILTER_EMAIL0": {
-        "label": "Contact sends only",
+        "label": "Sends with an address",
         "type": "FILTER",
         "top": 630,
         "left": 392
       },
       "T_EMAIL_K": {
-        "label": "Email join key",
+        "label": "Email join keys",
         "description": "",
         "type": "TRANSFORM",
         "top": 630,
@@ -2537,9 +2609,20 @@
               "type": "BASE_FORMULA_UI"
             },
             "label": "Cross-join key"
+          },
+          "T_EMAIL_K_F1": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
+            "label": "Email key (lowercased)"
           }
         },
-        "connectors": []
+        "connectors": [
+          {
+            "source": "T_EMAIL_K_F0",
+            "target": "T_EMAIL_K_F1"
+          }
+        ]
       },
       "JOIN_EMAIL_CAL": {
         "label": "Email x snapshot",
