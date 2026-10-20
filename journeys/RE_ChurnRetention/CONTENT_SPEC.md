@@ -19,6 +19,20 @@ disengaged (no app event in 60 days and no email open in 90), then low savings (
 else general. Measured churn by reason is in the validation reports; price shock is 11 to 21%, discount
 erosion 7%, the rest 5 to 6%.
 
+## Live distribution (first scoring batch, 2026-10-20, 7,878 active contacts)
+
+| Reason | Contacts | Mean offer change | Mean discount change | Within ~45 days of term end |
+|---|---|---|---|---|
+| GENERAL | 2,545 | | +12.8 | 23% |
+| NEW_CUSTOMER | 2,447 | | +8.2 | 9% |
+| DISENGAGED | 1,404 | | +10.1 | 20% |
+| PRICE_SHOCK | 986 | +$33.80 | +4.9 | 30% |
+| DISCOUNT_EROSION | 459 | | -15.7 | 19% |
+| LOW_SAVINGS | 37 | | | 32% |
+
+A third of the book is under six months old, which is the reset in action; PRICE_SHOCK is the
+tier-one entry population (about 300 of them are inside the 45-day window at any time).
+
 ## Content matrix
 
 | Reason | What the data says | Mindset | Email angle (T-45) | App / push | Offer or action | CTA | Creative note |
