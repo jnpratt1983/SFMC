@@ -40,7 +40,7 @@ A contact enters when all of these hold on the run date:
   non-pay journey's entry DE; email opt-out for the email path and mobile opt-out for SMS; DNR
   flag; already in `RE_ChurnRetention_History` for this term end date.
 
-Track is assigned in SQL from `Voluntary_Churn_Top_Factors__c`:
+Content is driven by `ChurnReason` (see `CONTENT_SPEC.md`); `Track` is derived from it for the step logic:
 
 | Track | Top factor contains | Steps |
 |---|---|---|

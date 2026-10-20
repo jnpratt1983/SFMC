@@ -28,6 +28,10 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 | Score | Decimal(5,2) |
 | Band | Text(10): HIGH (model tier) or OFFER (price tier) |
 | TopFactors | Text(255) |
+| ChurnReason | Text(20): PRICE_SHOCK, DISCOUNT_EROSION, NEW_CUSTOMER, DISENGAGED, LOW_SAVINGS, GENERAL |
+| OfferChange | Decimal(10,2), nullable |
+| DiscountChange | Decimal(10,2), nullable |
+| DrivingScore | Decimal(10,2), nullable |
 | Track | Text(10) |
 | TermEndAtEntry | Date |
 | TermStartAtEntry | Date |

@@ -21,13 +21,14 @@ SELECT
     c.Voluntary_Churn_Risk_Score__c                     AS Score,
     CASE WHEN c.Voluntary_Churn_Risk_Score__c >= cfg.HighCut THEN 'HIGH' ELSE 'OFFER' END AS Band,
     c.Voluntary_Churn_Top_Factors__c                    AS TopFactors,
-    CASE
-        WHEN c.Voluntary_Churn_Top_Factors__c LIKE '%Ticket%'  OR c.Voluntary_Churn_Top_Factors__c LIKE '%Support%'  THEN 'SERVICE'
-        WHEN c.Voluntary_Churn_Top_Factors__c LIKE '%Renewal%' OR c.Voluntary_Churn_Top_Factors__c LIKE '%Savings%'
-          OR c.Voluntary_Churn_Top_Factors__c LIKE '%Discount%' OR c.Voluntary_Churn_Top_Factors__c LIKE '%Premium%'  THEN 'PRICE'
-        WHEN c.Voluntary_Churn_Top_Factors__c LIKE '%App%'     OR c.Voluntary_Churn_Top_Factors__c LIKE '%Trip%'
-          OR c.Voluntary_Churn_Top_Factors__c LIKE '%Driving%' THEN 'ENGAGE'
-        ELSE 'DEFAULT'
+    ISNULL(c.Voluntary_Churn_Reason__c, 'GENERAL')      AS ChurnReason,
+    c.Voluntary_Churn_Offer_Change__c                   AS OfferChange,
+    c.Voluntary_Churn_Discount_Change__c                AS DiscountChange,
+    c.Voluntary_Churn_Driving_Score__c                  AS DrivingScore,
+    CASE ISNULL(c.Voluntary_Churn_Reason__c, 'GENERAL')
+        WHEN 'PRICE_SHOCK' THEN 'PRICE' WHEN 'LOW_SAVINGS' THEN 'PRICE'
+        WHEN 'DISCOUNT_EROSION' THEN 'ENGAGE' WHEN 'NEW_CUSTOMER' THEN 'ENGAGE'
+        WHEN 'DISENGAGED' THEN 'ENGAGE' ELSE 'DEFAULT'
     END                                                 AS Track,
     CAST(c.Current_Term_Expiration_Date__c AS DATE)     AS TermEndAtEntry,
     CAST(c.Current_Term_Effective_Date__c AS DATE)      AS TermStartAtEntry,
