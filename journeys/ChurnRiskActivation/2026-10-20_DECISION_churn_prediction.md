@@ -38,8 +38,9 @@ move the third decimal.
 3. **The "why" is already known: price.** Tracks by top factor are unnecessary for this journey. One
    message family: what the discount is worth over the new term and how to keep it, with the Engage
    content for customers whose driving score has fallen (the second-strongest signal, 7.2% vs 5.9%).
-4. **Keep the v2 score as a monthly reporting field on Contact**, labelled as a general risk score,
-   not as targeting. Retire the normalized score and its journey placeholder.
+4. **Deploy v3 as the monthly score on Contact**: the second tier of the journey entry (top decile
+   among offer-covered customers) and the general risk field for reporting and the persona batch.
+   Retire the normalized score and its journey placeholder.
 5. **Stop building models until one of two things changes:** the renewal offer history reaches 18
    months (v3 on the renewal window then has enough positives to beat the rule), or Contact field
    history on savings and discount exists so the non-renewal half of churn has a measurable driver.

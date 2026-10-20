@@ -32,7 +32,10 @@ A contact enters when all of these hold on the run date:
 - Primary named insured (`Driver_Role__c = 'PNI'`), not cancelled, not pending cancel.
 - Term ends in exactly 45 days (`Current_Term_Expiration_Date__c = today + 45`), so each contact
   is evaluated once per term.
-- Score in the High band, **or** in the Moderate band with tenure under 12 months.
+- **Tier 1:** a renewal offer in the last 60 days with an increase of more than $20 a month or more
+  than 10% (the captured `Renewal_Offer__c`). **Tier 2:** v3 model score at or above the top-decile cut
+  with an offer in the last 60 days. (Decision 2026-10-20; the offer rule carries the signal, the model
+  adds the next tier.)
 - **Exclusions:** any non-pay notice in the last 90 days (Contact or Bill); currently in the
   non-pay journey's entry DE; email opt-out for the email path and mobile opt-out for SMS; DNR
   flag; already in `RE_ChurnRetention_History` for this term end date.
@@ -41,7 +44,7 @@ Track is assigned in SQL from `Voluntary_Churn_Top_Factors__c`:
 
 | Track | Top factor contains | Steps |
 |---|---|---|
-| `PRICE` | Renewal, Savings, Discount, Premium | T-45 email (savings earned, how the discount carries into the new term). T-30 SMS where consented. T-21 second email, different angle (what the discount is worth over the next term), only to non-openers of T-45. T+7 after renewal: thank-you. |
+| `PRICE` | tier 1 (any offer-driven entry) or factor mentions Renewal, Savings, Discount, Premium, Bill | T-45 email (savings earned, how the discount carries into the new term). T-30 SMS where consented. T-21 second email, different angle (what the discount is worth over the next term), only to non-openers of T-45. T+7 after renewal: thank-you. |
 | `ENGAGE` | App, Trip, Driving | T-45 email plus app push. T-35 second push. T-21 email to non-openers. No SMS. Content differs by state: RI leads with HiGoals rewards progress; AZ (no HiGoals) leads with the safe-driving discount and trip tips. |
 | `SERVICE` | Ticket, Support | No marketing email while a ticket is open. Wait until the open ticket count is zero (daily check against the Zendesk sync), then join `PRICE` at the next step. No task is created. |
 | `DEFAULT` | anything else or blank | `PRICE` emails only. |

@@ -1,0 +1,5526 @@
+{
+  "label": "Churn PIT Scoring Set",
+  "name": "ChurnPITScoringSet",
+  "dataSpaceName": "default",
+  "type": "BATCH",
+  "description": "Scoring set: the active book as of the run date with the same features as the training set",
+  "definitions": [
+    {
+      "label": "Churn PIT Scoring Set",
+      "name": "ChurnPITScoringSet",
+      "version": "56.0",
+      "type": "STL",
+      "nodes": {
+        "LOAD_CAL": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Churn_Snapshot_Calendar__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "Snapshot_Date__c",
+              "Snapshot_Key__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "FILTER_CAL": {
+          "action": "filter",
+          "sources": [
+            "LOAD_CAL"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Snapshot_Key__c",
+                "operands": [
+                  "202407"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_CAL_F0": {
+          "action": "formula",
+          "sources": [
+            "FILTER_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "DateTime",
+                "defaultValue": "",
+                "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "formulaExpression": "now()",
+                "label": "Snap Date (scoring: run time)",
+                "name": "Snap_Date",
+                "type": "DATETIME"
+              }
+            ]
+          }
+        },
+        "T_CAL_F1": {
+          "action": "formula",
+          "sources": [
+            "T_CAL_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "date_format(now(), 'yyyyMM')",
+                "label": "Snap Key (yyyyMM)",
+                "name": "Snap_Key",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_CAL_F2": {
+          "action": "formula",
+          "sources": [
+            "T_CAL_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "LOAD_CON": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Contact__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "Id__c",
+              "AccountId__c",
+              "account_id_c__c",
+              "Customer_Number_c__c",
+              "CreatedDate__c",
+              "Policy_Effective_Date_c__c",
+              "Cancel_Date_c__c",
+              "Cancellation_Reason_c__c",
+              "Policy_Renewal_Date_c__c",
+              "Renewal_Offer_Date_c__c",
+              "Policy_Renewal_Rate_c__c",
+              "Lifetime_Savings_c__c",
+              "Telematic_Discount_Numeric__c",
+              "Current_Term_Effective_Date_c__c",
+              "Current_Term_Expiration_Date_c__c",
+              "Last_App_Open_Date_c__c",
+              "Monthly_Safe_Driving_Discount_c__c",
+              "Email__c",
+              "MailingState__c",
+              "Driver_Role_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "FILTER_CON": {
+          "action": "filter",
+          "sources": [
+            "LOAD_CON"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Id__c",
+                "operands": [
+                  "003"
+                ],
+                "operator": "STARTS_WITH",
+                "type": "TEXT"
+              },
+              {
+                "field": "Policy_Effective_Date_c__c",
+                "operands": [],
+                "operator": "IS_NOT_NULL",
+                "type": "DATETIME"
+              }
+            ],
+            "filterBooleanLogic": "1 AND 2"
+          }
+        },
+        "T_CON_K_F0": {
+          "action": "formula",
+          "sources": [
+            "FILTER_CON"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_CON_K_F1": {
+          "action": "formula",
+          "sources": [
+            "T_CON_K_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "lower(Email__c)",
+                "label": "Email key (lowercased)",
+                "name": "Email_Key",
+                "precision": 254,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "JOIN_BOOK": {
+          "action": "join",
+          "sources": [
+            "T_CON_K_F1",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_BOOK_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_BOOK"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Policy_Effective_Date_c__c <= \"Cal.Snap_Date\" and CreatedDate__c <= \"Cal.Snap_Date\" and (Cancel_Date_c__c is null or Cancel_Date_c__c > \"Cal.Snap_Date\") then 1 else 0 end",
+                "label": "In book at snapshot",
+                "name": "In_Book",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "FILTER_BOOK": {
+          "action": "filter",
+          "sources": [
+            "T_BOOK_F0"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "In_Book",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "LOAD_OFFER": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Renewal_Offer_c_00D3h0000068eod__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "Account_c__c",
+              "Offer_Date_c__c",
+              "Increase_Amount_Dollars_c__c",
+              "Policy_Renewal_Rate_c__c",
+              "Rating_Version_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_OFFER_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_OFFER"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_OFFER_CAL": {
+          "action": "join",
+          "sources": [
+            "T_OFFER_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_OFFER_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_OFFER_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Offer_Date_c__c <= \"Cal.Snap_Date\" and Offer_Date_c__c > \"Cal.Snap_Date\" - INTERVAL 60 DAY then 1 else 0 end",
+                "label": "Offer issued in the 60 days before the snapshot",
+                "name": "Offer_In_Window",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_OFFER_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_OFFER_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "\"Cal.Snap_Key\"",
+                "label": "Snap key (offer)",
+                "name": "Snap_Key_Offer",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_OFFER": {
+          "action": "filter",
+          "sources": [
+            "T_OFFER_W_F1"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Offer_In_Window",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_OFFER_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_OFFER"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_OFFER_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_OFFER_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "MAX",
+                "label": "Latest offer date",
+                "name": "Latest_Offer_Date",
+                "source": "Offer_Date_c__c"
+              }
+            ],
+            "groupings": [
+              "Account_c__c",
+              "Snap_Key_Offer"
+            ],
+            "nodeType": "STANDARD"
+          }
+        },
+        "JOIN_OFFER_LATEST": {
+          "action": "join",
+          "sources": [
+            "AGG_OFFER_AGG",
+            "LOAD_OFFER"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Account_c__c",
+              "Latest_Offer_Date"
+            ],
+            "rightKeys": [
+              "Account_c__c",
+              "Offer_Date_c__c"
+            ],
+            "rightQualifier": "Off"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Off.Account_c__c",
+                "Off.Offer_Date_c__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "JOIN_ACCT": {
+          "action": "join",
+          "sources": [
+            "FILTER_BOOK",
+            "JOIN_OFFER_LATEST"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "AccountId__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "Account_c__c",
+              "Snap_Key_Offer"
+            ],
+            "rightQualifier": "Acct"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Acct.Account_c__c",
+                "Acct.Snap_Key_Offer"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_LABELS_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_ACCT"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_Date_c__c > \"Cal.Snap_Date\" and Cancel_Date_c__c <= \"Cal.Snap_Date\" + INTERVAL 60 DAY then 1 else 0 end",
+                "label": "Cancel within 60d",
+                "name": "Cancel_In_60d",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F1": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_Date_c__c > \"Cal.Snap_Date\" and Cancel_Date_c__c <= \"Cal.Snap_Date\" + INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Cancel within 90d",
+                "name": "Cancel_In_90d",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F2": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancellation_Reason_c__c in ('Due to high premium','Replacement of insurance carrier','Insured request - other','App issue / UX','Due to poor customer service','Due to poor claims service') then 1 else 0 end",
+                "label": "Preventable voluntary reason",
+                "name": "Preventable",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F3": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_In_60d = 1 and Preventable = 1 then 1 else 0 end",
+                "label": "Label 60d",
+                "name": "Label_60",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F4": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_In_90d = 1 and Preventable = 1 then 1 else 0 end",
+                "label": "Label 90d",
+                "name": "Label_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F5": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_In_60d = 1 and Preventable = 0 then 1 else 0 end",
+                "label": "Censored (non-pay, company, unpreventable in window)",
+                "name": "Censored",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F6": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "case when Cancel_In_90d = 1 then Cancellation_Reason_c__c else null end",
+                "label": "Reason (evaluation only)",
+                "name": "Reason",
+                "precision": 255,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F7": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F6"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "concat(Id__c, '_', \"Cal.Snap_Key\")",
+                "label": "Row key",
+                "name": "Row_Key",
+                "precision": 40,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F8": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F7"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "datediff(\"Cal.Snap_Date\", CreatedDate__c)",
+                "label": "Tenure days",
+                "name": "Tenure_Days",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F9": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F8"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "datediff(\"Cal.Snap_Date\", Policy_Effective_Date_c__c)",
+                "label": "Days since policy effective",
+                "name": "Policy_Days",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F10": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F9"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "case when Tenure_Days < 180 then 'lt6mo' when Tenure_Days < 365 then '6to12mo' when Tenure_Days < 730 then '1to2y' else '2yplus' end",
+                "label": "Tenure bucket",
+                "name": "Tenure_Bucket",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F11": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F10"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "Policy_Days - 182 * floor(Policy_Days / 182)",
+                "label": "Days into term (estimated from 6-month terms)",
+                "name": "Days_Into_Term_Est",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F12": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F11"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "182 - (Policy_Days - 182 * floor(Policy_Days / 182))",
+                "label": "Days to term end (estimated)",
+                "name": "Days_To_Term_End_Est",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F13": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F12"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Policy_Renewal_Date_c__c >= \"Cal.Snap_Date\" then datediff(Policy_Renewal_Date_c__c, \"Cal.Snap_Date\") else null end",
+                "label": "Days to renewal (CURRENT VALUE: valid for latest snapshot only)",
+                "name": "Days_To_Renewal",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F14": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F13"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Current_Term_Effective_Date_c__c <= \"Cal.Snap_Date\" and Current_Term_Expiration_Date_c__c > \"Cal.Snap_Date\" then datediff(\"Cal.Snap_Date\", Current_Term_Effective_Date_c__c) else null end",
+                "label": "Days into term (real; null when the current term was not in force at the snapshot)",
+                "name": "Days_Into_Term",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F15": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F14"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Current_Term_Effective_Date_c__c <= \"Cal.Snap_Date\" and Current_Term_Expiration_Date_c__c > \"Cal.Snap_Date\" then datediff(Current_Term_Expiration_Date_c__c, \"Cal.Snap_Date\") else null end",
+                "label": "Days to term end (real; same rule)",
+                "name": "Days_To_Term_End",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F16": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F15"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Last_App_Open_Date_c__c is null or Last_App_Open_Date_c__c > \"Cal.Snap_Date\" then null else datediff(\"Cal.Snap_Date\", Last_App_Open_Date_c__c) end",
+                "label": "Days since last app open (Contact field; null if after snapshot)",
+                "name": "Days_Since_Last_App_Open",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F17": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F16"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Acct.Off.Increase_Amount_Dollars_c__c\"",
+                "label": "Renewal offer change $ (latest offer in the 60 days before the snapshot; point-in-time from Renewal_Offer__c)",
+                "name": "Renewal_Offer_Change_Dollars",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F18": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F17"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Acct.Off.Policy_Renewal_Rate_c__c\"",
+                "label": "Renewal offer monthly rate",
+                "name": "Renewal_Offer_Rate",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F19": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F18"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Acct.Off.Policy_Renewal_Rate_c__c\" - coalesce(\"Acct.Off.Increase_Amount_Dollars_c__c\", 0) > 0 then 100 * coalesce(\"Acct.Off.Increase_Amount_Dollars_c__c\", 0) / (\"Acct.Off.Policy_Renewal_Rate_c__c\" - coalesce(\"Acct.Off.Increase_Amount_Dollars_c__c\", 0)) else null end",
+                "label": "Renewal offer change % (computed; the Salesforce formula fields arrive null through the connector)",
+                "name": "Renewal_Offer_Change_Pct",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F20": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F19"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Acct.Latest_Offer_Date\" is null then null else datediff(\"Cal.Snap_Date\", \"Acct.Latest_Offer_Date\") end",
+                "label": "Days since the latest offer (point-in-time)",
+                "name": "Days_Since_Renewal_Offer_PIT",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F21": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F20"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "\"Acct.Off.Rating_Version_c__c\"",
+                "label": "Rating version on the offer",
+                "name": "Renewal_Rating_Version",
+                "precision": 40,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F22": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F21"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Renewal_Offer_Date_c__c <= \"Cal.Snap_Date\" then datediff(\"Cal.Snap_Date\", Renewal_Offer_Date_c__c) else null end",
+                "label": "Days since renewal offer (CURRENT VALUE)",
+                "name": "Days_Since_Renewal_Offer",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "LOAD_APP": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "MobileApp_c_00D3h0000068eod__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "Account_Id_c__c",
+              "Event_Timestamp_UTC_c__c",
+              "Event_Name_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_APP_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_APP"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_APP_CAL": {
+          "action": "join",
+          "sources": [
+            "T_APP_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_APP_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_APP_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Event_Timestamp_UTC_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Event before snapshot",
+                "name": "App_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_APP_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_APP_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Event_Timestamp_UTC_c__c > \"Cal.Snap_Date\" - INTERVAL 30 DAY and Event_Timestamp_UTC_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "App event in 30d",
+                "name": "App_30",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_APP_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_APP_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Event_Timestamp_UTC_c__c > \"Cal.Snap_Date\" - INTERVAL 90 DAY and Event_Timestamp_UTC_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "App event in 90d",
+                "name": "App_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_APP_W_F3": {
+          "action": "formula",
+          "sources": [
+            "T_APP_W_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "\"Cal.Snap_Key\"",
+                "label": "Snap key (app)",
+                "name": "Snap_Key_App",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_APP": {
+          "action": "filter",
+          "sources": [
+            "T_APP_W_F3"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "App_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_APP_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_APP"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_APP_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_APP_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "SUM",
+                "label": "App events 30d",
+                "name": "App_Events_30d",
+                "source": "App_30"
+              },
+              {
+                "action": "SUM",
+                "label": "App events 90d",
+                "name": "App_Events_90d",
+                "source": "App_90"
+              },
+              {
+                "action": "MAX",
+                "label": "Last app event",
+                "name": "Last_App_Event",
+                "source": "Event_Timestamp_UTC_c__c"
+              }
+            ],
+            "groupings": [
+              "Account_Id_c__c",
+              "Snap_Key_App"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "App_Events_30d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              },
+              {
+                "name": "App_Events_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "LOAD_EMAIL": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "IndividualEmailResults__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "et4ae5_Email_c__c",
+              "et4ae5_DateSent_c__c",
+              "et4ae5_DateOpened_c__c",
+              "et4ae5_Opened_c__c",
+              "et4ae5_Clicked_c__c",
+              "et4ae5_NumberOfUniqueClicks_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "FILTER_EMAIL0": {
+          "action": "filter",
+          "sources": [
+            "LOAD_EMAIL"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "et4ae5_Email_c__c",
+                "operands": [],
+                "operator": "IS_NOT_NULL",
+                "type": "TEXT"
+              },
+              {
+                "field": "et4ae5_DateSent_c__c",
+                "operands": [],
+                "operator": "IS_NOT_NULL",
+                "type": "DATETIME"
+              }
+            ],
+            "filterBooleanLogic": "1 AND 2"
+          }
+        },
+        "T_EMAIL_K_F0": {
+          "action": "formula",
+          "sources": [
+            "FILTER_EMAIL0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_K_F1": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_K_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "lower(et4ae5_Email_c__c)",
+                "label": "Email key (lowercased)",
+                "name": "Email_Key_I",
+                "precision": 254,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "JOIN_EMAIL_CAL": {
+          "action": "join",
+          "sources": [
+            "T_EMAIL_K_F1",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_EMAIL_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_EMAIL_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_DateSent_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Send before snapshot",
+                "name": "Email_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_DateSent_c__c > \"Cal.Snap_Date\" - INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Sent in 90d",
+                "name": "Email_Sent_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_Opened_c__c = true and coalesce(et4ae5_DateOpened_c__c, et4ae5_DateSent_c__c) > \"Cal.Snap_Date\" - INTERVAL 30 DAY and coalesce(et4ae5_DateOpened_c__c, et4ae5_DateSent_c__c) <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Opened in 30d",
+                "name": "Email_Open_30",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F3": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_Opened_c__c = true and coalesce(et4ae5_DateOpened_c__c, et4ae5_DateSent_c__c) > \"Cal.Snap_Date\" - INTERVAL 90 DAY and coalesce(et4ae5_DateOpened_c__c, et4ae5_DateSent_c__c) <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Opened in 90d",
+                "name": "Email_Open_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F4": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when et4ae5_Clicked_c__c = true and et4ae5_DateSent_c__c > \"Cal.Snap_Date\" - INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Clicked in 90d (attributed to send date)",
+                "name": "Email_Click_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F5": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "DateTime",
+                "defaultValue": "",
+                "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "formulaExpression": "case when et4ae5_Opened_c__c = true and et4ae5_DateOpened_c__c <= \"Cal.Snap_Date\" then et4ae5_DateOpened_c__c else et4ae5_DateSent_c__c end",
+                "label": "Email event date (open if before snapshot, else send)",
+                "name": "Email_Event_Date",
+                "type": "DATETIME"
+              }
+            ]
+          }
+        },
+        "T_EMAIL_W_F6": {
+          "action": "formula",
+          "sources": [
+            "T_EMAIL_W_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "\"Cal.Snap_Key\"",
+                "label": "Snap key (email)",
+                "name": "Snap_Key_Email",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_EMAIL": {
+          "action": "filter",
+          "sources": [
+            "T_EMAIL_W_F6"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Email_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_EMAIL_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_EMAIL"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_EMAIL_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_EMAIL_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "SUM",
+                "label": "Emails sent 90d",
+                "name": "Email_Sends_90d",
+                "source": "Email_Sent_90"
+              },
+              {
+                "action": "SUM",
+                "label": "Email opens 30d",
+                "name": "Email_Opens_30d",
+                "source": "Email_Open_30"
+              },
+              {
+                "action": "SUM",
+                "label": "Email opens 90d",
+                "name": "Email_Opens_90d",
+                "source": "Email_Open_90"
+              },
+              {
+                "action": "SUM",
+                "label": "Email clicks 90d",
+                "name": "Email_Clicks_90d",
+                "source": "Email_Click_90"
+              },
+              {
+                "action": "MAX",
+                "label": "Last email event",
+                "name": "Last_Email_Event",
+                "source": "Email_Event_Date"
+              }
+            ],
+            "groupings": [
+              "Email_Key_I",
+              "Snap_Key_Email"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "Email_Sends_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              },
+              {
+                "name": "Email_Opens_30d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              },
+              {
+                "name": "Email_Opens_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              },
+              {
+                "name": "Email_Clicks_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "LOAD_TICKET": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Zen_Desk_Ticket__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "Customer_Number_c__c",
+              "Created_at_c__c",
+              "Ticket_type_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_TKT_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_TICKET"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_TKT_CAL": {
+          "action": "join",
+          "sources": [
+            "T_TKT_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_TKT_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_TKT_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Created_at_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Ticket before snapshot",
+                "name": "Tkt_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_TKT_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_TKT_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Created_at_c__c > \"Cal.Snap_Date\" - INTERVAL 90 DAY and Created_at_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Ticket in 90d",
+                "name": "Tkt_90",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_TKT_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_TKT_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "\"Cal.Snap_Key\"",
+                "label": "Snap key (ticket)",
+                "name": "Snap_Key_Tkt",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_TKT": {
+          "action": "filter",
+          "sources": [
+            "T_TKT_W_F2"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Tkt_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_TKT_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_TKT"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_TKT_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_TKT_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "SUM",
+                "label": "Tickets 90d",
+                "name": "Tickets_90d",
+                "source": "Tkt_90"
+              },
+              {
+                "action": "MAX",
+                "label": "Last ticket",
+                "name": "Last_Ticket",
+                "source": "Created_at_c__c"
+              }
+            ],
+            "groupings": [
+              "Customer_Number_c__c",
+              "Snap_Key_Tkt"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "Tickets_90d",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "LOAD_DRV": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Monthly_Driving_Stat_c_00D3h0000068eod__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "customer_number_c__c",
+              "cycle_start_c__c",
+              "cycle_end_c__c",
+              "n_trips_in_curr_month_c__c",
+              "distance_miles_in_curr_month_c__c",
+              "subscore_display_safe_speeds_curr_month__c",
+              "subscore_display_smooth_driving_curr_mon__c",
+              "subscore_display_distracted_driving_curr__c",
+              "subscore_display_driving_patterns_curr_m__c",
+              "earn_discount_curr_month_c__c",
+              "total_earned_discount_c__c",
+              "driver_role_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_DRV_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_DRV"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_K_F1": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_K_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "(coalesce(subscore_display_safe_speeds_curr_month__c, 0) + coalesce(subscore_display_smooth_driving_curr_mon__c, 0) + coalesce(subscore_display_distracted_driving_curr__c, 0) + coalesce(subscore_display_driving_patterns_curr_m__c, 0)) / 4",
+                "label": "Cycle score (mean of the four display subscores)",
+                "name": "Drv_Score",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_DRV_CAL": {
+          "action": "join",
+          "sources": [
+            "T_DRV_K_F1",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_DRV_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_DRV_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when cycle_end_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Cycle ended before snapshot",
+                "name": "Drv_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when cycle_end_c__c > \"Cal.Snap_Date\" - INTERVAL 45 DAY and cycle_end_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Latest cycle (ended in the 45 days before)",
+                "name": "Drv_Latest_Window",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when cycle_end_c__c > \"Cal.Snap_Date\" - INTERVAL 135 DAY and cycle_end_c__c <= \"Cal.Snap_Date\" - INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Prior cycle (ended 90 to 135 days before)",
+                "name": "Drv_Prior_Window",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F3": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then Drv_Score else null end",
+                "label": "Score if latest",
+                "name": "Drv_Score_Latest",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F4": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Prior_Window = 1 then Drv_Score else null end",
+                "label": "Score if prior",
+                "name": "Drv_Score_Prior",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F5": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then n_trips_in_curr_month_c__c else null end",
+                "label": "Trips if latest",
+                "name": "Drv_Trips_Latest",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F6": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then distance_miles_in_curr_month_c__c else null end",
+                "label": "Miles if latest",
+                "name": "Drv_Miles_Latest",
+                "precision": 10,
+                "scale": 1,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F7": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F6"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then earn_discount_curr_month_c__c else null end",
+                "label": "Earned discount if latest",
+                "name": "Drv_Discount_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F8": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F7"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Prior_Window = 1 then earn_discount_curr_month_c__c else null end",
+                "label": "Earned discount if prior",
+                "name": "Drv_Discount_Prior",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F9": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F8"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 and driver_role_c__c = 'PNI' then 1 when Drv_Latest_Window = 1 then 0 else null end",
+                "label": "PNI at latest cycle (historical)",
+                "name": "Drv_PNI_Latest",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F10": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F9"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "\"Cal.Snap_Key\"",
+                "label": "Snap key (driving)",
+                "name": "Snap_Key_Drv",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_DRV": {
+          "action": "filter",
+          "sources": [
+            "T_DRV_W_F10"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Drv_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_DRV_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_DRV"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_DRV_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_DRV_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "MAX",
+                "label": "Last cycle end",
+                "name": "Drv_Last_Cycle_End",
+                "source": "cycle_end_c__c"
+              },
+              {
+                "action": "AVG",
+                "label": "Score latest",
+                "name": "Drv_Score_Latest_A",
+                "source": "Drv_Score_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Score prior",
+                "name": "Drv_Score_Prior_A",
+                "source": "Drv_Score_Prior"
+              },
+              {
+                "action": "AVG",
+                "label": "Trips latest",
+                "name": "Drv_Trips_Latest_A",
+                "source": "Drv_Trips_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Miles latest",
+                "name": "Drv_Miles_Latest_A",
+                "source": "Drv_Miles_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Discount latest",
+                "name": "Drv_Discount_Latest_A",
+                "source": "Drv_Discount_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Discount prior",
+                "name": "Drv_Discount_Prior_A",
+                "source": "Drv_Discount_Prior"
+              },
+              {
+                "action": "MAX",
+                "label": "PNI latest",
+                "name": "Drv_PNI_Latest_A",
+                "source": "Drv_PNI_Latest"
+              },
+              {
+                "action": "COUNT",
+                "label": "Cycles before snapshot",
+                "name": "Drv_Cycles",
+                "source": "cycle_end_c__c"
+              }
+            ],
+            "groupings": [
+              "customer_number_c__c",
+              "Snap_Key_Drv"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "Drv_Cycles",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "LOAD_BILL": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Bill_c_00D3h0000068eod__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "Contact_c__c",
+              "Invoice_Date_c__c",
+              "Policy_Net_Bill_Amount_c__c",
+              "Policy_Gross_Bill_Amount_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_BILL_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_BILL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_BILL_CAL": {
+          "action": "join",
+          "sources": [
+            "T_BILL_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_BILL_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_BILL_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Invoice_Date_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Invoice before snapshot",
+                "name": "Bill_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_BILL_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_BILL_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Invoice_Date_c__c > \"Cal.Snap_Date\" - INTERVAL 35 DAY and Invoice_Date_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Latest invoice (35 days)",
+                "name": "Bill_Latest_W",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_BILL_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_BILL_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Invoice_Date_c__c > \"Cal.Snap_Date\" - INTERVAL 125 DAY and Invoice_Date_c__c <= \"Cal.Snap_Date\" - INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Invoice ~3 months earlier",
+                "name": "Bill_Prior_W",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_BILL_W_F3": {
+          "action": "formula",
+          "sources": [
+            "T_BILL_W_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Bill_Latest_W = 1 then Policy_Net_Bill_Amount_c__c else null end",
+                "label": "Net if latest",
+                "name": "Bill_Net_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_BILL_W_F4": {
+          "action": "formula",
+          "sources": [
+            "T_BILL_W_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Bill_Prior_W = 1 then Policy_Net_Bill_Amount_c__c else null end",
+                "label": "Net if prior",
+                "name": "Bill_Net_Prior",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_BILL_W_F5": {
+          "action": "formula",
+          "sources": [
+            "T_BILL_W_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Bill_Latest_W = 1 then Policy_Gross_Bill_Amount_c__c else null end",
+                "label": "Gross if latest",
+                "name": "Bill_Gross_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_BILL_W_F6": {
+          "action": "formula",
+          "sources": [
+            "T_BILL_W_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "\"Cal.Snap_Key\"",
+                "label": "Snap key (bill)",
+                "name": "Snap_Key_Bill",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_BILL": {
+          "action": "filter",
+          "sources": [
+            "T_BILL_W_F6"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Bill_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_BILL_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_BILL"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_BILL_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_BILL_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "MAX",
+                "label": "Net latest",
+                "name": "Bill_Net_Latest_A",
+                "source": "Bill_Net_Latest"
+              },
+              {
+                "action": "MAX",
+                "label": "Net prior",
+                "name": "Bill_Net_Prior_A",
+                "source": "Bill_Net_Prior"
+              },
+              {
+                "action": "MAX",
+                "label": "Gross latest",
+                "name": "Bill_Gross_Latest_A",
+                "source": "Bill_Gross_Latest"
+              },
+              {
+                "action": "COUNT",
+                "label": "Invoices before snapshot",
+                "name": "Bill_Count",
+                "source": "Invoice_Date_c__c"
+              }
+            ],
+            "groupings": [
+              "Contact_c__c",
+              "Snap_Key_Bill"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "Bill_Count",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "JOIN_F_APP": {
+          "action": "join",
+          "sources": [
+            "T_LABELS_F22",
+            "AGG_APP_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "account_id_c__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "Account_Id_c__c",
+              "Snap_Key_App"
+            ],
+            "rightQualifier": "App"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "App.Account_Id_c__c",
+                "App.Snap_Key_App"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "JOIN_F_EMAIL": {
+          "action": "join",
+          "sources": [
+            "JOIN_F_APP",
+            "AGG_EMAIL_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Email_Key",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "Email_Key_I",
+              "Snap_Key_Email"
+            ],
+            "rightQualifier": "Email"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Email.Email_Key_I",
+                "Email.Snap_Key_Email"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "JOIN_F_TKT": {
+          "action": "join",
+          "sources": [
+            "JOIN_F_EMAIL",
+            "AGG_TKT_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Customer_Number_c__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "Customer_Number_c__c",
+              "Snap_Key_Tkt"
+            ],
+            "rightQualifier": "Tkt"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Tkt.Customer_Number_c__c",
+                "Tkt.Snap_Key_Tkt"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "JOIN_F_DRV": {
+          "action": "join",
+          "sources": [
+            "JOIN_F_TKT",
+            "AGG_DRV_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Customer_Number_c__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "customer_number_c__c",
+              "Snap_Key_Drv"
+            ],
+            "rightQualifier": "Drv"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Drv.customer_number_c__c",
+                "Drv.Snap_Key_Drv"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "JOIN_F_BILL": {
+          "action": "join",
+          "sources": [
+            "JOIN_F_DRV",
+            "AGG_BILL_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Id__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "Contact_c__c",
+              "Snap_Key_Bill"
+            ],
+            "rightQualifier": "Bill"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Bill.Contact_c__c",
+                "Bill.Snap_Key_Bill"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_FINAL_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_F_BILL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"App.App_Events_30d\", 0)",
+                "label": "App events 30d (final)",
+                "name": "App_Events_30d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F1": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"App.App_Events_90d\", 0)",
+                "label": "App events 90d (final)",
+                "name": "App_Events_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F2": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"App.Last_App_Event\" is null then 9999 else datediff(\"Cal.Snap_Date\", \"App.Last_App_Event\") end",
+                "label": "Days since last app event",
+                "name": "Days_Since_Last_App_Event",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F3": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Email.Email_Sends_90d\", 0)",
+                "label": "Emails sent 90d (final)",
+                "name": "Email_Sends_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F4": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Email.Email_Opens_30d\", 0)",
+                "label": "Email opens 30d (final)",
+                "name": "Email_Opens_30d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F5": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Email.Email_Opens_90d\", 0)",
+                "label": "Email opens 90d (final)",
+                "name": "Email_Opens_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F6": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Email.Email_Clicks_90d\", 0)",
+                "label": "Email clicks 90d (final)",
+                "name": "Email_Clicks_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F7": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F6"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when coalesce(\"Email.Email_Sends_90d\", 0) = 0 then null else coalesce(\"Email.Email_Opens_90d\", 0) / \"Email.Email_Sends_90d\" end",
+                "label": "Email open rate 90d",
+                "name": "Email_Open_Rate_90d",
+                "precision": 5,
+                "scale": 4,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F8": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F7"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Email.Last_Email_Event\" is null then 9999 else datediff(\"Cal.Snap_Date\", \"Email.Last_Email_Event\") end",
+                "label": "Days since last email event",
+                "name": "Days_Since_Last_Email_Event",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F9": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F8"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Tkt.Tickets_90d\", 0)",
+                "label": "Tickets 90d (final)",
+                "name": "Tickets_90d_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F10": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F9"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Tkt.Last_Ticket\" is null then 9999 else datediff(\"Cal.Snap_Date\", \"Tkt.Last_Ticket\") end",
+                "label": "Days since last ticket",
+                "name": "Days_Since_Last_Ticket",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F11": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F10"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_Score_Latest_A\"",
+                "label": "Driving score, latest cycle",
+                "name": "Drv_Score_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F12": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F11"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Drv.Drv_Score_Latest_A\" is null or \"Drv.Drv_Score_Prior_A\" is null then null else \"Drv.Drv_Score_Latest_A\" - \"Drv.Drv_Score_Prior_A\" end",
+                "label": "Driving score trend (latest minus ~3 cycles earlier)",
+                "name": "Drv_Score_Trend",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F13": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F12"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_Trips_Latest_A\"",
+                "label": "Trips, latest cycle",
+                "name": "Drv_Trips_Latest_F",
+                "precision": 10,
+                "scale": 1,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F14": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F13"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_Miles_Latest_A\"",
+                "label": "Miles, latest cycle",
+                "name": "Drv_Miles_Latest_F",
+                "precision": 10,
+                "scale": 1,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F15": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F14"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_Discount_Latest_A\"",
+                "label": "Earned discount, latest cycle",
+                "name": "Drv_Discount_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F16": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F15"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Drv.Drv_Discount_Latest_A\" is null or \"Drv.Drv_Discount_Prior_A\" is null then null else \"Drv.Drv_Discount_Latest_A\" - \"Drv.Drv_Discount_Prior_A\" end",
+                "label": "Earned discount change vs ~3 cycles earlier",
+                "name": "Drv_Discount_Change",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F17": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F16"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Drv.Drv_Last_Cycle_End\" is null then null else datediff(\"Cal.Snap_Date\", \"Drv.Drv_Last_Cycle_End\") end",
+                "label": "Days since the last driving cycle ended",
+                "name": "Days_Since_Last_Cycle",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F18": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F17"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Drv.Drv_Cycles\", 0)",
+                "label": "Driving cycles before snapshot",
+                "name": "Drv_Cycles_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F19": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F18"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_PNI_Latest_A\"",
+                "label": "PNI at latest cycle (historical, 1/0/null)",
+                "name": "Drv_PNI_Latest_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F20": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F19"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Bill.Bill_Net_Latest_A\"",
+                "label": "Net premium, latest invoice",
+                "name": "Bill_Net_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F21": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F20"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Bill.Bill_Net_Latest_A\" is null or \"Bill.Bill_Net_Prior_A\" is null then null else \"Bill.Bill_Net_Latest_A\" - \"Bill.Bill_Net_Prior_A\" end",
+                "label": "Net premium change vs ~3 months earlier ($)",
+                "name": "Bill_Net_Change_3m",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F22": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F21"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Bill.Bill_Net_Latest_A\" is null or \"Bill.Bill_Net_Prior_A\" is null or \"Bill.Bill_Net_Prior_A\" <= 0 then null else 100 * (\"Bill.Bill_Net_Latest_A\" - \"Bill.Bill_Net_Prior_A\") / \"Bill.Bill_Net_Prior_A\" end",
+                "label": "Net premium change vs ~3 months earlier (%)",
+                "name": "Bill_Net_Change_3m_Pct",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F23": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F22"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Bill.Bill_Gross_Latest_A\"",
+                "label": "Gross premium, latest invoice",
+                "name": "Bill_Gross_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F24": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F23"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Bill.Bill_Count\", 0)",
+                "label": "Invoices before snapshot",
+                "name": "Bill_Count_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F25": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F24"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "DateTime",
+                "defaultValue": "",
+                "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "formulaExpression": "case when \"App.Last_App_Event\" is not null and (\"Email.Last_Email_Event\" is null or \"App.Last_App_Event\" >= \"Email.Last_Email_Event\") and (\"Tkt.Last_Ticket\" is null or \"App.Last_App_Event\" >= \"Tkt.Last_Ticket\") then \"App.Last_App_Event\" when \"Email.Last_Email_Event\" is not null and (\"Tkt.Last_Ticket\" is null or \"Email.Last_Email_Event\" >= \"Tkt.Last_Ticket\") then \"Email.Last_Email_Event\" else \"Tkt.Last_Ticket\" end",
+                "label": "Max feature date (audit: must be <= Snap_Date)",
+                "name": "Max_Feature_Date",
+                "type": "DATETIME"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F26": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F25"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Acct.Latest_Offer_Date\" > \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Audit: offer dated after snapshot (must be 0)",
+                "name": "Offer_After_Snapshot",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "OUTPUT0": {
+          "action": "outputD360",
+          "sources": [
+            "T_FINAL_F26"
+          ],
+          "parameters": {
+            "dedupOrder": [],
+            "fieldsMappings": [
+              {
+                "sourceField": "Row_Key",
+                "targetField": "Row_Key__c"
+              },
+              {
+                "sourceField": "Id__c",
+                "targetField": "Contact_Id__c"
+              },
+              {
+                "sourceField": "Cal.Snap_Date",
+                "targetField": "Snapshot_Date__c"
+              },
+              {
+                "sourceField": "Cal.Snap_Key",
+                "targetField": "Snapshot_Key__c"
+              },
+              {
+                "sourceField": "Label_60",
+                "targetField": "Label_60__c"
+              },
+              {
+                "sourceField": "Label_90",
+                "targetField": "Label_90__c"
+              },
+              {
+                "sourceField": "Censored",
+                "targetField": "Censored__c"
+              },
+              {
+                "sourceField": "Reason",
+                "targetField": "Reason__c"
+              },
+              {
+                "sourceField": "Tenure_Days",
+                "targetField": "Tenure_Days__c"
+              },
+              {
+                "sourceField": "Tenure_Bucket",
+                "targetField": "Tenure_Bucket__c"
+              },
+              {
+                "sourceField": "Policy_Days",
+                "targetField": "Policy_Days__c"
+              },
+              {
+                "sourceField": "MailingState__c",
+                "targetField": "Mailing_State__c"
+              },
+              {
+                "sourceField": "Driver_Role_c__c",
+                "targetField": "Driver_Role__c"
+              },
+              {
+                "sourceField": "Days_Into_Term_Est",
+                "targetField": "Days_Into_Term_Est__c"
+              },
+              {
+                "sourceField": "Days_To_Term_End_Est",
+                "targetField": "Days_To_Term_End_Est__c"
+              },
+              {
+                "sourceField": "Days_To_Renewal",
+                "targetField": "Days_To_Renewal__c"
+              },
+              {
+                "sourceField": "Days_Since_Renewal_Offer",
+                "targetField": "Days_Since_Renewal_Offer__c"
+              },
+              {
+                "sourceField": "Days_Into_Term",
+                "targetField": "Days_Into_Term__c"
+              },
+              {
+                "sourceField": "Days_To_Term_End",
+                "targetField": "Days_To_Term_End__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_App_Open",
+                "targetField": "Days_Since_Last_App_Open__c"
+              },
+              {
+                "sourceField": "Monthly_Safe_Driving_Discount_c__c",
+                "targetField": "Monthly_Safe_Driving_Discount__c"
+              },
+              {
+                "sourceField": "Renewal_Offer_Change_Dollars",
+                "targetField": "Renewal_Offer_Change_Dollars__c"
+              },
+              {
+                "sourceField": "Renewal_Offer_Rate",
+                "targetField": "Renewal_Offer_Rate__c"
+              },
+              {
+                "sourceField": "Renewal_Offer_Change_Pct",
+                "targetField": "Renewal_Offer_Change_Pct__c"
+              },
+              {
+                "sourceField": "Renewal_Rating_Version",
+                "targetField": "Renewal_Rating_Version__c"
+              },
+              {
+                "sourceField": "Days_Since_Renewal_Offer_PIT",
+                "targetField": "Days_Since_Renewal_Offer_PIT__c"
+              },
+              {
+                "sourceField": "Policy_Renewal_Rate_c__c",
+                "targetField": "Policy_Renewal_Rate__c"
+              },
+              {
+                "sourceField": "Lifetime_Savings_c__c",
+                "targetField": "Lifetime_Savings__c"
+              },
+              {
+                "sourceField": "Telematic_Discount_Numeric__c",
+                "targetField": "Telematics_Discount__c"
+              },
+              {
+                "sourceField": "App_Events_30d_F",
+                "targetField": "App_Events_30d__c"
+              },
+              {
+                "sourceField": "App_Events_90d_F",
+                "targetField": "App_Events_90d__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_App_Event",
+                "targetField": "Days_Since_Last_App_Event__c"
+              },
+              {
+                "sourceField": "Email_Sends_90d_F",
+                "targetField": "Email_Sends_90d__c"
+              },
+              {
+                "sourceField": "Email_Opens_30d_F",
+                "targetField": "Email_Opens_30d__c"
+              },
+              {
+                "sourceField": "Email_Opens_90d_F",
+                "targetField": "Email_Opens_90d__c"
+              },
+              {
+                "sourceField": "Email_Clicks_90d_F",
+                "targetField": "Email_Clicks_90d__c"
+              },
+              {
+                "sourceField": "Email_Open_Rate_90d",
+                "targetField": "Email_Open_Rate_90d__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_Email_Event",
+                "targetField": "Days_Since_Last_Email_Event__c"
+              },
+              {
+                "sourceField": "Tickets_90d_F",
+                "targetField": "Tickets_90d__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_Ticket",
+                "targetField": "Days_Since_Last_Ticket__c"
+              },
+              {
+                "sourceField": "Drv_Score_Latest_F",
+                "targetField": "Drv_Score_Latest__c"
+              },
+              {
+                "sourceField": "Drv_Score_Trend",
+                "targetField": "Drv_Score_Trend__c"
+              },
+              {
+                "sourceField": "Drv_Trips_Latest_F",
+                "targetField": "Drv_Trips_Latest__c"
+              },
+              {
+                "sourceField": "Drv_Miles_Latest_F",
+                "targetField": "Drv_Miles_Latest__c"
+              },
+              {
+                "sourceField": "Drv_Discount_Latest_F",
+                "targetField": "Drv_Discount_Latest__c"
+              },
+              {
+                "sourceField": "Drv_Discount_Change",
+                "targetField": "Drv_Discount_Change__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_Cycle",
+                "targetField": "Days_Since_Last_Cycle__c"
+              },
+              {
+                "sourceField": "Drv_Cycles_F",
+                "targetField": "Drv_Cycles__c"
+              },
+              {
+                "sourceField": "Drv_PNI_Latest_F",
+                "targetField": "Drv_PNI_Latest__c"
+              },
+              {
+                "sourceField": "Bill_Net_Latest_F",
+                "targetField": "Bill_Net_Latest__c"
+              },
+              {
+                "sourceField": "Bill_Net_Change_3m",
+                "targetField": "Bill_Net_Change_3m__c"
+              },
+              {
+                "sourceField": "Bill_Net_Change_3m_Pct",
+                "targetField": "Bill_Net_Change_3m_Pct__c"
+              },
+              {
+                "sourceField": "Bill_Gross_Latest_F",
+                "targetField": "Bill_Gross_Latest__c"
+              },
+              {
+                "sourceField": "Bill_Count_F",
+                "targetField": "Bill_Count__c"
+              },
+              {
+                "sourceField": "Max_Feature_Date",
+                "targetField": "Max_Feature_Date__c"
+              },
+              {
+                "sourceField": "Offer_After_Snapshot",
+                "targetField": "Offer_After_Snapshot__c"
+              }
+            ],
+            "name": "Churn_PIT_Scoring_Set__dll",
+            "type": "dataLakeObject",
+            "writeMode": "OVERWRITE"
+          }
+        }
+      },
+      "outputDataObjects": [
+        {
+          "category": "Other",
+          "label": "Churn PIT Scoring Set",
+          "name": "Churn_PIT_Scoring_Set__dll",
+          "type": "dataLakeObject",
+          "fields": [
+            {
+              "isPrimaryKey": true,
+              "label": "Row Key",
+              "name": "Row_Key__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Contact Id",
+              "name": "Contact_Id__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Snapshot Date",
+              "name": "Snapshot_Date__c",
+              "type": "DateTime"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Snapshot Key",
+              "name": "Snapshot_Key__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Label 60",
+              "name": "Label_60__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Label 90",
+              "name": "Label_90__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Censored",
+              "name": "Censored__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Reason",
+              "name": "Reason__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Tenure Days",
+              "name": "Tenure_Days__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Tenure Bucket",
+              "name": "Tenure_Bucket__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Policy Days",
+              "name": "Policy_Days__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Mailing State",
+              "name": "Mailing_State__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Driver Role",
+              "name": "Driver_Role__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Into Term Est",
+              "name": "Days_Into_Term_Est__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days To Term End Est",
+              "name": "Days_To_Term_End_Est__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days To Renewal",
+              "name": "Days_To_Renewal__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Renewal Offer",
+              "name": "Days_Since_Renewal_Offer__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Into Term",
+              "name": "Days_Into_Term__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days To Term End",
+              "name": "Days_To_Term_End__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last App Open",
+              "name": "Days_Since_Last_App_Open__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Monthly Safe Driving Discount",
+              "name": "Monthly_Safe_Driving_Discount__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Renewal Offer Change Dollars",
+              "name": "Renewal_Offer_Change_Dollars__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Renewal Offer Rate",
+              "name": "Renewal_Offer_Rate__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Renewal Offer Change Pct",
+              "name": "Renewal_Offer_Change_Pct__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Renewal Rating Version",
+              "name": "Renewal_Rating_Version__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Renewal Offer PIT",
+              "name": "Days_Since_Renewal_Offer_PIT__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Policy Renewal Rate",
+              "name": "Policy_Renewal_Rate__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Lifetime Savings",
+              "name": "Lifetime_Savings__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Telematics Discount",
+              "name": "Telematics_Discount__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "App Events 30d",
+              "name": "App_Events_30d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "App Events 90d",
+              "name": "App_Events_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last App Event",
+              "name": "Days_Since_Last_App_Event__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Sends 90d",
+              "name": "Email_Sends_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Opens 30d",
+              "name": "Email_Opens_30d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Opens 90d",
+              "name": "Email_Opens_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Clicks 90d",
+              "name": "Email_Clicks_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Email Open Rate 90d",
+              "name": "Email_Open_Rate_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last Email Event",
+              "name": "Days_Since_Last_Email_Event__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Tickets 90d",
+              "name": "Tickets_90d__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last Ticket",
+              "name": "Days_Since_Last_Ticket__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Score Latest",
+              "name": "Drv_Score_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Score Trend",
+              "name": "Drv_Score_Trend__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Trips Latest",
+              "name": "Drv_Trips_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Miles Latest",
+              "name": "Drv_Miles_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Discount Latest",
+              "name": "Drv_Discount_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Discount Change",
+              "name": "Drv_Discount_Change__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last Cycle",
+              "name": "Days_Since_Last_Cycle__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Cycles",
+              "name": "Drv_Cycles__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv PNI Latest",
+              "name": "Drv_PNI_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Bill Net Latest",
+              "name": "Bill_Net_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Bill Net Change 3m",
+              "name": "Bill_Net_Change_3m__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Bill Net Change 3m Pct",
+              "name": "Bill_Net_Change_3m_Pct__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Bill Gross Latest",
+              "name": "Bill_Gross_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Bill Count",
+              "name": "Bill_Count__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Max Feature Date",
+              "name": "Max_Feature_Date__c",
+              "type": "DateTime"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Offer After Snapshot",
+              "name": "Offer_After_Snapshot__c",
+              "type": "Number"
+            }
+          ]
+        }
+      ],
+      "ui": {
+        "nodes": {
+          "LOAD_CAL": {
+            "label": "Snapshot calendar",
+            "type": "LOAD_DATASET",
+            "top": 60,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "FILTER_CAL": {
+            "label": "One calendar row",
+            "type": "FILTER",
+            "top": 60,
+            "left": 252
+          },
+          "T_CAL": {
+            "label": "Calendar keys",
+            "description": "Snapshot date, key, and a constant join key for the cross join",
+            "type": "TRANSFORM",
+            "top": 60,
+            "left": 392,
+            "graph": {
+              "T_CAL_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap Date (scoring: run time)"
+              },
+              "T_CAL_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap Key (yyyyMM)"
+              },
+              "T_CAL_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_CAL_F0",
+                "target": "T_CAL_F1"
+              },
+              {
+                "source": "T_CAL_F1",
+                "target": "T_CAL_F2"
+              }
+            ]
+          },
+          "LOAD_CON": {
+            "label": "Contact",
+            "type": "LOAD_DATASET",
+            "top": 250,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "FILTER_CON": {
+            "label": "Contacts with a policy",
+            "type": "FILTER",
+            "top": 250,
+            "left": 392
+          },
+          "T_CON_K": {
+            "label": "Contact join keys",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 250,
+            "left": 672,
+            "graph": {
+              "T_CON_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              },
+              "T_CON_K_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email key (lowercased)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_CON_K_F0",
+                "target": "T_CON_K_F1"
+              }
+            ]
+          },
+          "JOIN_BOOK": {
+            "label": "Contact x snapshot",
+            "type": "JOIN",
+            "top": 250,
+            "left": 952
+          },
+          "T_BOOK": {
+            "label": "Active-book flag",
+            "description": "Policy in force on the snapshot date and not yet cancelled",
+            "type": "TRANSFORM",
+            "top": 250,
+            "left": 1232,
+            "graph": {
+              "T_BOOK_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "In book at snapshot"
+              }
+            },
+            "connectors": []
+          },
+          "FILTER_BOOK": {
+            "label": "Keep in-book rows",
+            "type": "FILTER",
+            "top": 250,
+            "left": 1512
+          },
+          "LOAD_OFFER": {
+            "label": "Renewal offers",
+            "type": "LOAD_DATASET",
+            "top": 1010,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_OFFER_K": {
+            "label": "Offer join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1010,
+            "left": 392,
+            "graph": {
+              "T_OFFER_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_OFFER_CAL": {
+            "label": "Offer x snapshot",
+            "type": "JOIN",
+            "top": 1010,
+            "left": 672
+          },
+          "T_OFFER_W": {
+            "label": "Offer window",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1010,
+            "left": 952,
+            "graph": {
+              "T_OFFER_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Offer issued in the 60 days before the snapshot"
+              },
+              "T_OFFER_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (offer)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_OFFER_W_F0",
+                "target": "T_OFFER_W_F1"
+              }
+            ]
+          },
+          "FILTER_OFFER": {
+            "label": "Offers in window",
+            "type": "FILTER",
+            "top": 1010,
+            "left": 1232
+          },
+          "AGG_OFFER": {
+            "label": "Latest offer per account-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 1010,
+            "left": 1512,
+            "graph": {
+              "AGG_OFFER_EXTRACT": null,
+              "AGG_OFFER_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_OFFER_EXTRACT",
+                "target": "AGG_OFFER_AGG"
+              }
+            ]
+          },
+          "JOIN_OFFER_LATEST": {
+            "label": "Latest offer values",
+            "type": "JOIN",
+            "top": 1010,
+            "left": 1792
+          },
+          "JOIN_ACCT": {
+            "label": "+ renewal offer",
+            "type": "JOIN",
+            "top": 250,
+            "left": 1652
+          },
+          "T_LABELS": {
+            "label": "Labels and tenure",
+            "description": "60/90-day preventable-voluntary labels, censoring flag, tenure and term-position features",
+            "type": "TRANSFORM",
+            "top": 250,
+            "left": 1792,
+            "graph": {
+              "T_LABELS_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cancel within 60d"
+              },
+              "T_LABELS_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cancel within 90d"
+              },
+              "T_LABELS_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Preventable voluntary reason"
+              },
+              "T_LABELS_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Label 60d"
+              },
+              "T_LABELS_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Label 90d"
+              },
+              "T_LABELS_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Censored (non-pay, company, unpreventable in window)"
+              },
+              "T_LABELS_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Reason (evaluation only)"
+              },
+              "T_LABELS_F7": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Row key"
+              },
+              "T_LABELS_F8": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Tenure days"
+              },
+              "T_LABELS_F9": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since policy effective"
+              },
+              "T_LABELS_F10": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Tenure bucket"
+              },
+              "T_LABELS_F11": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days into term (estimated from 6-month terms)"
+              },
+              "T_LABELS_F12": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days to term end (estimated)"
+              },
+              "T_LABELS_F13": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days to renewal (CURRENT VALUE: valid for latest snapshot only)"
+              },
+              "T_LABELS_F14": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days into term (real; null when the current term was not in force at the snapshot)"
+              },
+              "T_LABELS_F15": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days to term end (real; same rule)"
+              },
+              "T_LABELS_F16": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since last app open (Contact field; null if after snapshot)"
+              },
+              "T_LABELS_F17": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Renewal offer change $ (latest offer in the 60 days before the snapshot; point-in-time from Renewal_Offer__c)"
+              },
+              "T_LABELS_F18": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Renewal offer monthly rate"
+              },
+              "T_LABELS_F19": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Renewal offer change % (computed; the Salesforce formula fields arrive null through the connector)"
+              },
+              "T_LABELS_F20": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since the latest offer (point-in-time)"
+              },
+              "T_LABELS_F21": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Rating version on the offer"
+              },
+              "T_LABELS_F22": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since renewal offer (CURRENT VALUE)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_LABELS_F0",
+                "target": "T_LABELS_F1"
+              },
+              {
+                "source": "T_LABELS_F1",
+                "target": "T_LABELS_F2"
+              },
+              {
+                "source": "T_LABELS_F2",
+                "target": "T_LABELS_F3"
+              },
+              {
+                "source": "T_LABELS_F3",
+                "target": "T_LABELS_F4"
+              },
+              {
+                "source": "T_LABELS_F4",
+                "target": "T_LABELS_F5"
+              },
+              {
+                "source": "T_LABELS_F5",
+                "target": "T_LABELS_F6"
+              },
+              {
+                "source": "T_LABELS_F6",
+                "target": "T_LABELS_F7"
+              },
+              {
+                "source": "T_LABELS_F7",
+                "target": "T_LABELS_F8"
+              },
+              {
+                "source": "T_LABELS_F8",
+                "target": "T_LABELS_F9"
+              },
+              {
+                "source": "T_LABELS_F9",
+                "target": "T_LABELS_F10"
+              },
+              {
+                "source": "T_LABELS_F10",
+                "target": "T_LABELS_F11"
+              },
+              {
+                "source": "T_LABELS_F11",
+                "target": "T_LABELS_F12"
+              },
+              {
+                "source": "T_LABELS_F12",
+                "target": "T_LABELS_F13"
+              },
+              {
+                "source": "T_LABELS_F13",
+                "target": "T_LABELS_F14"
+              },
+              {
+                "source": "T_LABELS_F14",
+                "target": "T_LABELS_F15"
+              },
+              {
+                "source": "T_LABELS_F15",
+                "target": "T_LABELS_F16"
+              },
+              {
+                "source": "T_LABELS_F16",
+                "target": "T_LABELS_F17"
+              },
+              {
+                "source": "T_LABELS_F17",
+                "target": "T_LABELS_F18"
+              },
+              {
+                "source": "T_LABELS_F18",
+                "target": "T_LABELS_F19"
+              },
+              {
+                "source": "T_LABELS_F19",
+                "target": "T_LABELS_F20"
+              },
+              {
+                "source": "T_LABELS_F20",
+                "target": "T_LABELS_F21"
+              },
+              {
+                "source": "T_LABELS_F21",
+                "target": "T_LABELS_F22"
+              }
+            ]
+          },
+          "LOAD_APP": {
+            "label": "Mobile app events",
+            "type": "LOAD_DATASET",
+            "top": 440,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_APP_K": {
+            "label": "App join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 440,
+            "left": 392,
+            "graph": {
+              "T_APP_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_APP_CAL": {
+            "label": "App x snapshot",
+            "type": "JOIN",
+            "top": 440,
+            "left": 672
+          },
+          "T_APP_W": {
+            "label": "App windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 440,
+            "left": 952,
+            "graph": {
+              "T_APP_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Event before snapshot"
+              },
+              "T_APP_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "App event in 30d"
+              },
+              "T_APP_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "App event in 90d"
+              },
+              "T_APP_W_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (app)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_APP_W_F0",
+                "target": "T_APP_W_F1"
+              },
+              {
+                "source": "T_APP_W_F1",
+                "target": "T_APP_W_F2"
+              },
+              {
+                "source": "T_APP_W_F2",
+                "target": "T_APP_W_F3"
+              }
+            ]
+          },
+          "FILTER_APP": {
+            "label": "Events before snapshot",
+            "type": "FILTER",
+            "top": 440,
+            "left": 1232
+          },
+          "AGG_APP": {
+            "label": "App per contact-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 440,
+            "left": 1512,
+            "graph": {
+              "AGG_APP_EXTRACT": null,
+              "AGG_APP_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_APP_EXTRACT",
+                "target": "AGG_APP_AGG"
+              }
+            ]
+          },
+          "LOAD_EMAIL": {
+            "label": "Individual Email Results",
+            "type": "LOAD_DATASET",
+            "top": 630,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "FILTER_EMAIL0": {
+            "label": "Sends with an address",
+            "type": "FILTER",
+            "top": 630,
+            "left": 392
+          },
+          "T_EMAIL_K": {
+            "label": "Email join keys",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 630,
+            "left": 672,
+            "graph": {
+              "T_EMAIL_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              },
+              "T_EMAIL_K_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email key (lowercased)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_EMAIL_K_F0",
+                "target": "T_EMAIL_K_F1"
+              }
+            ]
+          },
+          "JOIN_EMAIL_CAL": {
+            "label": "Email x snapshot",
+            "type": "JOIN",
+            "top": 630,
+            "left": 952
+          },
+          "T_EMAIL_W": {
+            "label": "Email windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 630,
+            "left": 1232,
+            "graph": {
+              "T_EMAIL_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Send before snapshot"
+              },
+              "T_EMAIL_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Sent in 90d"
+              },
+              "T_EMAIL_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Opened in 30d"
+              },
+              "T_EMAIL_W_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Opened in 90d"
+              },
+              "T_EMAIL_W_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Clicked in 90d (attributed to send date)"
+              },
+              "T_EMAIL_W_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email event date (open if before snapshot, else send)"
+              },
+              "T_EMAIL_W_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (email)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_EMAIL_W_F0",
+                "target": "T_EMAIL_W_F1"
+              },
+              {
+                "source": "T_EMAIL_W_F1",
+                "target": "T_EMAIL_W_F2"
+              },
+              {
+                "source": "T_EMAIL_W_F2",
+                "target": "T_EMAIL_W_F3"
+              },
+              {
+                "source": "T_EMAIL_W_F3",
+                "target": "T_EMAIL_W_F4"
+              },
+              {
+                "source": "T_EMAIL_W_F4",
+                "target": "T_EMAIL_W_F5"
+              },
+              {
+                "source": "T_EMAIL_W_F5",
+                "target": "T_EMAIL_W_F6"
+              }
+            ]
+          },
+          "FILTER_EMAIL": {
+            "label": "Sends before snapshot",
+            "type": "FILTER",
+            "top": 630,
+            "left": 1512
+          },
+          "AGG_EMAIL": {
+            "label": "Email per contact-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 630,
+            "left": 1792,
+            "graph": {
+              "AGG_EMAIL_EXTRACT": null,
+              "AGG_EMAIL_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_EMAIL_EXTRACT",
+                "target": "AGG_EMAIL_AGG"
+              }
+            ]
+          },
+          "LOAD_TICKET": {
+            "label": "Zendesk tickets",
+            "type": "LOAD_DATASET",
+            "top": 820,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_TKT_K": {
+            "label": "Ticket join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 820,
+            "left": 392,
+            "graph": {
+              "T_TKT_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_TKT_CAL": {
+            "label": "Ticket x snapshot",
+            "type": "JOIN",
+            "top": 820,
+            "left": 672
+          },
+          "T_TKT_W": {
+            "label": "Ticket windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 820,
+            "left": 952,
+            "graph": {
+              "T_TKT_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Ticket before snapshot"
+              },
+              "T_TKT_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Ticket in 90d"
+              },
+              "T_TKT_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (ticket)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_TKT_W_F0",
+                "target": "T_TKT_W_F1"
+              },
+              {
+                "source": "T_TKT_W_F1",
+                "target": "T_TKT_W_F2"
+              }
+            ]
+          },
+          "FILTER_TKT": {
+            "label": "Tickets before snapshot",
+            "type": "FILTER",
+            "top": 820,
+            "left": 1232
+          },
+          "AGG_TKT": {
+            "label": "Tickets per contact-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 820,
+            "left": 1512,
+            "graph": {
+              "AGG_TKT_EXTRACT": null,
+              "AGG_TKT_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_TKT_EXTRACT",
+                "target": "AGG_TKT_AGG"
+              }
+            ]
+          },
+          "LOAD_DRV": {
+            "label": "Monthly driving stats",
+            "type": "LOAD_DATASET",
+            "top": 1200,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_DRV_K": {
+            "label": "Driving keys",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1200,
+            "left": 392,
+            "graph": {
+              "T_DRV_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              },
+              "T_DRV_K_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cycle score (mean of the four display subscores)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_DRV_K_F0",
+                "target": "T_DRV_K_F1"
+              }
+            ]
+          },
+          "JOIN_DRV_CAL": {
+            "label": "Driving x snapshot",
+            "type": "JOIN",
+            "top": 1200,
+            "left": 672
+          },
+          "T_DRV_W": {
+            "label": "Driving windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1200,
+            "left": 952,
+            "graph": {
+              "T_DRV_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cycle ended before snapshot"
+              },
+              "T_DRV_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Latest cycle (ended in the 45 days before)"
+              },
+              "T_DRV_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Prior cycle (ended 90 to 135 days before)"
+              },
+              "T_DRV_W_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Score if latest"
+              },
+              "T_DRV_W_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Score if prior"
+              },
+              "T_DRV_W_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Trips if latest"
+              },
+              "T_DRV_W_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Miles if latest"
+              },
+              "T_DRV_W_F7": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount if latest"
+              },
+              "T_DRV_W_F8": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount if prior"
+              },
+              "T_DRV_W_F9": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "PNI at latest cycle (historical)"
+              },
+              "T_DRV_W_F10": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (driving)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_DRV_W_F0",
+                "target": "T_DRV_W_F1"
+              },
+              {
+                "source": "T_DRV_W_F1",
+                "target": "T_DRV_W_F2"
+              },
+              {
+                "source": "T_DRV_W_F2",
+                "target": "T_DRV_W_F3"
+              },
+              {
+                "source": "T_DRV_W_F3",
+                "target": "T_DRV_W_F4"
+              },
+              {
+                "source": "T_DRV_W_F4",
+                "target": "T_DRV_W_F5"
+              },
+              {
+                "source": "T_DRV_W_F5",
+                "target": "T_DRV_W_F6"
+              },
+              {
+                "source": "T_DRV_W_F6",
+                "target": "T_DRV_W_F7"
+              },
+              {
+                "source": "T_DRV_W_F7",
+                "target": "T_DRV_W_F8"
+              },
+              {
+                "source": "T_DRV_W_F8",
+                "target": "T_DRV_W_F9"
+              },
+              {
+                "source": "T_DRV_W_F9",
+                "target": "T_DRV_W_F10"
+              }
+            ]
+          },
+          "FILTER_DRV": {
+            "label": "Cycles before snapshot",
+            "type": "FILTER",
+            "top": 1200,
+            "left": 1232
+          },
+          "AGG_DRV": {
+            "label": "Driving per contact-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 1200,
+            "left": 1512,
+            "graph": {
+              "AGG_DRV_EXTRACT": null,
+              "AGG_DRV_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_DRV_EXTRACT",
+                "target": "AGG_DRV_AGG"
+              }
+            ]
+          },
+          "LOAD_BILL": {
+            "label": "Bills (price only)",
+            "type": "LOAD_DATASET",
+            "top": 1390,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_BILL_K": {
+            "label": "Bill join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1390,
+            "left": 392,
+            "graph": {
+              "T_BILL_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_BILL_CAL": {
+            "label": "Bill x snapshot",
+            "type": "JOIN",
+            "top": 1390,
+            "left": 672
+          },
+          "T_BILL_W": {
+            "label": "Bill windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1390,
+            "left": 952,
+            "graph": {
+              "T_BILL_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Invoice before snapshot"
+              },
+              "T_BILL_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Latest invoice (35 days)"
+              },
+              "T_BILL_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Invoice ~3 months earlier"
+              },
+              "T_BILL_W_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Net if latest"
+              },
+              "T_BILL_W_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Net if prior"
+              },
+              "T_BILL_W_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Gross if latest"
+              },
+              "T_BILL_W_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (bill)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_BILL_W_F0",
+                "target": "T_BILL_W_F1"
+              },
+              {
+                "source": "T_BILL_W_F1",
+                "target": "T_BILL_W_F2"
+              },
+              {
+                "source": "T_BILL_W_F2",
+                "target": "T_BILL_W_F3"
+              },
+              {
+                "source": "T_BILL_W_F3",
+                "target": "T_BILL_W_F4"
+              },
+              {
+                "source": "T_BILL_W_F4",
+                "target": "T_BILL_W_F5"
+              },
+              {
+                "source": "T_BILL_W_F5",
+                "target": "T_BILL_W_F6"
+              }
+            ]
+          },
+          "FILTER_BILL": {
+            "label": "Invoices before snapshot",
+            "type": "FILTER",
+            "top": 1390,
+            "left": 1232
+          },
+          "AGG_BILL": {
+            "label": "Bills per contact-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 1390,
+            "left": 1512,
+            "graph": {
+              "AGG_BILL_EXTRACT": null,
+              "AGG_BILL_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_BILL_EXTRACT",
+                "target": "AGG_BILL_AGG"
+              }
+            ]
+          },
+          "JOIN_F_APP": {
+            "label": "+ app",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2072
+          },
+          "JOIN_F_EMAIL": {
+            "label": "+ email",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2352
+          },
+          "JOIN_F_TKT": {
+            "label": "+ tickets",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2632
+          },
+          "JOIN_F_DRV": {
+            "label": "+ driving",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2772
+          },
+          "JOIN_F_BILL": {
+            "label": "+ bills",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2842
+          },
+          "T_FINAL": {
+            "label": "Final features",
+            "description": "Null-safe counts, recency, and the leakage audit column",
+            "type": "TRANSFORM",
+            "top": 250,
+            "left": 2912,
+            "graph": {
+              "T_FINAL_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "App events 30d (final)"
+              },
+              "T_FINAL_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "App events 90d (final)"
+              },
+              "T_FINAL_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since last app event"
+              },
+              "T_FINAL_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Emails sent 90d (final)"
+              },
+              "T_FINAL_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email opens 30d (final)"
+              },
+              "T_FINAL_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email opens 90d (final)"
+              },
+              "T_FINAL_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email clicks 90d (final)"
+              },
+              "T_FINAL_F7": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Email open rate 90d"
+              },
+              "T_FINAL_F8": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since last email event"
+              },
+              "T_FINAL_F9": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Tickets 90d (final)"
+              },
+              "T_FINAL_F10": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since last ticket"
+              },
+              "T_FINAL_F11": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Driving score, latest cycle"
+              },
+              "T_FINAL_F12": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Driving score trend (latest minus ~3 cycles earlier)"
+              },
+              "T_FINAL_F13": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Trips, latest cycle"
+              },
+              "T_FINAL_F14": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Miles, latest cycle"
+              },
+              "T_FINAL_F15": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount, latest cycle"
+              },
+              "T_FINAL_F16": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount change vs ~3 cycles earlier"
+              },
+              "T_FINAL_F17": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since the last driving cycle ended"
+              },
+              "T_FINAL_F18": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Driving cycles before snapshot"
+              },
+              "T_FINAL_F19": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "PNI at latest cycle (historical, 1/0/null)"
+              },
+              "T_FINAL_F20": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Net premium, latest invoice"
+              },
+              "T_FINAL_F21": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Net premium change vs ~3 months earlier ($)"
+              },
+              "T_FINAL_F22": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Net premium change vs ~3 months earlier (%)"
+              },
+              "T_FINAL_F23": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Gross premium, latest invoice"
+              },
+              "T_FINAL_F24": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Invoices before snapshot"
+              },
+              "T_FINAL_F25": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Max feature date (audit: must be <= Snap_Date)"
+              },
+              "T_FINAL_F26": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Audit: offer dated after snapshot (must be 0)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_FINAL_F0",
+                "target": "T_FINAL_F1"
+              },
+              {
+                "source": "T_FINAL_F1",
+                "target": "T_FINAL_F2"
+              },
+              {
+                "source": "T_FINAL_F2",
+                "target": "T_FINAL_F3"
+              },
+              {
+                "source": "T_FINAL_F3",
+                "target": "T_FINAL_F4"
+              },
+              {
+                "source": "T_FINAL_F4",
+                "target": "T_FINAL_F5"
+              },
+              {
+                "source": "T_FINAL_F5",
+                "target": "T_FINAL_F6"
+              },
+              {
+                "source": "T_FINAL_F6",
+                "target": "T_FINAL_F7"
+              },
+              {
+                "source": "T_FINAL_F7",
+                "target": "T_FINAL_F8"
+              },
+              {
+                "source": "T_FINAL_F8",
+                "target": "T_FINAL_F9"
+              },
+              {
+                "source": "T_FINAL_F9",
+                "target": "T_FINAL_F10"
+              },
+              {
+                "source": "T_FINAL_F10",
+                "target": "T_FINAL_F11"
+              },
+              {
+                "source": "T_FINAL_F11",
+                "target": "T_FINAL_F12"
+              },
+              {
+                "source": "T_FINAL_F12",
+                "target": "T_FINAL_F13"
+              },
+              {
+                "source": "T_FINAL_F13",
+                "target": "T_FINAL_F14"
+              },
+              {
+                "source": "T_FINAL_F14",
+                "target": "T_FINAL_F15"
+              },
+              {
+                "source": "T_FINAL_F15",
+                "target": "T_FINAL_F16"
+              },
+              {
+                "source": "T_FINAL_F16",
+                "target": "T_FINAL_F17"
+              },
+              {
+                "source": "T_FINAL_F17",
+                "target": "T_FINAL_F18"
+              },
+              {
+                "source": "T_FINAL_F18",
+                "target": "T_FINAL_F19"
+              },
+              {
+                "source": "T_FINAL_F19",
+                "target": "T_FINAL_F20"
+              },
+              {
+                "source": "T_FINAL_F20",
+                "target": "T_FINAL_F21"
+              },
+              {
+                "source": "T_FINAL_F21",
+                "target": "T_FINAL_F22"
+              },
+              {
+                "source": "T_FINAL_F22",
+                "target": "T_FINAL_F23"
+              },
+              {
+                "source": "T_FINAL_F23",
+                "target": "T_FINAL_F24"
+              },
+              {
+                "source": "T_FINAL_F24",
+                "target": "T_FINAL_F25"
+              },
+              {
+                "source": "T_FINAL_F25",
+                "target": "T_FINAL_F26"
+              }
+            ]
+          },
+          "OUTPUT0": {
+            "label": "Churn_PIT_Scoring_Set",
+            "type": "OUTPUT",
+            "top": 250,
+            "left": 3192
+          }
+        },
+        "connectors": [
+          {
+            "source": "LOAD_CAL",
+            "target": "FILTER_CAL"
+          },
+          {
+            "source": "FILTER_CAL",
+            "target": "T_CAL"
+          },
+          {
+            "source": "LOAD_CON",
+            "target": "FILTER_CON"
+          },
+          {
+            "source": "FILTER_CON",
+            "target": "T_CON_K"
+          },
+          {
+            "source": "T_CON_K",
+            "target": "JOIN_BOOK"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_BOOK"
+          },
+          {
+            "source": "JOIN_BOOK",
+            "target": "T_BOOK"
+          },
+          {
+            "source": "T_BOOK",
+            "target": "FILTER_BOOK"
+          },
+          {
+            "source": "LOAD_OFFER",
+            "target": "T_OFFER_K"
+          },
+          {
+            "source": "T_OFFER_K",
+            "target": "JOIN_OFFER_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_OFFER_CAL"
+          },
+          {
+            "source": "JOIN_OFFER_CAL",
+            "target": "T_OFFER_W"
+          },
+          {
+            "source": "T_OFFER_W",
+            "target": "FILTER_OFFER"
+          },
+          {
+            "source": "FILTER_OFFER",
+            "target": "AGG_OFFER"
+          },
+          {
+            "source": "AGG_OFFER",
+            "target": "JOIN_OFFER_LATEST"
+          },
+          {
+            "source": "LOAD_OFFER",
+            "target": "JOIN_OFFER_LATEST"
+          },
+          {
+            "source": "JOIN_OFFER_LATEST",
+            "target": "JOIN_ACCT"
+          },
+          {
+            "source": "FILTER_BOOK",
+            "target": "JOIN_ACCT"
+          },
+          {
+            "source": "JOIN_ACCT",
+            "target": "T_LABELS"
+          },
+          {
+            "source": "LOAD_APP",
+            "target": "T_APP_K"
+          },
+          {
+            "source": "T_APP_K",
+            "target": "JOIN_APP_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_APP_CAL"
+          },
+          {
+            "source": "JOIN_APP_CAL",
+            "target": "T_APP_W"
+          },
+          {
+            "source": "T_APP_W",
+            "target": "FILTER_APP"
+          },
+          {
+            "source": "FILTER_APP",
+            "target": "AGG_APP"
+          },
+          {
+            "source": "LOAD_EMAIL",
+            "target": "FILTER_EMAIL0"
+          },
+          {
+            "source": "FILTER_EMAIL0",
+            "target": "T_EMAIL_K"
+          },
+          {
+            "source": "T_EMAIL_K",
+            "target": "JOIN_EMAIL_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_EMAIL_CAL"
+          },
+          {
+            "source": "JOIN_EMAIL_CAL",
+            "target": "T_EMAIL_W"
+          },
+          {
+            "source": "T_EMAIL_W",
+            "target": "FILTER_EMAIL"
+          },
+          {
+            "source": "FILTER_EMAIL",
+            "target": "AGG_EMAIL"
+          },
+          {
+            "source": "LOAD_TICKET",
+            "target": "T_TKT_K"
+          },
+          {
+            "source": "T_TKT_K",
+            "target": "JOIN_TKT_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_TKT_CAL"
+          },
+          {
+            "source": "JOIN_TKT_CAL",
+            "target": "T_TKT_W"
+          },
+          {
+            "source": "T_TKT_W",
+            "target": "FILTER_TKT"
+          },
+          {
+            "source": "FILTER_TKT",
+            "target": "AGG_TKT"
+          },
+          {
+            "source": "LOAD_DRV",
+            "target": "T_DRV_K"
+          },
+          {
+            "source": "T_DRV_K",
+            "target": "JOIN_DRV_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_DRV_CAL"
+          },
+          {
+            "source": "JOIN_DRV_CAL",
+            "target": "T_DRV_W"
+          },
+          {
+            "source": "T_DRV_W",
+            "target": "FILTER_DRV"
+          },
+          {
+            "source": "FILTER_DRV",
+            "target": "AGG_DRV"
+          },
+          {
+            "source": "LOAD_BILL",
+            "target": "T_BILL_K"
+          },
+          {
+            "source": "T_BILL_K",
+            "target": "JOIN_BILL_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_BILL_CAL"
+          },
+          {
+            "source": "JOIN_BILL_CAL",
+            "target": "T_BILL_W"
+          },
+          {
+            "source": "T_BILL_W",
+            "target": "FILTER_BILL"
+          },
+          {
+            "source": "FILTER_BILL",
+            "target": "AGG_BILL"
+          },
+          {
+            "source": "T_LABELS",
+            "target": "JOIN_F_APP"
+          },
+          {
+            "source": "AGG_APP",
+            "target": "JOIN_F_APP"
+          },
+          {
+            "source": "JOIN_F_APP",
+            "target": "JOIN_F_EMAIL"
+          },
+          {
+            "source": "AGG_EMAIL",
+            "target": "JOIN_F_EMAIL"
+          },
+          {
+            "source": "JOIN_F_EMAIL",
+            "target": "JOIN_F_TKT"
+          },
+          {
+            "source": "AGG_TKT",
+            "target": "JOIN_F_TKT"
+          },
+          {
+            "source": "JOIN_F_TKT",
+            "target": "JOIN_F_DRV"
+          },
+          {
+            "source": "AGG_DRV",
+            "target": "JOIN_F_DRV"
+          },
+          {
+            "source": "JOIN_F_DRV",
+            "target": "JOIN_F_BILL"
+          },
+          {
+            "source": "AGG_BILL",
+            "target": "JOIN_F_BILL"
+          },
+          {
+            "source": "JOIN_F_BILL",
+            "target": "T_FINAL"
+          },
+          {
+            "source": "T_FINAL",
+            "target": "OUTPUT0"
+          }
+        ],
+        "hiddenColumns": []
+      }
+    }
+  ]
+}

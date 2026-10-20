@@ -122,6 +122,13 @@ Model Builder trains on data model objects, not lake objects.
    `Days_Since_Last_Cycle__c`, `Drv_Cycles__c`, `Drv_PNI_Latest__c` (historical PNI flag from the
    driving cycles; every driving row is a PNI, so 1 = was the PNI with telematics at that time, null = no
    driving data). Coverage: a latest-cycle score on ~45% of rows in every year; any cycle on ~51%.
+   **Version 3 (2026-10-20, late):** source `Churn_PIT_Train_V3__dlm` (all uncensored rows; no email counts
+   in the view at all). Variables = the version-2 list minus `Email_Opens_90d__c`, plus the five bill
+   columns `Bill_Net_Latest__c`, `Bill_Net_Change_3m__c`, `Bill_Net_Change_3m_Pct__c`, `Bill_Gross_Latest__c`,
+   `Bill_Count__c` (price history only; gross equals net on nearly every bill). 31 predictors. For the
+   renewal-window variant, add a Model Builder filter `Renewal_Offer_Change_Dollars__c is not null`
+   instead of separate views.
+
    For v1 also deselect the current-value columns `Days_To_Renewal__c`,
    `Days_Since_Renewal_Offer__c`, `Lifetime_Savings__c`, `Telematics_Discount__c`,
    `Policy_Renewal_Rate__c` (they are only point-in-time for the newest snapshot). Everything else
@@ -159,7 +166,7 @@ Model Builder trains on data model objects, not lake objects.
    renewal from the policy system), not algorithm settings. Record the result either way in a
    dated file in this folder.
 
-## Phase 6. Production scoring and the Contact field (half a day)
+## Phase 6. Production scoring and the Contact field (half a day; **status 2026-10-20:** scoring transform `ChurnPITScoringSet` created via API with `build_transform_json.py --with-driving --with-bills --scoring`, output `Churn_PIT_Scoring_Set__dll`; Contact fields created by the user with history tracking, Contact is at the 20-field history cap; steps 1 and 3 below are done)
 
 1. **Scoring transform.** Data Transforms > open `Churn PIT Training Set` > Save As
    `Churn PIT Scoring Set`. Changes: on row A add a Filter after the calendar input,
@@ -173,9 +180,10 @@ Model Builder trains on data model objects, not lake objects.
    the prediction, and the top three factor columns > schedule after the scoring transform.
    (The old setup did the same thing with an AI Functions node inside the scoring transform; either
    works, the separate job is easier to re-point when v2 ships.)
-3. **Contact field.** Setup > Object Manager > Contact > New Field > Number(5,2)
-   `Voluntary_Churn_Risk_Score__c`, plus Text(255) `Voluntary_Churn_Top_Factors__c`. Enable
-   history tracking on the score field **before** the first write.
+3. **Contact fields (done).** `Voluntary_Churn_Risk_Score__c` Number(7,2), `Voluntary_Churn_Top_Factors__c`
+   Text(255), `Voluntary_Churn_Scored_At__c` Date, `Voluntary_Churn_Band__c` picklist High/Moderate/Low;
+   history tracking is on for the first three and Contact is at its 20-field cap, so nothing else can be
+   tracked without retiring one.
 4. **Write-back.** Data Cloud > Data Actions, or the Contact enrichment "Copy Fields": source
    `Voluntary_Churn_Score__dlm`, key `Contact_Id__c` = Contact Id, map prediction x 100 to the
    score field and the factors to the text field. Run after the prediction job.
