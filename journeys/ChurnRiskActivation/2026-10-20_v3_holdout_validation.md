@@ -1,7 +1,6 @@
 # Voluntary Churn 60d v3: holdout validation (2026-10-20, night)
 
-**Verdict: the first version with real lift beyond price-at-renewal, and the one to deploy after
-one variable is removed.** Overall AUC 0.627 against 0.599 (v2), 0.579 (v1) and 0.560 (tenure).
+**Verdict: the first version with real lift beyond price-at-renewal, and the one to deploy.** Overall AUC 0.627 against 0.599 (v2), 0.579 (v1) and 0.560 (tenure).
 It clears the "tenure + 0.05" line, three of four tenure buckets, and for the first time ranks
 customers outside the renewal window (0.628) as well as inside it (0.623). It does not reach the
 0.68 target or the 2.5x top decile. The compliance proxy fails, and the diagnosis below says why
@@ -60,18 +59,18 @@ the rest. Two causes, measured on the holdout:
   and the journey's entry criteria exclude anyone with a notice in 90 days, so non-pay customers are
   never targeted regardless of their score.
 
-## What to do
+## What to do (decision 2026-10-20: ship v3 as is; the non-pay correlation is accepted)
 
-1. **Train v3.1: same objects, deselect `Bill Count`, 30 variables.** Re-run the holdout job into
-   `Voluntary_Churn_Holdout_Scores_V31`. Expect the AUC to hold within a point and the top-decile
-   non-pay share to drop toward 30%. That is the production candidate.
-2. **Deploy v3.1 as the scored field on Contact** with monthly bands, and use it two ways: ranking
-   inside the renewal-window entry (replacing "model top decile among offer-covered" with the v3.1
-   top decile), and as the general risk score for reporting and the persona batch. It is the first
-   version where the general score means something.
-3. **Journey entry stays rule-first:** offered increase > $20 or > 10%, term end within 45 days, PNI,
-   no non-pay notice in 90 days; v3.1 top decile among offer-covered customers adds the next tier. On
-   the holdout the combined rule flags 16% of the window at 11.1% cancel and captures 37% of its
-   preventable cancellations.
-4. **Stop here on modelling.** v3.1 is a one-variable retrain, not a new build. The next real gain needs
-   data that does not exist yet (18 months of offer history, Contact field history on savings).
+1. **Deploy v3 as the scored field on Contact** with monthly bands, used two ways: ranking inside the
+   renewal-window entry (the model's top decile among offer-covered customers is the second tier),
+   and as the general risk score for reporting and the persona batch. It is the first version where
+   the general score means something.
+2. **Journey entry stays rule-first:** offered increase > $20 or > 10%, term end within 45 days, PNI,
+   no non-pay notice in 90 days; v3 top decile among offer-covered customers adds the next tier. On the
+   holdout the combined rule flags 16% of the window at 11.1% cancel and captures 37% of its preventable
+   cancellations. The 90-day non-pay exclusion at entry is what keeps non-pay customers out of outreach,
+   whatever the score's correlation; for reference, customers offered a $20-plus increase carry a 41%
+   non-pay history themselves, against 23% for everyone else.
+3. **Stop here on modelling.** The next real gain needs data that does not exist yet (18 months of
+   offer history, Contact field history on savings). `Bill_Count__c` is noted as a payment proxy for
+   Insurance's awareness; it stays in by decision.
