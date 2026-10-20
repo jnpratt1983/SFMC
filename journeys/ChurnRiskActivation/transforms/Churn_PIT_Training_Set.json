@@ -52,8 +52,8 @@
           {
             "businessType": "Text",
             "defaultValue": "",
-            "formulaExpression": "Snapshot_Key__c",
-            "label": "Snap Key",
+            "formulaExpression": "date_format(Snapshot_Date__c, 'yyyyMM')",
+            "label": "Snap Key (yyyyMM, derived from the date; the stream's Snapshot_Key__c landed as Number)",
             "name": "Snap_Key",
             "precision": 10,
             "type": "TEXT"
@@ -133,7 +133,7 @@
             "field": "Policy_Effective_Date_c__c",
             "operands": [],
             "operator": "IS_NOT_NULL",
-            "type": "DATE"
+            "type": "DATETIME"
           }
         ],
         "filterBooleanLogic": "1 AND 2"
@@ -387,9 +387,6 @@
           "Snap_Key_Offer"
         ],
         "nodeType": "STANDARD"
-      },
-      "schema": {
-        "fields": []
       }
     },
     "JOIN_OFFER_LATEST": {
@@ -691,7 +688,7 @@
           {
             "businessType": "Number",
             "defaultValue": "",
-            "formulaExpression": "pmod(Policy_Days, 182)",
+            "formulaExpression": "Policy_Days - 182 * floor(Policy_Days / 182)",
             "label": "Days into term (estimated from 6-month terms)",
             "name": "Days_Into_Term_Est",
             "precision": 18,
@@ -712,7 +709,7 @@
           {
             "businessType": "Number",
             "defaultValue": "",
-            "formulaExpression": "182 - pmod(Policy_Days, 182)",
+            "formulaExpression": "182 - (Policy_Days - 182 * floor(Policy_Days / 182))",
             "label": "Days to term end (estimated)",
             "name": "Days_To_Term_End_Est",
             "precision": 18,
@@ -936,13 +933,13 @@
       "sources": [],
       "parameters": {
         "dataset": {
-          "name": "MobileApp_c_00D3h0000068eod__dlm",
-          "type": "dataModelObject"
+          "name": "MobileApp_c_00D3h0000068eod__dll",
+          "type": "dataLakeObject"
         },
         "fields": [
-          "Account_Id__c",
-          "Event_Timestamp_UTC__c",
-          "Event_Name__c"
+          "Account_Id_c__c",
+          "Event_Timestamp_UTC_c__c",
+          "Event_Name_c__c"
         ],
         "sampleDetails": {
           "type": "TopN"
@@ -1010,7 +1007,7 @@
           {
             "businessType": "Number",
             "defaultValue": "",
-            "formulaExpression": "case when Event_Timestamp_UTC__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+            "formulaExpression": "case when Event_Timestamp_UTC_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
             "label": "Event before snapshot",
             "name": "App_Before_Snap",
             "precision": 18,
@@ -1031,7 +1028,7 @@
           {
             "businessType": "Number",
             "defaultValue": "",
-            "formulaExpression": "case when Event_Timestamp_UTC__c > \"Cal.Snap_Date\" - INTERVAL 30 DAY and Event_Timestamp_UTC__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+            "formulaExpression": "case when Event_Timestamp_UTC_c__c > \"Cal.Snap_Date\" - INTERVAL 30 DAY and Event_Timestamp_UTC_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
             "label": "App event in 30d",
             "name": "App_30",
             "precision": 18,
@@ -1052,7 +1049,7 @@
           {
             "businessType": "Number",
             "defaultValue": "",
-            "formulaExpression": "case when Event_Timestamp_UTC__c > \"Cal.Snap_Date\" - INTERVAL 90 DAY and Event_Timestamp_UTC__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+            "formulaExpression": "case when Event_Timestamp_UTC_c__c > \"Cal.Snap_Date\" - INTERVAL 90 DAY and Event_Timestamp_UTC_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
             "label": "App event in 90d",
             "name": "App_90",
             "precision": 18,
@@ -1132,11 +1129,11 @@
             "action": "MAX",
             "label": "Last app event",
             "name": "Last_App_Event",
-            "source": "Event_Timestamp_UTC__c"
+            "source": "Event_Timestamp_UTC_c__c"
           }
         ],
         "groupings": [
-          "Account_Id__c",
+          "Account_Id_c__c",
           "Snap_Key_App"
         ],
         "nodeType": "STANDARD"
@@ -1528,8 +1525,8 @@
       "sources": [],
       "parameters": {
         "dataset": {
-          "name": "Zen_Desk_Ticket_Gold__dlm",
-          "type": "dataModelObject"
+          "name": "Zen_Desk_Ticket__dll",
+          "type": "dataLakeObject"
         },
         "fields": [
           "Customer_Number_c__c",
@@ -1734,7 +1731,7 @@
           "Cal.Snap_Key"
         ],
         "rightKeys": [
-          "Account_Id__c",
+          "Account_Id_c__c",
           "Snap_Key_App"
         ],
         "rightQualifier": "App"
@@ -1743,7 +1740,7 @@
         "fields": [],
         "slice": {
           "fields": [
-            "App.Account_Id__c",
+            "App.Account_Id_c__c",
             "App.Snap_Key_App"
           ],
           "ignoreMissingFields": true,
@@ -2054,7 +2051,7 @@
             "businessType": "DateTime",
             "defaultValue": "",
             "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-            "formulaExpression": "greatest(\"App.Last_App_Event\", \"Email.Last_Email_Event\", \"Tkt.Last_Ticket\")",
+            "formulaExpression": "case when \"App.Last_App_Event\" is not null and (\"Email.Last_Email_Event\" is null or \"App.Last_App_Event\" >= \"Email.Last_Email_Event\") and (\"Tkt.Last_Ticket\" is null or \"App.Last_App_Event\" >= \"Tkt.Last_Ticket\") then \"App.Last_App_Event\" when \"Email.Last_Email_Event\" is not null and (\"Tkt.Last_Ticket\" is null or \"Email.Last_Email_Event\" >= \"Tkt.Last_Ticket\") then \"Email.Last_Email_Event\" else \"Tkt.Last_Ticket\" end",
             "label": "Max feature date (audit: must be <= Snap_Date)",
             "name": "Max_Feature_Date",
             "type": "DATETIME"
@@ -2062,10 +2059,31 @@
         ]
       }
     },
+    "T_FINAL_F12": {
+      "action": "formula",
+      "sources": [
+        "T_FINAL_F11"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Number",
+            "defaultValue": "",
+            "formulaExpression": "case when \"Acct.Latest_Offer_Date\" > \"Cal.Snap_Date\" then 1 else 0 end",
+            "label": "Audit: offer dated after snapshot (must be 0)",
+            "name": "Offer_After_Snapshot",
+            "precision": 18,
+            "scale": 0,
+            "type": "NUMBER"
+          }
+        ]
+      }
+    },
     "OUTPUT0": {
       "action": "outputD360",
       "sources": [
-        "T_FINAL_F11"
+        "T_FINAL_F12"
       ],
       "parameters": {
         "dedupOrder": [],
@@ -2225,6 +2243,10 @@
           {
             "sourceField": "Max_Feature_Date",
             "targetField": "Max_Feature_Date__c"
+          },
+          {
+            "sourceField": "Offer_After_Snapshot",
+            "targetField": "Offer_After_Snapshot__c"
           }
         ],
         "name": "Churn_PIT_Training_Set__dll",
@@ -2238,7 +2260,6 @@
       "category": "Other",
       "label": "Churn PIT Training Set",
       "name": "Churn_PIT_Training_Set__dll",
-      "namespace": "",
       "type": "dataLakeObject",
       "fields": [
         {
@@ -2474,6 +2495,12 @@
           "label": "Max Feature Date",
           "name": "Max_Feature_Date__c",
           "type": "DateTime"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Offer After Snapshot",
+          "name": "Offer_After_Snapshot__c",
+          "type": "Number"
         }
       ]
     }
@@ -2510,7 +2537,7 @@
             "parameters": {
               "type": "BASE_FORMULA_UI"
             },
-            "label": "Snap Key"
+            "label": "Snap Key (yyyyMM, derived from the date; the stream's Snapshot_Key__c landed as Number)"
           },
           "T_CAL_F2": {
             "parameters": {
@@ -3364,6 +3391,12 @@
               "type": "BASE_FORMULA_UI"
             },
             "label": "Max feature date (audit: must be <= Snap_Date)"
+          },
+          "T_FINAL_F12": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
+            "label": "Audit: offer dated after snapshot (must be 0)"
           }
         },
         "connectors": [
@@ -3410,6 +3443,10 @@
           {
             "source": "T_FINAL_F10",
             "target": "T_FINAL_F11"
+          },
+          {
+            "source": "T_FINAL_F11",
+            "target": "T_FINAL_F12"
           }
         ]
       },
