@@ -111,7 +111,12 @@ Model Builder trains on data model objects, not lake objects.
 2. **Goal.** Data source = `Churn_PIT_Training_Set_Train__dlm`. Predict `Label_60__c`.
    Outcome type: Binary classification. Goal: maximize the value `1`.
 3. **Variables.** Deselect: `Row_Key__c`, `Contact_Id__c`, `Snapshot_Date__c`,
-   `Snapshot_Key__c`, `Label_90__c`, `Censored__c`, `Reason__c`, `Max_Feature_Date__c`.
+   `Snapshot_Key__c`, `Label_90__c`, `Censored__c`, `Reason__c`, `Max_Feature_Date__c`,
+   `Offer_After_Snapshot__c`. **Version 2 (2026-10-20):** source `Churn_PIT_Train_V2__dlm`; also
+   deselect `Email_Sends_90d__c`, `Email_Opens_30d__c`, `Email_Opens_90d__c`, `Email_Clicks_90d__c`
+   (send-driven counts that encode the non-pay journey; keep `Email_Open_Rate_90d__c` and
+   `Days_Since_Last_Email_Event__c`). `Mailing_State__c` stays in. `Driver_Role__c` is not in the
+   V2 views at all: it is populated only on contacts still active today, so it leaks the label.
    For v1 also deselect the current-value columns `Days_To_Renewal__c`,
    `Days_Since_Renewal_Offer__c`, `Lifetime_Savings__c`, `Telematics_Discount__c`,
    `Policy_Renewal_Rate__c` (they are only point-in-time for the newest snapshot). Everything else
