@@ -78,12 +78,17 @@ load("LOAD_CAL", "Churn_Snapshot_Calendar__dll", "dataLakeObject", ["Snapshot_Da
 if SCORING:
     filt("FILTER_CAL", "LOAD_CAL", [{"field": "Snapshot_Key__c", "operands": ["202407"], "operator": "EQUAL", "type": "NUMBER"}], "One calendar row", 60, 252)
     ui_link("LOAD_CAL", "FILTER_CAL")
-cal_last = transform("T_CAL", "FILTER_CAL" if SCORING else "LOAD_CAL", [
+cal_pre = "FILTER_CAL" if SCORING else "LOAD_CAL"
+if not SCORING:
+    cal_closed = transform("T_CAL_CLOSED", "LOAD_CAL", [num_field("Window_Closed", "case when to_timestamp(Snapshot_Date__c) <= now() - INTERVAL 61 DAY then 1 else 0 end", "Label window closed (snapshot older than 61 days)")], "Closed windows only", 60, 252)
+    filt("FILTER_CAL", cal_closed, [{"field": "Window_Closed", "operands": ["1"], "operator": "EQUAL", "type": "NUMBER"}], "Snapshots with a closed 60-day window", 60, 322)
+    ui_link("LOAD_CAL", "T_CAL_CLOSED"); ui_link("T_CAL_CLOSED", "FILTER_CAL"); cal_pre = "FILTER_CAL"
+cal_last = transform("T_CAL", cal_pre, [
     date_field("Snap_Date", "now()" if SCORING else "to_timestamp(Snapshot_Date__c)", "Snap Date (scoring: run time)" if SCORING else "Snap Date (timestamp so it compares with event datetimes)"),
     text_field("Snap_Key", "date_format(now(), 'yyyyMM')" if SCORING else "date_format(Snapshot_Date__c, 'yyyyMM')", "Snap Key (yyyyMM)", 10),
     num_field("xk", "1", "Cross-join key"),
 ], "Calendar keys", 60, 392, "Snapshot date, key, and a constant join key for the cross join")
-ui_link("FILTER_CAL" if SCORING else "LOAD_CAL", "T_CAL")
+ui_link(cal_pre, "T_CAL")
 
 # ---------------------------------------------------------------- contact book (row 1)
 load("LOAD_CON", "Contact__dll", "dataLakeObject", ["Id__c", "AccountId__c", "account_id_c__c", "Customer_Number_c__c", "CreatedDate__c", "Policy_Effective_Date_c__c",
@@ -323,6 +328,15 @@ final = transform("T_FINAL", "JOIN_F_BILL" if WITH_BILLS else ("JOIN_F_DRV" if W
        num_field("Bill_Net_Change_3m_Pct", 'case when "Bill.Bill_Net_Latest_A" is null or "Bill.Bill_Net_Prior_A" is null or "Bill.Bill_Net_Prior_A" <= 0 then null else 100 * ("Bill.Bill_Net_Latest_A" - "Bill.Bill_Net_Prior_A") / "Bill.Bill_Net_Prior_A" end', "Net premium change vs ~3 months earlier (%)", 10, 2),
        num_field("Bill_Gross_Latest_F", '"Bill.Bill_Gross_Latest_A"', "Gross premium, latest invoice", 10, 2),
        num_field("Bill_Count_F", 'coalesce("Bill.Bill_Count", 0)', "Invoices before snapshot")] if WITH_BILLS else []),
+    # one primary reason per customer, fixed priority, from the same signals the model sees (requires --with-driving --with-bills for the full set)
+    text_field("Churn_Reason", 'case '
+        + ('when "Acct.Off.Increase_Amount_Dollars_c__c" > 20 or ("Acct.Off.Policy_Renewal_Rate_c__c" - coalesce("Acct.Off.Increase_Amount_Dollars_c__c", 0) > 0 and 100 * coalesce("Acct.Off.Increase_Amount_Dollars_c__c", 0) / ("Acct.Off.Policy_Renewal_Rate_c__c" - coalesce("Acct.Off.Increase_Amount_Dollars_c__c", 0)) > 10) then \'PRICE_SHOCK\' ' if WITH_OFFERS else '')
+        + ('when "Bill.Bill_Net_Latest_A" - "Bill.Bill_Net_Prior_A" > 20 then \'PRICE_SHOCK\' ' if WITH_BILLS else '')
+        + ('when "Drv.Drv_Discount_Latest_A" - "Drv.Drv_Discount_Prior_A" < -5 or "Drv.Drv_Score_Latest_A" - "Drv.Drv_Score_Prior_A" < -5 then \'DISCOUNT_EROSION\' ' if WITH_DRIVING else '')
+        + 'when Tenure_Days < 180 then \'NEW_CUSTOMER\' '
+        + 'when ("App.Last_App_Event" is null or datediff(' + SNAP + ', "App.Last_App_Event") > 60) and coalesce("Email.Email_Opens_90d", 0) = 0 then \'DISENGAGED\' '
+        + ('when "Drv.Drv_Discount_Latest_A" is not null and "Drv.Drv_Discount_Latest_A" < 5 then \'LOW_SAVINGS\' ' if WITH_DRIVING else '')
+        + 'else \'GENERAL\' end', "Primary churn reason (priority: price shock, discount erosion, new customer, disengaged, low savings, general)", 20),
     date_field("Max_Feature_Date", 'case when "App.Last_App_Event" is not null and ("Email.Last_Email_Event" is null or "App.Last_App_Event" >= "Email.Last_Email_Event") and ("Tkt.Last_Ticket" is null or "App.Last_App_Event" >= "Tkt.Last_Ticket") then "App.Last_App_Event" when "Email.Last_Email_Event" is not null and ("Tkt.Last_Ticket" is null or "Email.Last_Email_Event" >= "Tkt.Last_Ticket") then "Email.Last_Email_Event" else "Tkt.Last_Ticket" end', "Max feature date (audit: must be <= Snap_Date)"),
     *([num_field("Offer_After_Snapshot", f'case when "Acct.Latest_Offer_Date" > {SNAP} then 1 else 0 end', "Audit: offer dated after snapshot (must be 0)")] if WITH_OFFERS else []),
 ], "Final features", 250, 2912, "Null-safe counts, recency, and the leakage audit column")
@@ -348,6 +362,7 @@ mappings = [
     *([("Drv_Score_Latest_F", "Drv_Score_Latest__c"), ("Drv_Score_Trend", "Drv_Score_Trend__c"), ("Drv_Trips_Latest_F", "Drv_Trips_Latest__c"), ("Drv_Miles_Latest_F", "Drv_Miles_Latest__c"),
        ("Drv_Discount_Latest_F", "Drv_Discount_Latest__c"), ("Drv_Discount_Change", "Drv_Discount_Change__c"), ("Days_Since_Last_Cycle", "Days_Since_Last_Cycle__c"), ("Drv_Cycles_F", "Drv_Cycles__c"), ("Drv_PNI_Latest_F", "Drv_PNI_Latest__c")] if WITH_DRIVING else []),
     *([("Bill_Net_Latest_F", "Bill_Net_Latest__c"), ("Bill_Net_Change_3m", "Bill_Net_Change_3m__c"), ("Bill_Net_Change_3m_Pct", "Bill_Net_Change_3m_Pct__c"), ("Bill_Gross_Latest_F", "Bill_Gross_Latest__c"), ("Bill_Count_F", "Bill_Count__c")] if WITH_BILLS else []),
+    ("Churn_Reason", "Churn_Reason__c"),
     ("Max_Feature_Date", "Max_Feature_Date__c"), *([("Offer_After_Snapshot", "Offer_After_Snapshot__c")] if WITH_OFFERS else []),
 ]
 nodes["OUTPUT0"] = {"action": "outputD360", "sources": [final], "parameters": {"dedupOrder": [], "fieldsMappings": [{"sourceField": s, "targetField": t} for s, t in mappings],
@@ -355,7 +370,7 @@ nodes["OUTPUT0"] = {"action": "outputD360", "sources": [final], "parameters": {"
 ui_nodes["OUTPUT0"] = {"label": "Churn_PIT_Scoring_Set" if SCORING else "Churn_PIT_Training_Set", "type": "OUTPUT", "top": 250, "left": 3192}
 ui_link("T_FINAL", "OUTPUT0")
 
-types = {"Mailing_State__c": "Text", "Driver_Role__c": "Text", "Renewal_Rating_Version__c": "Text", "Row_Key__c": "Text", "Contact_Id__c": "Text", "Snapshot_Date__c": "DateTime", "Snapshot_Key__c": "Text", "Reason__c": "Text", "Tenure_Bucket__c": "Text", "Max_Feature_Date__c": "DateTime"}
+types = {"Churn_Reason__c": "Text", "Mailing_State__c": "Text", "Driver_Role__c": "Text", "Renewal_Rating_Version__c": "Text", "Row_Key__c": "Text", "Contact_Id__c": "Text", "Snapshot_Date__c": "DateTime", "Snapshot_Key__c": "Text", "Reason__c": "Text", "Tenure_Bucket__c": "Text", "Max_Feature_Date__c": "DateTime"}
 out_fields = [{"isPrimaryKey": t == "Row_Key__c", "label": t[:-3].replace("_", " "), "name": t, "type": types.get(t, "Number")} for s, t in mappings]
 LBL, NM, OUT = ("Churn PIT Scoring Set", "ChurnPITScoringSet", "Churn_PIT_Scoring_Set__dll") if SCORING else ("Churn PIT Training Set", "ChurnPITTrainingSet", "Churn_PIT_Training_Set__dll")
 definition = {"label": LBL, "name": NM, "version": "56.0", "type": "STL", "nodes": nodes,
@@ -384,7 +399,7 @@ json.dump(api_body, open(os.path.join(HERE, f"Churn_PIT_Training_Set{SUFFIX}.api
 with open(os.path.join(HERE, "Churn_Snapshot_Calendar.csv"), "w", newline="") as f:
     w = csv.writer(f); w.writerow(["Snapshot_Date", "Snapshot_Key"])
     y, m = 2024, 7
-    while (y, m) <= (2026, 8):
+    while (y, m) <= (2028, 12):
         w.writerow([date(y, m, 1).isoformat(), f"{y}{m:02d}"]); m += 1
         if m == 13: y, m = y + 1, 1
 print("nodes:", len(nodes), "| ui nodes:", len(ui_nodes), "| connectors:", len(ui_conn), "| output fields:", len(out_fields))

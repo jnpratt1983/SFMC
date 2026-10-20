@@ -184,9 +184,13 @@ Model Builder trains on data model objects, not lake objects.
    Text(255), `Voluntary_Churn_Scored_At__c` Date, `Voluntary_Churn_Band__c` picklist High/Moderate/Low;
    history tracking is on for the first three and Contact is at its 20-field cap, so nothing else can be
    tracked without retiring one.
-4. **Write-back.** Data Cloud > Data Actions, or the Contact enrichment "Copy Fields": source
-   `Voluntary_Churn_Score__dlm`, key `Contact_Id__c` = Contact Id, map prediction x 100 to the
-   score field and the factors to the text field. Run after the prediction job.
+4. **Write-back (done 2026-10-20 with `scripts/write_back_scores.py`).** Data Cloud's Copy Fields
+   enrichment creates its own read-only fields and cannot compute the band or join the contributor
+   names, so the write-back is a script: it reads the prediction object (score, three contributors)
+   and the scoring lake object (reason, offer change, discount change, driving score), computes the
+   band from the batch's deciles, and bulk-updates Contact. Run it after each monthly predict job:
+   `python3 write_back_scores.py` (prints the cuts to copy into the journey config) or with
+   `--high/--moderate` to pin them.
 5. **Bands.** After the first production run:
    ```
    SELECT Voluntary_Churn_Risk_Score__c FROM Contact WHERE Voluntary_Churn_Risk_Score__c != null ORDER BY Voluntary_Churn_Risk_Score__c DESC
@@ -204,7 +208,7 @@ Model Builder trains on data model objects, not lake objects.
 | When | What |
 |---|---|
 | 1st | Contact stream refresh, scoring transform, prediction job, write-back, band cut points |
-| 2nd | Calendar row for the new month, training transform, train/holdout views |
+| 2nd | Training transform (the calendar is pre-loaded through 2028; new snapshots activate once their window closes), train/holdout views; Contact write-back runs on this machine by launchd at 07:00 Chicago |
 | Each batch | Validation script row, compliance proxy check, top-decile overlap with last month |
 | Quarterly | Retrain on all closed snapshots as vN+1; promote only if it beats the live model on the same holdout |
 

@@ -28,10 +28,49 @@
             }
           }
         },
-        "T_CAL_F0": {
+        "T_CAL_CLOSED_F0": {
           "action": "formula",
           "sources": [
             "LOAD_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when to_timestamp(Snapshot_Date__c) <= now() - INTERVAL 61 DAY then 1 else 0 end",
+                "label": "Label window closed (snapshot older than 61 days)",
+                "name": "Window_Closed",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "FILTER_CAL": {
+          "action": "filter",
+          "sources": [
+            "T_CAL_CLOSED_F0"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Window_Closed",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_CAL_F0": {
+          "action": "formula",
+          "sources": [
+            "FILTER_CAL"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -3181,6 +3220,26 @@
             "expressionType": "SQL",
             "fields": [
               {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Acct.Off.Increase_Amount_Dollars_c__c\" > 20 or (\"Acct.Off.Policy_Renewal_Rate_c__c\" - coalesce(\"Acct.Off.Increase_Amount_Dollars_c__c\", 0) > 0 and 100 * coalesce(\"Acct.Off.Increase_Amount_Dollars_c__c\", 0) / (\"Acct.Off.Policy_Renewal_Rate_c__c\" - coalesce(\"Acct.Off.Increase_Amount_Dollars_c__c\", 0)) > 10) then 'PRICE_SHOCK' when \"Bill.Bill_Net_Latest_A\" - \"Bill.Bill_Net_Prior_A\" > 20 then 'PRICE_SHOCK' when \"Drv.Drv_Discount_Latest_A\" - \"Drv.Drv_Discount_Prior_A\" < -5 or \"Drv.Drv_Score_Latest_A\" - \"Drv.Drv_Score_Prior_A\" < -5 then 'DISCOUNT_EROSION' when Tenure_Days < 180 then 'NEW_CUSTOMER' when (\"App.Last_App_Event\" is null or datediff(\"Cal.Snap_Date\", \"App.Last_App_Event\") > 60) and coalesce(\"Email.Email_Opens_90d\", 0) = 0 then 'DISENGAGED' when \"Drv.Drv_Discount_Latest_A\" is not null and \"Drv.Drv_Discount_Latest_A\" < 5 then 'LOW_SAVINGS' else 'GENERAL' end",
+                "label": "Primary churn reason (priority: price shock, discount erosion, new customer, disengaged, low savings, general)",
+                "name": "Churn_Reason",
+                "precision": 20,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F26": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F25"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
                 "businessType": "DateTime",
                 "defaultValue": "",
                 "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
@@ -3192,10 +3251,10 @@
             ]
           }
         },
-        "T_FINAL_F26": {
+        "T_FINAL_F27": {
           "action": "formula",
           "sources": [
-            "T_FINAL_F25"
+            "T_FINAL_F26"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -3216,7 +3275,7 @@
         "OUTPUT0": {
           "action": "outputD360",
           "sources": [
-            "T_FINAL_F26"
+            "T_FINAL_F27"
           ],
           "parameters": {
             "dedupOrder": [],
@@ -3436,6 +3495,10 @@
               {
                 "sourceField": "Bill_Count_F",
                 "targetField": "Bill_Count__c"
+              },
+              {
+                "sourceField": "Churn_Reason",
+                "targetField": "Churn_Reason__c"
               },
               {
                 "sourceField": "Max_Feature_Date",
@@ -3785,6 +3848,12 @@
             },
             {
               "isPrimaryKey": false,
+              "label": "Churn Reason",
+              "name": "Churn_Reason__c",
+              "type": "Text"
+            },
+            {
+              "isPrimaryKey": false,
               "label": "Max Feature Date",
               "name": "Max_Feature_Date__c",
               "type": "DateTime"
@@ -3812,6 +3881,28 @@
               },
               "dataspace": "default"
             }
+          },
+          "T_CAL_CLOSED": {
+            "label": "Closed windows only",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 60,
+            "left": 252,
+            "graph": {
+              "T_CAL_CLOSED_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Label window closed (snapshot older than 61 days)"
+              }
+            },
+            "connectors": []
+          },
+          "FILTER_CAL": {
+            "label": "Snapshots with a closed 60-day window",
+            "type": "FILTER",
+            "top": 60,
+            "left": 322
           },
           "T_CAL": {
             "label": "Calendar keys",
@@ -5122,9 +5213,15 @@
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Max feature date (audit: must be <= Snap_Date)"
+                "label": "Primary churn reason (priority: price shock, discount erosion, new customer, disengaged, low savings, general)"
               },
               "T_FINAL_F26": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Max feature date (audit: must be <= Snap_Date)"
+              },
+              "T_FINAL_F27": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
@@ -5235,6 +5332,10 @@
               {
                 "source": "T_FINAL_F25",
                 "target": "T_FINAL_F26"
+              },
+              {
+                "source": "T_FINAL_F26",
+                "target": "T_FINAL_F27"
               }
             ]
           },
@@ -5248,6 +5349,14 @@
         "connectors": [
           {
             "source": "LOAD_CAL",
+            "target": "T_CAL_CLOSED"
+          },
+          {
+            "source": "T_CAL_CLOSED",
+            "target": "FILTER_CAL"
+          },
+          {
+            "source": "FILTER_CAL",
             "target": "T_CAL"
           },
           {

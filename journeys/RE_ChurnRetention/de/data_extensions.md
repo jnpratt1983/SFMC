@@ -7,9 +7,9 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 | Field | Type | Notes |
 |---|---|---|
 | ConfigKey | Text(20), PK | `current` |
-| HighCut | Decimal(5,2) | start of the v3 top decile from the latest batch (58.29 on the Aug 2026 holdout) |
-| ModerateCut | Decimal(5,2) | start of decile 3 (reporting only; entry does not use it) |
-| BatchDate | Date | scoring batch the cuts came from |
+| HighCut | Decimal(5,2) | start of the v3 top decile from the latest batch. **First production batch 2026-10-20: 59.99** (788 of 7,878 contacts) |
+| ModerateCut | Decimal(5,2) | start of decile 3 (reporting only; entry does not use it). **2026-10-20: 49.05** (1,576 contacts) |
+| BatchDate | Date | scoring batch the cuts came from (2026-10-20 for the first row) |
 
 ## RE_ChurnRetention_Entry (Overwrite daily; journey entry source)
 
@@ -28,6 +28,10 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 | Score | Decimal(5,2) |
 | Band | Text(10): HIGH (model tier) or OFFER (price tier) |
 | TopFactors | Text(255) |
+| ChurnReason | Text(20): PRICE_SHOCK, DISCOUNT_EROSION, NEW_CUSTOMER, DISENGAGED, LOW_SAVINGS, GENERAL |
+| OfferChange | Decimal(10,2), nullable |
+| DiscountChange | Decimal(10,2), nullable |
+| DrivingScore | Decimal(10,2), nullable |
 | Track | Text(10) |
 | TermEndAtEntry | Date |
 | TermStartAtEntry | Date |
