@@ -217,7 +217,7 @@ ui_link("FILTER_TKT", "AGG_TKT")
 
 if WITH_DRIVING:
     # ------------------------------------------------------------ driving (row G): latest cycle ended before the snapshot, and the cycle ~3 months earlier
-    load("LOAD_DRV", DRIVING_DLO, "dataLakeObject", ["Contact_c__c", "cycle_start_c__c", "cycle_end_c__c", "n_trips_in_curr_month_c__c", "distance_miles_in_curr_month_c__c",
+    load("LOAD_DRV", DRIVING_DLO, "dataLakeObject", ["customer_number_c__c", "cycle_start_c__c", "cycle_end_c__c", "n_trips_in_curr_month_c__c", "distance_miles_in_curr_month_c__c",
          "subscore_display_safe_speeds_curr_month__c", "subscore_display_smooth_driving_curr_mon__c", "subscore_display_distracted_driving_curr__c", "subscore_display_driving_patterns_curr_m__c",
          "earn_discount_curr_month_c__c", "total_earned_discount_c__c", "driver_role_c__c"], "Monthly driving stats", 1200, 112)
     drv_k = transform("T_DRV_K", "LOAD_DRV", [
@@ -242,7 +242,7 @@ if WITH_DRIVING:
     ], "Driving windows", 1200, 952)
     filt("FILTER_DRV", drv_f, [{"field": "Drv_Before_Snap", "operands": ["1"], "operator": "EQUAL", "type": "NUMBER"}], "Cycles before snapshot", 1200, 1232)
     ui_link("JOIN_DRV_CAL", "T_DRV_W"); ui_link("T_DRV_W", "FILTER_DRV")
-    drv_agg = aggregate("AGG_DRV", "FILTER_DRV", ["Contact_c__c", "Snap_Key_Drv"], [
+    drv_agg = aggregate("AGG_DRV", "FILTER_DRV", ["customer_number_c__c", "Snap_Key_Drv"], [
         {"action": "MAX", "label": "Last cycle end", "name": "Drv_Last_Cycle_End", "source": "cycle_end_c__c"},
         {"action": "AVG", "label": "Score latest", "name": "Drv_Score_Latest_A", "source": "Drv_Score_Latest"},
         {"action": "AVG", "label": "Score prior", "name": "Drv_Score_Prior_A", "source": "Drv_Score_Prior"},
@@ -262,7 +262,7 @@ ui_link("JOIN_F_APP", "JOIN_F_EMAIL"); ui_link("AGG_EMAIL", "JOIN_F_EMAIL")
 join("JOIN_F_TKT", "JOIN_F_EMAIL", tk_agg, ["Customer_Number_c__c", "Cal.Snap_Key"], ["Customer_Number_c__c", "Snap_Key_Tkt"], "Tkt", "LEFT_OUTER", "+ tickets", 250, 2632, drop=["Tkt.Customer_Number_c__c", "Tkt.Snap_Key_Tkt"])
 ui_link("JOIN_F_EMAIL", "JOIN_F_TKT"); ui_link("AGG_TKT", "JOIN_F_TKT")
 if WITH_DRIVING:
-    join("JOIN_F_DRV", "JOIN_F_TKT", drv_agg, ["Id__c", "Cal.Snap_Key"], ["Contact_c__c", "Snap_Key_Drv"], "Drv", "LEFT_OUTER", "+ driving", 250, 2772, drop=["Drv.Contact_c__c", "Drv.Snap_Key_Drv"])
+    join("JOIN_F_DRV", "JOIN_F_TKT", drv_agg, ["Customer_Number_c__c", "Cal.Snap_Key"], ["customer_number_c__c", "Snap_Key_Drv"], "Drv", "LEFT_OUTER", "+ driving", 250, 2772, drop=["Drv.customer_number_c__c", "Drv.Snap_Key_Drv"])  # customer number matches 100% of driving rows; the Contact lookup only 92%
     ui_link("JOIN_F_TKT", "JOIN_F_DRV"); ui_link("AGG_DRV", "JOIN_F_DRV")
 final = transform("T_FINAL", "JOIN_F_DRV" if WITH_DRIVING else "JOIN_F_TKT", [
     num_field("App_Events_30d_F", 'coalesce("App.App_Events_30d", 0)', "App events 30d (final)"),
