@@ -93,9 +93,26 @@ book = transform("T_BOOK", "JOIN_BOOK", [
 ], "Active-book flag", 250, 1232, "Policy in force on the snapshot date and not yet cancelled")
 filt("FILTER_BOOK", book, [{"field": "In_Book", "operands": ["1"], "operator": "EQUAL", "type": "NUMBER"}], "Keep in-book rows", 250, 1512)
 ui_link("JOIN_BOOK", "T_BOOK"); ui_link("T_BOOK", "FILTER_BOOK")
-load("LOAD_ACCT", "Account_00D3h0000068eod__dll", "dataLakeObject", ["Id__c", "Increase_Amount_Dollars_c__c", "Offered_Rate_Change_c__c", "Policy_Renewal_Rate_c__c", "Renewal_Offer_Date_c__c"], "Account renewal offer", 1010, 112)
-join("JOIN_ACCT", "FILTER_BOOK", "LOAD_ACCT", ["AccountId__c"], ["Id__c"], "Acct", "LEFT_OUTER", "+ renewal offer", 250, 1652, drop=["Acct.Id__c"])
-ui_link("LOAD_ACCT", "JOIN_ACCT"); ui_link("FILTER_BOOK", "JOIN_ACCT")
+# ---------------------------------------------------------------- renewal offers (row F): Renewal_Offer__c captured by the Account flow, point-in-time
+load("LOAD_OFFER", "Renewal_Offer_c_00D3h0000068eod__dll", "dataLakeObject", ["Account_c__c", "Offer_Date_c__c", "Increase_Amount_Dollars_c__c", "Policy_Renewal_Rate_c__c", "Prior_Rate_c__c", "Increase_Percent_c__c", "Rating_Version_c__c"], "Renewal offers", 1010, 112)
+off_k = transform("T_OFFER_K", "LOAD_OFFER", [num_field("xk", "1", "Cross-join key")], "Offer join key", 1010, 392)
+ui_link("LOAD_OFFER", "T_OFFER_K")
+join("JOIN_OFFER_CAL", off_k, cal_last, ["xk"], ["xk"], "Cal", "INNER", "Offer x snapshot", 1010, 672, drop=["Cal.xk", "Cal.Snapshot_Date__c", "Cal.Snapshot_Key__c"])
+ui_link("T_OFFER_K", "JOIN_OFFER_CAL"); ui_link("T_CAL", "JOIN_OFFER_CAL")
+off_f = transform("T_OFFER_W", "JOIN_OFFER_CAL", [
+    num_field("Offer_In_Window", f"case when Offer_Date_c__c <= {SNAP} and Offer_Date_c__c > {SNAP} - INTERVAL 60 DAY then 1 else 0 end", "Offer issued in the 60 days before the snapshot"),
+    text_field("Snap_Key_Offer", SNAPKEY, "Snap key (offer)", 10),
+], "Offer window", 1010, 952)
+filt("FILTER_OFFER", off_f, [{"field": "Offer_In_Window", "operands": ["1"], "operator": "EQUAL", "type": "NUMBER"}], "Offers in window", 1010, 1232)
+ui_link("JOIN_OFFER_CAL", "T_OFFER_W"); ui_link("T_OFFER_W", "FILTER_OFFER")
+off_agg = aggregate("AGG_OFFER", "FILTER_OFFER", ["Account_c__c", "Snap_Key_Offer"], [
+    {"action": "MAX", "label": "Latest offer date", "name": "Latest_Offer_Date", "source": "Offer_Date_c__c"}], "Latest offer per account-snapshot", 1010, 1512)
+ui_link("FILTER_OFFER", "AGG_OFFER")
+# bring the latest offer's values back: join the aggregate to the offer rows on account + date
+join("JOIN_OFFER_LATEST", off_agg, "LOAD_OFFER", ["Account_c__c", "Latest_Offer_Date"], ["Account_c__c", "Offer_Date_c__c"], "Off", "LEFT_OUTER", "Latest offer values", 1010, 1792, drop=["Off.Account_c__c", "Off.Offer_Date_c__c"])
+ui_link("AGG_OFFER", "JOIN_OFFER_LATEST"); ui_link("LOAD_OFFER", "JOIN_OFFER_LATEST")
+join("JOIN_ACCT", "FILTER_BOOK", "JOIN_OFFER_LATEST", ["AccountId__c", "Cal.Snap_Key"], ["Account_c__c", "Snap_Key_Offer"], "Acct", "LEFT_OUTER", "+ renewal offer", 250, 1652, drop=["Acct.Account_c__c", "Acct.Snap_Key_Offer"])
+ui_link("JOIN_OFFER_LATEST", "JOIN_ACCT"); ui_link("FILTER_BOOK", "JOIN_ACCT")
 labels = transform("T_LABELS", "JOIN_ACCT", [
     num_field("Cancel_In_60d", f"case when Cancel_Date_c__c > {SNAP} and Cancel_Date_c__c <= {SNAP} + INTERVAL 60 DAY then 1 else 0 end", "Cancel within 60d"),
     num_field("Cancel_In_90d", f"case when Cancel_Date_c__c > {SNAP} and Cancel_Date_c__c <= {SNAP} + INTERVAL 90 DAY then 1 else 0 end", "Cancel within 90d"),
@@ -114,10 +131,11 @@ labels = transform("T_LABELS", "JOIN_ACCT", [
     num_field("Days_Into_Term", f"case when Current_Term_Effective_Date_c__c <= {SNAP} and Current_Term_Expiration_Date_c__c > {SNAP} then datediff({SNAP}, Current_Term_Effective_Date_c__c) else null end", "Days into term (real; null when the current term was not in force at the snapshot)"),
     num_field("Days_To_Term_End", f"case when Current_Term_Effective_Date_c__c <= {SNAP} and Current_Term_Expiration_Date_c__c > {SNAP} then datediff(Current_Term_Expiration_Date_c__c, {SNAP}) else null end", "Days to term end (real; same rule)"),
     num_field("Days_Since_Last_App_Open", f"case when Last_App_Open_Date_c__c is null or Last_App_Open_Date_c__c > {SNAP} then null else datediff({SNAP}, Last_App_Open_Date_c__c) end", "Days since last app open (Contact field; null if after snapshot)"),
-    num_field("Renewal_Offer_Change_Dollars", f'case when "Acct.Renewal_Offer_Date_c__c" <= {SNAP} and "Acct.Renewal_Offer_Date_c__c" > {SNAP} - INTERVAL 60 DAY then "Acct.Increase_Amount_Dollars_c__c" else null end', "Renewal offer change $ (offer issued in the 60 days before snapshot; CURRENT VALUE until AccountHistory is streamed)", 10, 2),
-    num_field("Renewal_Offer_Rate", f'case when "Acct.Renewal_Offer_Date_c__c" <= {SNAP} and "Acct.Renewal_Offer_Date_c__c" > {SNAP} - INTERVAL 60 DAY then "Acct.Policy_Renewal_Rate_c__c" else null end', "Renewal offer monthly rate (same window)", 10, 2),
-    num_field("Renewal_Offer_Change_Pct", f'case when "Acct.Renewal_Offer_Date_c__c" <= {SNAP} and "Acct.Renewal_Offer_Date_c__c" > {SNAP} - INTERVAL 60 DAY and "Acct.Policy_Renewal_Rate_c__c" - "Acct.Increase_Amount_Dollars_c__c" > 0 then 100 * "Acct.Increase_Amount_Dollars_c__c" / ("Acct.Policy_Renewal_Rate_c__c" - "Acct.Increase_Amount_Dollars_c__c") else null end', "Renewal offer change % (same window)", 10, 2),
-    text_field("Renewal_Rating_Version", f'case when "Acct.Renewal_Offer_Date_c__c" <= {SNAP} and "Acct.Renewal_Offer_Date_c__c" > {SNAP} - INTERVAL 60 DAY then "Acct.Offered_Rate_Change_c__c" else null end', "Rating version on the offer", 40),
+    num_field("Renewal_Offer_Change_Dollars", '"Acct.Off.Increase_Amount_Dollars_c__c"', "Renewal offer change $ (latest offer in the 60 days before the snapshot; point-in-time from Renewal_Offer__c)", 10, 2),
+    num_field("Renewal_Offer_Rate", '"Acct.Off.Policy_Renewal_Rate_c__c"', "Renewal offer monthly rate", 10, 2),
+    num_field("Renewal_Offer_Change_Pct", '"Acct.Off.Increase_Percent_c__c"', "Renewal offer change %", 10, 2),
+    num_field("Days_Since_Renewal_Offer_PIT", f'case when "Acct.Latest_Offer_Date" is null then null else datediff({SNAP}, "Acct.Latest_Offer_Date") end', "Days since the latest offer (point-in-time)"),
+    text_field("Renewal_Rating_Version", '"Acct.Off.Rating_Version_c__c"', "Rating version on the offer", 40),
     num_field("Days_Since_Renewal_Offer", f"case when Renewal_Offer_Date_c__c <= {SNAP} then datediff({SNAP}, Renewal_Offer_Date_c__c) else null end", "Days since renewal offer (CURRENT VALUE)"),
 ], "Labels and tenure", 250, 1792, "60/90-day preventable-voluntary labels, censoring flag, tenure and term-position features")
 ui_link("JOIN_ACCT", "T_LABELS")
@@ -222,6 +240,7 @@ mappings = [
     ("Monthly_Safe_Driving_Discount_c__c", "Monthly_Safe_Driving_Discount__c"),
     ("Renewal_Offer_Change_Dollars", "Renewal_Offer_Change_Dollars__c"), ("Renewal_Offer_Rate", "Renewal_Offer_Rate__c"),
     ("Renewal_Offer_Change_Pct", "Renewal_Offer_Change_Pct__c"), ("Renewal_Rating_Version", "Renewal_Rating_Version__c"),
+    ("Days_Since_Renewal_Offer_PIT", "Days_Since_Renewal_Offer_PIT__c"),
     ("Policy_Renewal_Rate_c__c", "Policy_Renewal_Rate__c"), ("Lifetime_Savings_c__c", "Lifetime_Savings__c"), ("Telematic_Discount_Numeric__c", "Telematics_Discount__c"),
     ("App_Events_30d_F", "App_Events_30d__c"), ("App_Events_90d_F", "App_Events_90d__c"), ("Days_Since_Last_App_Event", "Days_Since_Last_App_Event__c"),
     ("Email_Sends_90d_F", "Email_Sends_90d__c"), ("Email_Opens_30d_F", "Email_Opens_30d__c"), ("Email_Opens_90d_F", "Email_Opens_90d__c"), ("Email_Clicks_90d_F", "Email_Clicks_90d__c"),
