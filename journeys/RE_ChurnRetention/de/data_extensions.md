@@ -33,10 +33,11 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 | TermStartAtEntry | Date |
 | TenureDays | Number |
 | EntryDate | Date |
+| Arm | Text(10): TREAT or HOLDOUT |
 
 ## RE_ChurnRetention_History (Append; suppression and reporting)
 
-Fields: Id (Text 18), TermEndAtEntry (Date), EntryDate (Date), Band, Track, Score, TopFactors.
+Fields: Id (Text 18), TermEndAtEntry (Date), EntryDate (Date), Band, Track, Score, TopFactors, Arm.
 Primary key: Id + TermEndAtEntry. Retention: keep all rows; it is the measurement spine.
 
 ## RE_ChurnRetention_Exit (Overwrite daily; journey exit criteria)

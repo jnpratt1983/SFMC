@@ -70,17 +70,15 @@ preventable cancels per 60 days, AUC standard error ~0.015). Pass twice in a row
 and top decile >= 2.5x. Two batches are enough; the full book gives far more outcomes than the
 journey does.
 
-### Gate 3: the journey lowers churn (9 to 12 months, needs a holdout)
+### Gate 3: the journey lowers churn (9 to 12 months; 50/50 holdout approved by compliance 2026-10-20)
 
-**Design.** Randomized 50/50 split at entry using Journey Builder's Random Split as the first
-activity. The holdout path has no sends and the same exit criteria, so both arms are tracked in
-`RE_ChurnRetention_History` with an `Arm` column. Widen entry to the full Moderate and High bands
+**Design.** Randomized 50/50 split assigned in the entry query (`Arm` = TREAT or HOLDOUT, random
+order partitioned by state) and logged in `RE_ChurnRetention_History`. The journey's first
+activity is a decision split on `Arm`; the HOLDOUT path has no sends and the same exit criteria. Widen entry to the full Moderate and High bands
 in both states to reach ~400 entrants a month; keep the non-pay exclusion. Stratify the random
 split by state (two Random Split activities behind a state decision split, or one split with the
 state recorded) so the AZ:RI mix is identical in both arms. Holdout contacts still
-get every servicing communication, which is the argument to make to compliance: this is
-discretionary marketing, not a required notice, so the 2026-10-02 bar on non-pay holdouts should
-not apply. Get that answer in writing before launch.
+get every servicing communication. Compliance approved the split on 2026-10-20.
 
 **Primary metric.** Preventable voluntary cancellation by T+30 after term end, per entrant.
 Secondary: any cancellation by T+30; renewal recorded by T+7.
@@ -95,16 +93,14 @@ the HiGoals announcement benchmark; savings-page visits from the email; app re-a
 14 days among the Engage track (holdout gives a clean comparison here with far more power, since
 the base rate is 30 to 50%); early renewal acceptance by T-7.
 
-**If compliance refuses the holdout.** Fall back to the regression-discontinuity read at the
-High cut (entered just above versus not entered just below, same tenure bucket, same window)
-plus the year-over-year renewal-cohort curve. Expect the same calendar time with wider error
-bars; report it as an estimate, not a proof.
+**Secondary reads**, reported alongside: the cut-line comparison at the High cut and the
+year-over-year renewal-cohort curve. They cross-check the randomized read but do not replace it.
 
 ## Calendar
 
 | Month | What |
 |---|---|
-| 0 | Gate 0. Compliance decision on the holdout. MC Connect fields synced. |
+| 0 | Gate 0. Holdout approved (done 2026-10-20). MC Connect fields synced. |
 | 1 | Launch in AZ and RI with the 50/50 split. Gate 1 checks weekly. |
 | 2 to 3 | Gate 2 after batches 1 and 2. Leading indicators from month 2. |
 | 4 to 5 | First interim look at churn (entries from months 1 to 4; outcomes through month 6.5). |

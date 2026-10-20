@@ -1,7 +1,10 @@
 /* Query activity: RE_ChurnRetention_Entry (automation RE_ChurnRetention, step 1)
    Target DE: RE_ChurnRetention_Entry (Overwrite). Journey entry audience.
    Runs daily 06:30. One row per PNI contact whose term ends in exactly 45 days and who the
-   voluntary-churn model flags. Band cut points come from RE_ChurnRetention_Config (one row). */
+   voluntary-churn model flags. Band cut points come from RE_ChurnRetention_Config (one row).
+   Arm: 50/50 random split assigned here (approved by compliance 2026-10-20), stratified by state so
+   AZ and RI are balanced in both arms. HOLDOUT rows enter the journey and take the no-send path;
+   they keep every servicing communication. The arm is logged in RE_ChurnRetention_History. */
 SELECT
     c.Id,
     c.Customer_Number__c,
@@ -27,7 +30,9 @@ SELECT
     CAST(c.Current_Term_Expiration_Date__c AS DATE)     AS TermEndAtEntry,
     CAST(c.Current_Term_Effective_Date__c AS DATE)      AS TermStartAtEntry,
     DATEDIFF(DAY, c.CreatedDate, GETDATE())             AS TenureDays,
-    GETDATE()                                           AS EntryDate
+    GETDATE()                                           AS EntryDate,
+    CASE WHEN ROW_NUMBER() OVER (PARTITION BY c.MailingState ORDER BY NEWID()) % 2 = 0
+         THEN 'TREAT' ELSE 'HOLDOUT' END                 AS Arm
 FROM ENT.Contact_Salesforce c
 CROSS JOIN [RE_ChurnRetention_Config] cfg
 WHERE
