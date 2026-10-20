@@ -22,7 +22,7 @@ Branches cross-join each event source to the calendar on a constant key, flag th
 
 ## Prerequisites (one-time)
 
-1. **Calendar data stream.** Upload `Churn_Snapshot_Calendar.csv` as a CSV data stream named `Churn_Snapshot_Calendar` (fields `Snapshot_Date` as Date, `Snapshot_Key` as Text, primary key `Snapshot_Key`). The DLO name must come out as `Churn_Snapshot_Calendar__dll`; if the org suffixes it differently, change `LOAD_CAL` in the generator. Add a row each month.
+1. **Calendar data stream.** Done 2026-10-20: `Churn_Snapshot_Calendar__dll`, 26 rows, `Snapshot_Key` landed as Number so the transform derives its text key from the date with `date_format(..., 'yyyyMM')`. Add a row each month (re-upload the CSV; the stream is total-replace).
 2. **Contact and Account data stream fields.** Added 2026-10-20: `Current_Term_Effective_Date`, `Current_Term_Expiration_Date`, `Last_App_Open_Date`, `Monthly_Safe_Driving_Discount` on the Contact stream, and `Increase_Amount_Dollars`, `Offered_Rate_Change`, `Policy_Renewal_Rate`, `Renewal_Offer_Date` on the Account stream (`Account_00D3h0000068eod__dll`, joined on `AccountId`). The columns exist but are empty until a **full** refresh of each stream runs; the incremental upsert only fills rows modified since the last run.
 3. **Renewal offers are point-in-time.** The `Renewal_Offer_c_00D3h0000068eod__dll` lake object (custom object `Renewal_Offer__c`, written by the Account flow `Renewal Offer Capture` since 2026-10-20) holds one row per offer, so the offer joined to each snapshot is the latest one issued in the 60 days before that snapshot. Offers before 2026-10-20 are not captured unless the object is backfilled. Verify the lake object name after the data stream is created; the connector suffixes custom objects with the org id.
 4. **Known current-value fields.** `Days_To_Renewal__c`, `Days_Since_Renewal_Offer__c`, `Days_Into_Term__c`, `Days_To_Term_End__c`, `Days_Since_Last_App_Open__c`, `Lifetime_Savings__c`, `Telematics_Discount__c`, `Monthly_Safe_Driving_Discount__c`, `Policy_Renewal_Rate__c` and the four `Renewal_Offer_*` columns are read from today's Contact or Account row, so they are only point-in-time for the newest snapshot (the real term columns return null for older snapshots by construction, the others do not). Keep them out of the first training run (exclude in Model Builder) and use them in scoring; they become training features once the AccountHistory stream (offers since 2025-11-14) and Contact field history are joined in. The estimated `Days_*_Est__c` columns stay as the historical stand-in.
@@ -30,11 +30,17 @@ Branches cross-join each event source to the calendar on a constant key, flag th
 
 ## Deploy
 
-Option A, API (the `ssot/data-transforms` endpoint is beta; if POST is refused, use option B):
+**Deployed 2026-10-20 via the API** as `ChurnPITTrainingSet` (the `.nooffers` variant, because the Renewal Offer lake object did not exist yet). To add the offers branch once the `Renewal_Offer__c` data stream exists: delete the transform (or create under a new name) and post `Churn_PIT_Training_Set.api.json`.
+
+Option A, API:
 
 ```
+python3 build_transform_json.py                   # full definition, needs Renewal_Offer_c_00D3h0000068eod__dll
+python3 build_transform_json.py --without-offers  # writes the .nooffers variant
 sf api request rest "/services/data/v64.0/ssot/data-transforms" -o blueowl-prod -X POST --body @Churn_PIT_Training_Set.api.json
 ```
+
+What the POST validator enforces (learned 2026-10-20, one error per attempt): formulas are raw SQL (the GET response shows them HTML-escaped, do not post them that way); filter expression types are TEXT / NUMBER / DATETIME / BOOLEAN, never DATE; `outputDataObjects` entries take only label, name, type, category, fields; an aggregate node may not carry an empty `schema`; `pmod` and `greatest` are not available (use floor arithmetic and `case`); `date_format`, `datediff`, `concat`, `coalesce`, `floor`, `INTERVAL n DAY` are fine; **all inputs must be the same object type**, so this transform reads lake objects only (`__dll`), which is why mobile app and Zendesk come from `MobileApp_c_00D3h0000068eod__dll` and `Zen_Desk_Ticket__dll` rather than the DMOs.
 
 Option B, rebuild in Data Cloud > Data Transforms > New > Batch, using `Churn_PIT_Training_Set.json` as the node-by-node spec. The `ui.nodes` block lists every visual node left to right with its label; each `TRANSFORM` node's `graph` lists the formula steps in order, and `nodes.<id>.parameters.fields[0].formulaExpression` is the formula to paste.
 

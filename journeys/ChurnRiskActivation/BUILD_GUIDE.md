@@ -39,7 +39,7 @@ whatever the Contact stream change needs from the Salesforce admin.
    re-run it, and use the new JSON.
 5. Monthly maintenance: upload a one-row CSV for the new month to the same stream (append).
 
-## Phase 2. Build the training transform (half a day)
+## Phase 2. Build the training transform (half a day; **done via API 2026-10-20** as `ChurnPITTrainingSet`, no-offers variant; the canvas steps below remain the spec and the way to add the offers branch by hand)
 
 Data Cloud > Data Transforms > New > **Batch Data Transform** > name
 `Churn PIT Training Set` (API name `ChurnPITTrainingSet`), data space `default`.
