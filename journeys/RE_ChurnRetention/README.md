@@ -51,7 +51,8 @@ Track is assigned in SQL from `Voluntary_Churn_Top_Factors__c`:
 - Name `RE_ChurnRetention_<Month>2026`. Entry source: `RE_ChurnRetention_Entry`, scheduled
   daily after the automation. Re-entry: **single entry across all versions**. No trailing waits
   (the non-pay journey's trailing waits are why 63% of its traced contacts were stuck).
-- First split: `MailingState` (AZ / RI) for content; second split: `Track`; third split: channel, reusing the "Email Only / Email & SMS / SMS Only /
+- First activity: a decision split on `Arm`. `HOLDOUT` goes straight to a wait that ends at T+30 and then exits; it sends nothing and has the same exit criteria, so both arms are tracked identically in `RE_ChurnRetention_History`. Approved by compliance 2026-10-20 as a 50/50 split. `TREAT` continues.
+- Second split: `MailingState` (AZ / RI) for content; third split: `Track`; fourth split: channel, reusing the "Email Only / Email & SMS / SMS Only /
   Remainder" multi-criteria split from `AC_ReviewQuoteStepJourney` keyed on
   `HasOptedOutOfEmail`, `et4ae5__HasOptedOutOfMobile__c`, `SMS_Policy_Opt_In__c`.
 - Email sends use Einstein STO (24 hours). SMS between 09:00 and 19:00 local.
@@ -73,9 +74,10 @@ Track is assigned in SQL from `Voluntary_Churn_Top_Factors__c`:
   premium, which the policy system communicates.
 - Insurance reviews every template before activation.
 
-## Measurement (no holdout; compliance barred holdouts on 2026-10-02)
+## Measurement (50/50 randomized holdout, approved 2026-10-20)
 
-1. **Cut-line comparison.** 90-day cancel rate for contacts just above the High cut (entered)
+0. **Primary read.** Preventable voluntary cancellation by T+30 after term end, TREAT vs HOLDOUT from `RE_ChurnRetention_History` joined to Contact; stratified by state, tenure bucket and band. Interim looks at months 4 and 8 of entries, final read at month 12. See `TEST_PLAN.md`.
+1. **Cut-line comparison (secondary).** 90-day cancel rate for contacts just above the High cut (entered)
    versus just below it (not entered), same term-end window, same tenure bucket.
 2. **Year-over-year renewal cohort.** Daily retention curve for entered contacts' renewal cohort
    versus the same calendar window a year earlier, as done for the non-pay journey.
