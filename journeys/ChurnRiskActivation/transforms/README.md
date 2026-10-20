@@ -50,9 +50,9 @@ Option B, rebuild in Data Cloud > Data Transforms > New > Batch, using `Churn_PI
 
 Either way, set the output to a new DLO `Churn_PIT_Training_Set` with `Row_Key__c` as primary key, run once, then run the pre-training checks in `../RETRAIN_point_in_time_labels.md` step 5.
 
-## Scoring variant
+## Scoring variant (created 2026-10-20)
 
-Copy the transform, point `LOAD_CAL` at a one-row calendar for the run date (or filter the calendar to the max date), drop the `T_LABELS` label and censoring steps' downstream filter (score everyone), and write to `Churn_PIT_Scoring_Set__dll` with the same columns minus the labels.
+`python3 build_transform_json.py --with-driving --with-bills --scoring` writes `Churn_PIT_Training_Set.scoring.api.json`: the same definition with the calendar filtered to one row, `Snap_Date = now()`, `Snap_Key = date_format(now(), 'yyyyMM')`, output `Churn_PIT_Scoring_Set__dll`. Posted as `ChurnPITScoringSet`; label columns are present but meaningless on the scoring set (everyone is active at run time). Add the output to the default data space, map it to `Churn_PIT_Scoring_Set__dlm`, and point the production predict job at it. It runs daily by default; the predict job and write-back decide the monthly cadence.
 
 ## First-run findings (2026-10-20)
 

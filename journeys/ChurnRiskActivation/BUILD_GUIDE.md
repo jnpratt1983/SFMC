@@ -166,7 +166,7 @@ Model Builder trains on data model objects, not lake objects.
    renewal from the policy system), not algorithm settings. Record the result either way in a
    dated file in this folder.
 
-## Phase 6. Production scoring and the Contact field (half a day)
+## Phase 6. Production scoring and the Contact field (half a day; **status 2026-10-20:** scoring transform `ChurnPITScoringSet` created via API with `build_transform_json.py --with-driving --with-bills --scoring`, output `Churn_PIT_Scoring_Set__dll`; Contact fields created by the user with history tracking, Contact is at the 20-field history cap; steps 1 and 3 below are done)
 
 1. **Scoring transform.** Data Transforms > open `Churn PIT Training Set` > Save As
    `Churn PIT Scoring Set`. Changes: on row A add a Filter after the calendar input,
@@ -180,9 +180,10 @@ Model Builder trains on data model objects, not lake objects.
    the prediction, and the top three factor columns > schedule after the scoring transform.
    (The old setup did the same thing with an AI Functions node inside the scoring transform; either
    works, the separate job is easier to re-point when v2 ships.)
-3. **Contact field.** Setup > Object Manager > Contact > New Field > Number(5,2)
-   `Voluntary_Churn_Risk_Score__c`, plus Text(255) `Voluntary_Churn_Top_Factors__c`. Enable
-   history tracking on the score field **before** the first write.
+3. **Contact fields (done).** `Voluntary_Churn_Risk_Score__c` Number(7,2), `Voluntary_Churn_Top_Factors__c`
+   Text(255), `Voluntary_Churn_Scored_At__c` Date, `Voluntary_Churn_Band__c` picklist High/Moderate/Low;
+   history tracking is on for the first three and Contact is at its 20-field cap, so nothing else can be
+   tracked without retiring one.
 4. **Write-back.** Data Cloud > Data Actions, or the Contact enrichment "Copy Fields": source
    `Voluntary_Churn_Score__dlm`, key `Contact_Id__c` = Contact Id, map prediction x 100 to the
    score field and the factors to the text field. Run after the prediction job.
