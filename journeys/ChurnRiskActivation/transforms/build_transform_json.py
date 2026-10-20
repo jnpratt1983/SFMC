@@ -78,7 +78,8 @@ ui_link("LOAD_CAL", "T_CAL")
 # ---------------------------------------------------------------- contact book (row 1)
 load("LOAD_CON", "Contact__dll", "dataLakeObject", ["Id__c", "AccountId__c", "Account_Id2_c__c", "Customer_Number_c__c", "CreatedDate__c", "Policy_Effective_Date_c__c",
      "Cancel_Date_c__c", "Cancellation_Reason_c__c", "Policy_Renewal_Date_c__c", "Renewal_Offer_Date_c__c", "Policy_Renewal_Rate_c__c",
-     "Lifetime_Savings_c__c", "Telematic_Discount_Numeric__c"], "Contact", 250, 112)
+     "Lifetime_Savings_c__c", "Telematic_Discount_Numeric__c", "Current_Term_Effective_Date_c__c", "Current_Term_Expiration_Date_c__c",
+     "Last_App_Open_Date_c__c", "Monthly_Safe_Driving_Discount_c__c"], "Contact", 250, 112)
 filt("FILTER_CON", "LOAD_CON", [
     {"field": "Id__c", "operands": ["003"], "operator": "STARTS_WITH", "type": "TEXT"},
     {"field": "Policy_Effective_Date_c__c", "operands": [], "operator": "IS_NOT_NULL", "type": "DATE"}], "Contacts with a policy", 250, 392, "1 AND 2")
@@ -92,7 +93,10 @@ book = transform("T_BOOK", "JOIN_BOOK", [
 ], "Active-book flag", 250, 1232, "Policy in force on the snapshot date and not yet cancelled")
 filt("FILTER_BOOK", book, [{"field": "In_Book", "operands": ["1"], "operator": "EQUAL", "type": "NUMBER"}], "Keep in-book rows", 250, 1512)
 ui_link("JOIN_BOOK", "T_BOOK"); ui_link("T_BOOK", "FILTER_BOOK")
-labels = transform("T_LABELS", "FILTER_BOOK", [
+load("LOAD_ACCT", "Account_00D3h0000068eod__dll", "dataLakeObject", ["Id__c", "Increase_Amount_Dollars_c__c", "Offered_Rate_Change_c__c", "Policy_Renewal_Rate_c__c", "Renewal_Offer_Date_c__c"], "Account renewal offer", 1010, 112)
+join("JOIN_ACCT", "FILTER_BOOK", "LOAD_ACCT", ["AccountId__c"], ["Id__c"], "Acct", "LEFT_OUTER", "+ renewal offer", 250, 1652, drop=["Acct.Id__c"])
+ui_link("LOAD_ACCT", "JOIN_ACCT"); ui_link("FILTER_BOOK", "JOIN_ACCT")
+labels = transform("T_LABELS", "JOIN_ACCT", [
     num_field("Cancel_In_60d", f"case when Cancel_Date_c__c > {SNAP} and Cancel_Date_c__c <= {SNAP} + INTERVAL 60 DAY then 1 else 0 end", "Cancel within 60d"),
     num_field("Cancel_In_90d", f"case when Cancel_Date_c__c > {SNAP} and Cancel_Date_c__c <= {SNAP} + INTERVAL 90 DAY then 1 else 0 end", "Cancel within 90d"),
     num_field("Preventable", f"case when Cancellation_Reason_c__c in {PREVENTABLE} then 1 else 0 end", "Preventable voluntary reason"),
@@ -107,9 +111,16 @@ labels = transform("T_LABELS", "FILTER_BOOK", [
     num_field("Days_Into_Term_Est", "pmod(Policy_Days, 182)", "Days into term (estimated from 6-month terms)"),
     num_field("Days_To_Term_End_Est", "182 - pmod(Policy_Days, 182)", "Days to term end (estimated)"),
     num_field("Days_To_Renewal", f"case when Policy_Renewal_Date_c__c >= {SNAP} then datediff(Policy_Renewal_Date_c__c, {SNAP}) else null end", "Days to renewal (CURRENT VALUE: valid for latest snapshot only)"),
+    num_field("Days_Into_Term", f"case when Current_Term_Effective_Date_c__c <= {SNAP} and Current_Term_Expiration_Date_c__c > {SNAP} then datediff({SNAP}, Current_Term_Effective_Date_c__c) else null end", "Days into term (real; null when the current term was not in force at the snapshot)"),
+    num_field("Days_To_Term_End", f"case when Current_Term_Effective_Date_c__c <= {SNAP} and Current_Term_Expiration_Date_c__c > {SNAP} then datediff(Current_Term_Expiration_Date_c__c, {SNAP}) else null end", "Days to term end (real; same rule)"),
+    num_field("Days_Since_Last_App_Open", f"case when Last_App_Open_Date_c__c is null or Last_App_Open_Date_c__c > {SNAP} then null else datediff({SNAP}, Last_App_Open_Date_c__c) end", "Days since last app open (Contact field; null if after snapshot)"),
+    num_field("Renewal_Offer_Change_Dollars", f'case when "Acct.Renewal_Offer_Date_c__c" <= {SNAP} and "Acct.Renewal_Offer_Date_c__c" > {SNAP} - INTERVAL 60 DAY then "Acct.Increase_Amount_Dollars_c__c" else null end', "Renewal offer change $ (offer issued in the 60 days before snapshot; CURRENT VALUE until AccountHistory is streamed)", 10, 2),
+    num_field("Renewal_Offer_Rate", f'case when "Acct.Renewal_Offer_Date_c__c" <= {SNAP} and "Acct.Renewal_Offer_Date_c__c" > {SNAP} - INTERVAL 60 DAY then "Acct.Policy_Renewal_Rate_c__c" else null end', "Renewal offer monthly rate (same window)", 10, 2),
+    num_field("Renewal_Offer_Change_Pct", f'case when "Acct.Renewal_Offer_Date_c__c" <= {SNAP} and "Acct.Renewal_Offer_Date_c__c" > {SNAP} - INTERVAL 60 DAY and "Acct.Policy_Renewal_Rate_c__c" - "Acct.Increase_Amount_Dollars_c__c" > 0 then 100 * "Acct.Increase_Amount_Dollars_c__c" / ("Acct.Policy_Renewal_Rate_c__c" - "Acct.Increase_Amount_Dollars_c__c") else null end', "Renewal offer change % (same window)", 10, 2),
+    text_field("Renewal_Rating_Version", f'case when "Acct.Renewal_Offer_Date_c__c" <= {SNAP} and "Acct.Renewal_Offer_Date_c__c" > {SNAP} - INTERVAL 60 DAY then "Acct.Offered_Rate_Change_c__c" else null end', "Rating version on the offer", 40),
     num_field("Days_Since_Renewal_Offer", f"case when Renewal_Offer_Date_c__c <= {SNAP} then datediff({SNAP}, Renewal_Offer_Date_c__c) else null end", "Days since renewal offer (CURRENT VALUE)"),
 ], "Labels and tenure", 250, 1792, "60/90-day preventable-voluntary labels, censoring flag, tenure and term-position features")
-ui_link("FILTER_BOOK", "T_LABELS")
+ui_link("JOIN_ACCT", "T_LABELS")
 
 # ---------------------------------------------------------------- app events (row 2)
 load("LOAD_APP", "MobileApp_c_00D3h0000068eod__dlm", "dataModelObject", ["Account_Id__c", "Event_Timestamp_UTC__c", "Event_Name__c"], "Mobile app events", 440, 112)
@@ -207,6 +218,10 @@ mappings = [
     ("Tenure_Days", "Tenure_Days__c"), ("Tenure_Bucket", "Tenure_Bucket__c"), ("Policy_Days", "Policy_Days__c"),
     ("Days_Into_Term_Est", "Days_Into_Term_Est__c"), ("Days_To_Term_End_Est", "Days_To_Term_End_Est__c"),
     ("Days_To_Renewal", "Days_To_Renewal__c"), ("Days_Since_Renewal_Offer", "Days_Since_Renewal_Offer__c"),
+    ("Days_Into_Term", "Days_Into_Term__c"), ("Days_To_Term_End", "Days_To_Term_End__c"), ("Days_Since_Last_App_Open", "Days_Since_Last_App_Open__c"),
+    ("Monthly_Safe_Driving_Discount_c__c", "Monthly_Safe_Driving_Discount__c"),
+    ("Renewal_Offer_Change_Dollars", "Renewal_Offer_Change_Dollars__c"), ("Renewal_Offer_Rate", "Renewal_Offer_Rate__c"),
+    ("Renewal_Offer_Change_Pct", "Renewal_Offer_Change_Pct__c"), ("Renewal_Rating_Version", "Renewal_Rating_Version__c"),
     ("Policy_Renewal_Rate_c__c", "Policy_Renewal_Rate__c"), ("Lifetime_Savings_c__c", "Lifetime_Savings__c"), ("Telematic_Discount_Numeric__c", "Telematics_Discount__c"),
     ("App_Events_30d_F", "App_Events_30d__c"), ("App_Events_90d_F", "App_Events_90d__c"), ("Days_Since_Last_App_Event", "Days_Since_Last_App_Event__c"),
     ("Email_Sends_90d_F", "Email_Sends_90d__c"), ("Email_Opens_30d_F", "Email_Opens_30d__c"), ("Email_Opens_90d_F", "Email_Opens_90d__c"), ("Email_Clicks_90d_F", "Email_Clicks_90d__c"),
@@ -218,7 +233,7 @@ nodes["OUTPUT0"] = {"action": "outputD360", "sources": [final], "parameters": {"
 ui_nodes["OUTPUT0"] = {"label": "Churn_PIT_Training_Set", "type": "OUTPUT", "top": 250, "left": 3192}
 ui_link("T_FINAL", "OUTPUT0")
 
-types = {"Row_Key__c": "Text", "Contact_Id__c": "Text", "Snapshot_Date__c": "DateTime", "Snapshot_Key__c": "Text", "Reason__c": "Text", "Tenure_Bucket__c": "Text", "Max_Feature_Date__c": "DateTime"}
+types = {"Renewal_Rating_Version__c": "Text", "Row_Key__c": "Text", "Contact_Id__c": "Text", "Snapshot_Date__c": "DateTime", "Snapshot_Key__c": "Text", "Reason__c": "Text", "Tenure_Bucket__c": "Text", "Max_Feature_Date__c": "DateTime"}
 out_fields = [{"isPrimaryKey": t == "Row_Key__c", "label": t[:-3].replace("_", " "), "name": t, "type": types.get(t, "Number")} for s, t in mappings]
 definition = {"label": "Churn PIT Training Set", "name": "ChurnPITTrainingSet", "version": "56.0", "type": "STL", "nodes": nodes,
               "outputDataObjects": [{"category": "Other", "label": "Churn PIT Training Set", "name": "Churn_PIT_Training_Set__dll", "namespace": "", "type": "dataLakeObject", "fields": out_fields}],

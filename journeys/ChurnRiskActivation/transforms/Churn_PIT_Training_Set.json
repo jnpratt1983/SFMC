@@ -103,7 +103,11 @@
           "Renewal_Offer_Date_c__c",
           "Policy_Renewal_Rate_c__c",
           "Lifetime_Savings_c__c",
-          "Telematic_Discount_Numeric__c"
+          "Telematic_Discount_Numeric__c",
+          "Current_Term_Effective_Date_c__c",
+          "Current_Term_Expiration_Date_c__c",
+          "Last_App_Open_Date_c__c",
+          "Monthly_Safe_Driving_Discount_c__c"
         ],
         "sampleDetails": {
           "type": "TopN"
@@ -224,10 +228,57 @@
         ]
       }
     },
+    "LOAD_ACCT": {
+      "action": "load",
+      "sources": [],
+      "parameters": {
+        "dataset": {
+          "name": "Account_00D3h0000068eod__dll",
+          "type": "dataLakeObject"
+        },
+        "fields": [
+          "Id__c",
+          "Increase_Amount_Dollars_c__c",
+          "Offered_Rate_Change_c__c",
+          "Policy_Renewal_Rate_c__c",
+          "Renewal_Offer_Date_c__c"
+        ],
+        "sampleDetails": {
+          "type": "TopN"
+        }
+      }
+    },
+    "JOIN_ACCT": {
+      "action": "join",
+      "sources": [
+        "FILTER_BOOK",
+        "LOAD_ACCT"
+      ],
+      "parameters": {
+        "joinType": "LEFT_OUTER",
+        "leftKeys": [
+          "AccountId__c"
+        ],
+        "rightKeys": [
+          "Id__c"
+        ],
+        "rightQualifier": "Acct"
+      },
+      "schema": {
+        "fields": [],
+        "slice": {
+          "fields": [
+            "Acct.Id__c"
+          ],
+          "ignoreMissingFields": true,
+          "mode": "DROP"
+        }
+      }
+    },
     "T_LABELS_F0": {
       "action": "formula",
       "sources": [
-        "FILTER_BOOK"
+        "JOIN_ACCT"
       ],
       "parameters": {
         "expressionType": "SQL",
@@ -519,6 +570,152 @@
       "action": "formula",
       "sources": [
         "T_LABELS_F13"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Number",
+            "defaultValue": "",
+            "formulaExpression": "case when Current_Term_Effective_Date_c__c <= \"Cal.Snap_Date\" and Current_Term_Expiration_Date_c__c > \"Cal.Snap_Date\" then datediff(\"Cal.Snap_Date\", Current_Term_Effective_Date_c__c) else null end",
+            "label": "Days into term (real; null when the current term was not in force at the snapshot)",
+            "name": "Days_Into_Term",
+            "precision": 18,
+            "scale": 0,
+            "type": "NUMBER"
+          }
+        ]
+      }
+    },
+    "T_LABELS_F15": {
+      "action": "formula",
+      "sources": [
+        "T_LABELS_F14"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Number",
+            "defaultValue": "",
+            "formulaExpression": "case when Current_Term_Effective_Date_c__c <= \"Cal.Snap_Date\" and Current_Term_Expiration_Date_c__c > \"Cal.Snap_Date\" then datediff(Current_Term_Expiration_Date_c__c, \"Cal.Snap_Date\") else null end",
+            "label": "Days to term end (real; same rule)",
+            "name": "Days_To_Term_End",
+            "precision": 18,
+            "scale": 0,
+            "type": "NUMBER"
+          }
+        ]
+      }
+    },
+    "T_LABELS_F16": {
+      "action": "formula",
+      "sources": [
+        "T_LABELS_F15"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Number",
+            "defaultValue": "",
+            "formulaExpression": "case when Last_App_Open_Date_c__c is null or Last_App_Open_Date_c__c > \"Cal.Snap_Date\" then null else datediff(\"Cal.Snap_Date\", Last_App_Open_Date_c__c) end",
+            "label": "Days since last app open (Contact field; null if after snapshot)",
+            "name": "Days_Since_Last_App_Open",
+            "precision": 18,
+            "scale": 0,
+            "type": "NUMBER"
+          }
+        ]
+      }
+    },
+    "T_LABELS_F17": {
+      "action": "formula",
+      "sources": [
+        "T_LABELS_F16"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Number",
+            "defaultValue": "",
+            "formulaExpression": "case when \"Acct.Renewal_Offer_Date_c__c\" <= \"Cal.Snap_Date\" and \"Acct.Renewal_Offer_Date_c__c\" > \"Cal.Snap_Date\" - INTERVAL 60 DAY then \"Acct.Increase_Amount_Dollars_c__c\" else null end",
+            "label": "Renewal offer change $ (offer issued in the 60 days before snapshot; CURRENT VALUE until AccountHistory is streamed)",
+            "name": "Renewal_Offer_Change_Dollars",
+            "precision": 10,
+            "scale": 2,
+            "type": "NUMBER"
+          }
+        ]
+      }
+    },
+    "T_LABELS_F18": {
+      "action": "formula",
+      "sources": [
+        "T_LABELS_F17"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Number",
+            "defaultValue": "",
+            "formulaExpression": "case when \"Acct.Renewal_Offer_Date_c__c\" <= \"Cal.Snap_Date\" and \"Acct.Renewal_Offer_Date_c__c\" > \"Cal.Snap_Date\" - INTERVAL 60 DAY then \"Acct.Policy_Renewal_Rate_c__c\" else null end",
+            "label": "Renewal offer monthly rate (same window)",
+            "name": "Renewal_Offer_Rate",
+            "precision": 10,
+            "scale": 2,
+            "type": "NUMBER"
+          }
+        ]
+      }
+    },
+    "T_LABELS_F19": {
+      "action": "formula",
+      "sources": [
+        "T_LABELS_F18"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Number",
+            "defaultValue": "",
+            "formulaExpression": "case when \"Acct.Renewal_Offer_Date_c__c\" <= \"Cal.Snap_Date\" and \"Acct.Renewal_Offer_Date_c__c\" > \"Cal.Snap_Date\" - INTERVAL 60 DAY and \"Acct.Policy_Renewal_Rate_c__c\" - \"Acct.Increase_Amount_Dollars_c__c\" > 0 then 100 * \"Acct.Increase_Amount_Dollars_c__c\" / (\"Acct.Policy_Renewal_Rate_c__c\" - \"Acct.Increase_Amount_Dollars_c__c\") else null end",
+            "label": "Renewal offer change % (same window)",
+            "name": "Renewal_Offer_Change_Pct",
+            "precision": 10,
+            "scale": 2,
+            "type": "NUMBER"
+          }
+        ]
+      }
+    },
+    "T_LABELS_F20": {
+      "action": "formula",
+      "sources": [
+        "T_LABELS_F19"
+      ],
+      "parameters": {
+        "expressionType": "SQL",
+        "fields": [
+          {
+            "businessType": "Text",
+            "defaultValue": "",
+            "formulaExpression": "case when \"Acct.Renewal_Offer_Date_c__c\" <= \"Cal.Snap_Date\" and \"Acct.Renewal_Offer_Date_c__c\" > \"Cal.Snap_Date\" - INTERVAL 60 DAY then \"Acct.Offered_Rate_Change_c__c\" else null end",
+            "label": "Rating version on the offer",
+            "name": "Renewal_Rating_Version",
+            "precision": 40,
+            "type": "TEXT"
+          }
+        ]
+      }
+    },
+    "T_LABELS_F21": {
+      "action": "formula",
+      "sources": [
+        "T_LABELS_F20"
       ],
       "parameters": {
         "expressionType": "SQL",
@@ -1329,7 +1526,7 @@
     "JOIN_F_APP": {
       "action": "join",
       "sources": [
-        "T_LABELS_F14",
+        "T_LABELS_F21",
         "AGG_APP_AGG"
       ],
       "parameters": {
@@ -1736,6 +1933,38 @@
             "targetField": "Days_Since_Renewal_Offer__c"
           },
           {
+            "sourceField": "Days_Into_Term",
+            "targetField": "Days_Into_Term__c"
+          },
+          {
+            "sourceField": "Days_To_Term_End",
+            "targetField": "Days_To_Term_End__c"
+          },
+          {
+            "sourceField": "Days_Since_Last_App_Open",
+            "targetField": "Days_Since_Last_App_Open__c"
+          },
+          {
+            "sourceField": "Monthly_Safe_Driving_Discount_c__c",
+            "targetField": "Monthly_Safe_Driving_Discount__c"
+          },
+          {
+            "sourceField": "Renewal_Offer_Change_Dollars",
+            "targetField": "Renewal_Offer_Change_Dollars__c"
+          },
+          {
+            "sourceField": "Renewal_Offer_Rate",
+            "targetField": "Renewal_Offer_Rate__c"
+          },
+          {
+            "sourceField": "Renewal_Offer_Change_Pct",
+            "targetField": "Renewal_Offer_Change_Pct__c"
+          },
+          {
+            "sourceField": "Renewal_Rating_Version",
+            "targetField": "Renewal_Rating_Version__c"
+          },
+          {
             "sourceField": "Policy_Renewal_Rate_c__c",
             "targetField": "Policy_Renewal_Rate__c"
           },
@@ -1899,6 +2128,54 @@
           "label": "Days Since Renewal Offer",
           "name": "Days_Since_Renewal_Offer__c",
           "type": "Number"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Days Into Term",
+          "name": "Days_Into_Term__c",
+          "type": "Number"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Days To Term End",
+          "name": "Days_To_Term_End__c",
+          "type": "Number"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Days Since Last App Open",
+          "name": "Days_Since_Last_App_Open__c",
+          "type": "Number"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Monthly Safe Driving Discount",
+          "name": "Monthly_Safe_Driving_Discount__c",
+          "type": "Number"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Renewal Offer Change Dollars",
+          "name": "Renewal_Offer_Change_Dollars__c",
+          "type": "Number"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Renewal Offer Rate",
+          "name": "Renewal_Offer_Rate__c",
+          "type": "Number"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Renewal Offer Change Pct",
+          "name": "Renewal_Offer_Change_Pct__c",
+          "type": "Number"
+        },
+        {
+          "isPrimaryKey": false,
+          "label": "Renewal Rating Version",
+          "name": "Renewal_Rating_Version__c",
+          "type": "Text"
         },
         {
           "isPrimaryKey": false,
@@ -2108,6 +2385,25 @@
         "top": 250,
         "left": 1512
       },
+      "LOAD_ACCT": {
+        "label": "Account renewal offer",
+        "type": "LOAD_DATASET",
+        "top": 1010,
+        "left": 112,
+        "parameters": {
+          "sampleSize": 500,
+          "sampleDetails": {
+            "type": "TopN"
+          },
+          "dataspace": "default"
+        }
+      },
+      "JOIN_ACCT": {
+        "label": "+ renewal offer",
+        "type": "JOIN",
+        "top": 250,
+        "left": 1652
+      },
       "T_LABELS": {
         "label": "Labels and tenure",
         "description": "60/90-day preventable-voluntary labels, censoring flag, tenure and term-position features",
@@ -2203,6 +2499,48 @@
             "parameters": {
               "type": "BASE_FORMULA_UI"
             },
+            "label": "Days into term (real; null when the current term was not in force at the snapshot)"
+          },
+          "T_LABELS_F15": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
+            "label": "Days to term end (real; same rule)"
+          },
+          "T_LABELS_F16": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
+            "label": "Days since last app open (Contact field; null if after snapshot)"
+          },
+          "T_LABELS_F17": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
+            "label": "Renewal offer change $ (offer issued in the 60 days before snapshot; CURRENT VALUE until AccountHistory is streamed)"
+          },
+          "T_LABELS_F18": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
+            "label": "Renewal offer monthly rate (same window)"
+          },
+          "T_LABELS_F19": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
+            "label": "Renewal offer change % (same window)"
+          },
+          "T_LABELS_F20": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
+            "label": "Rating version on the offer"
+          },
+          "T_LABELS_F21": {
+            "parameters": {
+              "type": "BASE_FORMULA_UI"
+            },
             "label": "Days since renewal offer (CURRENT VALUE)"
           }
         },
@@ -2262,6 +2600,34 @@
           {
             "source": "T_LABELS_F13",
             "target": "T_LABELS_F14"
+          },
+          {
+            "source": "T_LABELS_F14",
+            "target": "T_LABELS_F15"
+          },
+          {
+            "source": "T_LABELS_F15",
+            "target": "T_LABELS_F16"
+          },
+          {
+            "source": "T_LABELS_F16",
+            "target": "T_LABELS_F17"
+          },
+          {
+            "source": "T_LABELS_F17",
+            "target": "T_LABELS_F18"
+          },
+          {
+            "source": "T_LABELS_F18",
+            "target": "T_LABELS_F19"
+          },
+          {
+            "source": "T_LABELS_F19",
+            "target": "T_LABELS_F20"
+          },
+          {
+            "source": "T_LABELS_F20",
+            "target": "T_LABELS_F21"
           }
         ]
       },
@@ -2788,7 +3154,15 @@
         "target": "FILTER_BOOK"
       },
       {
+        "source": "LOAD_ACCT",
+        "target": "JOIN_ACCT"
+      },
+      {
         "source": "FILTER_BOOK",
+        "target": "JOIN_ACCT"
+      },
+      {
+        "source": "JOIN_ACCT",
         "target": "T_LABELS"
       },
       {
