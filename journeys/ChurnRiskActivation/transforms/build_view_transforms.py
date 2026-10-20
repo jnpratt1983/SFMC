@@ -11,9 +11,10 @@ import json, os, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__)); ORG = "blueowl-prod"
 TRAIN_LAST, HOLDOUT_FIRST = "202604", "202605"
 SRC = "Churn_PIT_Training_Set__dll"
-VERSION = "V2" if "--v2" in sys.argv else ""           # --v2: new names, drops leakage columns
+VERSION = "V3" if "--v3" in sys.argv else ("V2" if "--v2" in sys.argv else "")   # --v2: drops leakage columns; --v3: renewal window only
+OFFER_ONLY = VERSION == "V3"
 # Driver_Role__c is populated only on contacts still active today (label 0 wherever it is set): leakage, never carried.
-DROP = {"Driver_Role__c"}
+DROP = {"Driver_Role__c"} | ({"Email_Opens_90d__c", "Email_Sends_90d__c", "Email_Opens_30d__c", "Email_Clicks_90d__c"} if VERSION == "V3" else set())
 
 def api(path, method="GET", body=None):
     cmd = ["sf", "api", "request", "rest", path, "-o", ORG, "-X", method]
@@ -49,8 +50,8 @@ def definition(name, label, exprs, out_dlo):
                              "outputDataObjects": [{"category": "Other", "label": label, "name": out_dlo, "type": "dataLakeObject", "fields": out_fields}], "ui": ui}]}
 
 views = [
-    (f"ChurnPITTrain{VERSION}", f"Churn PIT Train {VERSION}".strip(), f"case when Snapshot_Key__c <= '{TRAIN_LAST}' then 1 else 0 end", f"Churn_PIT_Train{('_' + VERSION) if VERSION else ''}__dll"),
-    (f"ChurnPITHoldout{VERSION}", f"Churn PIT Holdout {VERSION}".strip(), f"case when Snapshot_Key__c >= '{HOLDOUT_FIRST}' then 1 else 0 end", f"Churn_PIT_Holdout{('_' + VERSION) if VERSION else ''}__dll"),
+    (f"ChurnPITTrain{VERSION}", f"Churn PIT Train {VERSION}".strip(), f"case when Snapshot_Key__c <= '{TRAIN_LAST}'" + (" and Renewal_Offer_Change_Dollars__c is not null" if OFFER_ONLY else "") + " then 1 else 0 end", f"Churn_PIT_Train{('_' + VERSION) if VERSION else ''}__dll"),
+    (f"ChurnPITHoldout{VERSION}", f"Churn PIT Holdout {VERSION}".strip(), f"case when Snapshot_Key__c >= '{HOLDOUT_FIRST}'" + (" and Renewal_Offer_Change_Dollars__c is not null" if OFFER_ONLY else "") + " then 1 else 0 end", f"Churn_PIT_Holdout{('_' + VERSION) if VERSION else ''}__dll"),
 ]
 for name, label, exprs, out_dlo in views:
     d = definition(name, label, exprs, out_dlo)
