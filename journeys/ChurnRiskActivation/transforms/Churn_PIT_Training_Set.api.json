@@ -1764,6 +1764,444 @@
             ]
           }
         },
+        "LOAD_DRV": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Monthly_Driving_Stat_c_00D3h0000068eod__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "customer_number_c__c",
+              "cycle_start_c__c",
+              "cycle_end_c__c",
+              "n_trips_in_curr_month_c__c",
+              "distance_miles_in_curr_month_c__c",
+              "subscore_display_safe_speeds_curr_month__c",
+              "subscore_display_smooth_driving_curr_mon__c",
+              "subscore_display_distracted_driving_curr__c",
+              "subscore_display_driving_patterns_curr_m__c",
+              "earn_discount_curr_month_c__c",
+              "total_earned_discount_c__c",
+              "driver_role_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_DRV_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_DRV"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_K_F1": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_K_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "(coalesce(subscore_display_safe_speeds_curr_month__c, 0) + coalesce(subscore_display_smooth_driving_curr_mon__c, 0) + coalesce(subscore_display_distracted_driving_curr__c, 0) + coalesce(subscore_display_driving_patterns_curr_m__c, 0)) / 4",
+                "label": "Cycle score (mean of the four display subscores)",
+                "name": "Drv_Score",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_DRV_CAL": {
+          "action": "join",
+          "sources": [
+            "T_DRV_K_F1",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_DRV_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_DRV_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when cycle_end_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Cycle ended before snapshot",
+                "name": "Drv_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when cycle_end_c__c > \"Cal.Snap_Date\" - INTERVAL 45 DAY and cycle_end_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Latest cycle (ended in the 45 days before)",
+                "name": "Drv_Latest_Window",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when cycle_end_c__c > \"Cal.Snap_Date\" - INTERVAL 135 DAY and cycle_end_c__c <= \"Cal.Snap_Date\" - INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Prior cycle (ended 90 to 135 days before)",
+                "name": "Drv_Prior_Window",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F3": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then Drv_Score else null end",
+                "label": "Score if latest",
+                "name": "Drv_Score_Latest",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F4": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Prior_Window = 1 then Drv_Score else null end",
+                "label": "Score if prior",
+                "name": "Drv_Score_Prior",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F5": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then n_trips_in_curr_month_c__c else null end",
+                "label": "Trips if latest",
+                "name": "Drv_Trips_Latest",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F6": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then distance_miles_in_curr_month_c__c else null end",
+                "label": "Miles if latest",
+                "name": "Drv_Miles_Latest",
+                "precision": 10,
+                "scale": 1,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F7": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F6"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then earn_discount_curr_month_c__c else null end",
+                "label": "Earned discount if latest",
+                "name": "Drv_Discount_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F8": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F7"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Prior_Window = 1 then earn_discount_curr_month_c__c else null end",
+                "label": "Earned discount if prior",
+                "name": "Drv_Discount_Prior",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F9": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F8"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Drv_Latest_Window = 1 and driver_role_c__c = 'PNI' then 1 when Drv_Latest_Window = 1 then 0 else null end",
+                "label": "PNI at latest cycle (historical)",
+                "name": "Drv_PNI_Latest",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F10": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F9"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "\"Cal.Snap_Key\"",
+                "label": "Snap key (driving)",
+                "name": "Snap_Key_Drv",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_DRV": {
+          "action": "filter",
+          "sources": [
+            "T_DRV_W_F10"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Drv_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_DRV_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_DRV"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_DRV_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_DRV_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "MAX",
+                "label": "Last cycle end",
+                "name": "Drv_Last_Cycle_End",
+                "source": "cycle_end_c__c"
+              },
+              {
+                "action": "AVG",
+                "label": "Score latest",
+                "name": "Drv_Score_Latest_A",
+                "source": "Drv_Score_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Score prior",
+                "name": "Drv_Score_Prior_A",
+                "source": "Drv_Score_Prior"
+              },
+              {
+                "action": "AVG",
+                "label": "Trips latest",
+                "name": "Drv_Trips_Latest_A",
+                "source": "Drv_Trips_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Miles latest",
+                "name": "Drv_Miles_Latest_A",
+                "source": "Drv_Miles_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Discount latest",
+                "name": "Drv_Discount_Latest_A",
+                "source": "Drv_Discount_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Discount prior",
+                "name": "Drv_Discount_Prior_A",
+                "source": "Drv_Discount_Prior"
+              },
+              {
+                "action": "MAX",
+                "label": "PNI latest",
+                "name": "Drv_PNI_Latest_A",
+                "source": "Drv_PNI_Latest"
+              },
+              {
+                "action": "COUNT",
+                "label": "Cycles before snapshot",
+                "name": "Drv_Cycles",
+                "source": "cycle_end_c__c"
+              }
+            ],
+            "groupings": [
+              "customer_number_c__c",
+              "Snap_Key_Drv"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "Drv_Cycles",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
         "JOIN_F_APP": {
           "action": "join",
           "sources": [
@@ -1854,10 +2292,40 @@
             }
           }
         },
+        "JOIN_F_DRV": {
+          "action": "join",
+          "sources": [
+            "JOIN_F_TKT",
+            "AGG_DRV_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Customer_Number_c__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "customer_number_c__c",
+              "Snap_Key_Drv"
+            ],
+            "rightQualifier": "Drv"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Drv.customer_number_c__c",
+                "Drv.Snap_Key_Drv"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
         "T_FINAL_F0": {
           "action": "formula",
           "sources": [
-            "JOIN_F_TKT"
+            "JOIN_F_DRV"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -2094,6 +2562,195 @@
             "expressionType": "SQL",
             "fields": [
               {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_Score_Latest_A\"",
+                "label": "Driving score, latest cycle",
+                "name": "Drv_Score_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F12": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F11"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Drv.Drv_Score_Latest_A\" is null or \"Drv.Drv_Score_Prior_A\" is null then null else \"Drv.Drv_Score_Latest_A\" - \"Drv.Drv_Score_Prior_A\" end",
+                "label": "Driving score trend (latest minus ~3 cycles earlier)",
+                "name": "Drv_Score_Trend",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F13": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F12"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_Trips_Latest_A\"",
+                "label": "Trips, latest cycle",
+                "name": "Drv_Trips_Latest_F",
+                "precision": 10,
+                "scale": 1,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F14": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F13"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_Miles_Latest_A\"",
+                "label": "Miles, latest cycle",
+                "name": "Drv_Miles_Latest_F",
+                "precision": 10,
+                "scale": 1,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F15": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F14"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_Discount_Latest_A\"",
+                "label": "Earned discount, latest cycle",
+                "name": "Drv_Discount_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F16": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F15"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Drv.Drv_Discount_Latest_A\" is null or \"Drv.Drv_Discount_Prior_A\" is null then null else \"Drv.Drv_Discount_Latest_A\" - \"Drv.Drv_Discount_Prior_A\" end",
+                "label": "Earned discount change vs ~3 cycles earlier",
+                "name": "Drv_Discount_Change",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F17": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F16"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Drv.Drv_Last_Cycle_End\" is null then null else datediff(\"Cal.Snap_Date\", \"Drv.Drv_Last_Cycle_End\") end",
+                "label": "Days since the last driving cycle ended",
+                "name": "Days_Since_Last_Cycle",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F18": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F17"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Drv.Drv_Cycles\", 0)",
+                "label": "Driving cycles before snapshot",
+                "name": "Drv_Cycles_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F19": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F18"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_PNI_Latest_A\"",
+                "label": "PNI at latest cycle (historical, 1/0/null)",
+                "name": "Drv_PNI_Latest_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F20": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F19"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
                 "businessType": "DateTime",
                 "defaultValue": "",
                 "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
@@ -2105,10 +2762,10 @@
             ]
           }
         },
-        "T_FINAL_F12": {
+        "T_FINAL_F21": {
           "action": "formula",
           "sources": [
-            "T_FINAL_F11"
+            "T_FINAL_F20"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -2129,7 +2786,7 @@
         "OUTPUT0": {
           "action": "outputD360",
           "sources": [
-            "T_FINAL_F12"
+            "T_FINAL_F21"
           ],
           "parameters": {
             "dedupOrder": [],
@@ -2293,6 +2950,42 @@
               {
                 "sourceField": "Days_Since_Last_Ticket",
                 "targetField": "Days_Since_Last_Ticket__c"
+              },
+              {
+                "sourceField": "Drv_Score_Latest_F",
+                "targetField": "Drv_Score_Latest__c"
+              },
+              {
+                "sourceField": "Drv_Score_Trend",
+                "targetField": "Drv_Score_Trend__c"
+              },
+              {
+                "sourceField": "Drv_Trips_Latest_F",
+                "targetField": "Drv_Trips_Latest__c"
+              },
+              {
+                "sourceField": "Drv_Miles_Latest_F",
+                "targetField": "Drv_Miles_Latest__c"
+              },
+              {
+                "sourceField": "Drv_Discount_Latest_F",
+                "targetField": "Drv_Discount_Latest__c"
+              },
+              {
+                "sourceField": "Drv_Discount_Change",
+                "targetField": "Drv_Discount_Change__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_Cycle",
+                "targetField": "Days_Since_Last_Cycle__c"
+              },
+              {
+                "sourceField": "Drv_Cycles_F",
+                "targetField": "Drv_Cycles__c"
+              },
+              {
+                "sourceField": "Drv_PNI_Latest_F",
+                "targetField": "Drv_PNI_Latest__c"
               },
               {
                 "sourceField": "Max_Feature_Date",
@@ -2554,6 +3247,60 @@
               "isPrimaryKey": false,
               "label": "Days Since Last Ticket",
               "name": "Days_Since_Last_Ticket__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Score Latest",
+              "name": "Drv_Score_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Score Trend",
+              "name": "Drv_Score_Trend__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Trips Latest",
+              "name": "Drv_Trips_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Miles Latest",
+              "name": "Drv_Miles_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Discount Latest",
+              "name": "Drv_Discount_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Discount Change",
+              "name": "Drv_Discount_Change__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last Cycle",
+              "name": "Days_Since_Last_Cycle__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Cycles",
+              "name": "Drv_Cycles__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv PNI Latest",
+              "name": "Drv_PNI_Latest__c",
               "type": "Number"
             },
             {
@@ -3383,6 +4130,192 @@
               }
             ]
           },
+          "LOAD_DRV": {
+            "label": "Monthly driving stats",
+            "type": "LOAD_DATASET",
+            "top": 1200,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_DRV_K": {
+            "label": "Driving keys",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1200,
+            "left": 392,
+            "graph": {
+              "T_DRV_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              },
+              "T_DRV_K_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cycle score (mean of the four display subscores)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_DRV_K_F0",
+                "target": "T_DRV_K_F1"
+              }
+            ]
+          },
+          "JOIN_DRV_CAL": {
+            "label": "Driving x snapshot",
+            "type": "JOIN",
+            "top": 1200,
+            "left": 672
+          },
+          "T_DRV_W": {
+            "label": "Driving windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1200,
+            "left": 952,
+            "graph": {
+              "T_DRV_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cycle ended before snapshot"
+              },
+              "T_DRV_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Latest cycle (ended in the 45 days before)"
+              },
+              "T_DRV_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Prior cycle (ended 90 to 135 days before)"
+              },
+              "T_DRV_W_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Score if latest"
+              },
+              "T_DRV_W_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Score if prior"
+              },
+              "T_DRV_W_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Trips if latest"
+              },
+              "T_DRV_W_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Miles if latest"
+              },
+              "T_DRV_W_F7": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount if latest"
+              },
+              "T_DRV_W_F8": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount if prior"
+              },
+              "T_DRV_W_F9": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "PNI at latest cycle (historical)"
+              },
+              "T_DRV_W_F10": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (driving)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_DRV_W_F0",
+                "target": "T_DRV_W_F1"
+              },
+              {
+                "source": "T_DRV_W_F1",
+                "target": "T_DRV_W_F2"
+              },
+              {
+                "source": "T_DRV_W_F2",
+                "target": "T_DRV_W_F3"
+              },
+              {
+                "source": "T_DRV_W_F3",
+                "target": "T_DRV_W_F4"
+              },
+              {
+                "source": "T_DRV_W_F4",
+                "target": "T_DRV_W_F5"
+              },
+              {
+                "source": "T_DRV_W_F5",
+                "target": "T_DRV_W_F6"
+              },
+              {
+                "source": "T_DRV_W_F6",
+                "target": "T_DRV_W_F7"
+              },
+              {
+                "source": "T_DRV_W_F7",
+                "target": "T_DRV_W_F8"
+              },
+              {
+                "source": "T_DRV_W_F8",
+                "target": "T_DRV_W_F9"
+              },
+              {
+                "source": "T_DRV_W_F9",
+                "target": "T_DRV_W_F10"
+              }
+            ]
+          },
+          "FILTER_DRV": {
+            "label": "Cycles before snapshot",
+            "type": "FILTER",
+            "top": 1200,
+            "left": 1232
+          },
+          "AGG_DRV": {
+            "label": "Driving per contact-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 1200,
+            "left": 1512,
+            "graph": {
+              "AGG_DRV_EXTRACT": null,
+              "AGG_DRV_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_DRV_EXTRACT",
+                "target": "AGG_DRV_AGG"
+              }
+            ]
+          },
           "JOIN_F_APP": {
             "label": "+ app",
             "type": "JOIN",
@@ -3400,6 +4333,12 @@
             "type": "JOIN",
             "top": 250,
             "left": 2632
+          },
+          "JOIN_F_DRV": {
+            "label": "+ driving",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2772
           },
           "T_FINAL": {
             "label": "Final features",
@@ -3478,9 +4417,63 @@
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Max feature date (audit: must be <= Snap_Date)"
+                "label": "Driving score, latest cycle"
               },
               "T_FINAL_F12": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Driving score trend (latest minus ~3 cycles earlier)"
+              },
+              "T_FINAL_F13": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Trips, latest cycle"
+              },
+              "T_FINAL_F14": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Miles, latest cycle"
+              },
+              "T_FINAL_F15": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount, latest cycle"
+              },
+              "T_FINAL_F16": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount change vs ~3 cycles earlier"
+              },
+              "T_FINAL_F17": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since the last driving cycle ended"
+              },
+              "T_FINAL_F18": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Driving cycles before snapshot"
+              },
+              "T_FINAL_F19": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "PNI at latest cycle (historical, 1/0/null)"
+              },
+              "T_FINAL_F20": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Max feature date (audit: must be <= Snap_Date)"
+              },
+              "T_FINAL_F21": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
@@ -3535,6 +4528,42 @@
               {
                 "source": "T_FINAL_F11",
                 "target": "T_FINAL_F12"
+              },
+              {
+                "source": "T_FINAL_F12",
+                "target": "T_FINAL_F13"
+              },
+              {
+                "source": "T_FINAL_F13",
+                "target": "T_FINAL_F14"
+              },
+              {
+                "source": "T_FINAL_F14",
+                "target": "T_FINAL_F15"
+              },
+              {
+                "source": "T_FINAL_F15",
+                "target": "T_FINAL_F16"
+              },
+              {
+                "source": "T_FINAL_F16",
+                "target": "T_FINAL_F17"
+              },
+              {
+                "source": "T_FINAL_F17",
+                "target": "T_FINAL_F18"
+              },
+              {
+                "source": "T_FINAL_F18",
+                "target": "T_FINAL_F19"
+              },
+              {
+                "source": "T_FINAL_F19",
+                "target": "T_FINAL_F20"
+              },
+              {
+                "source": "T_FINAL_F20",
+                "target": "T_FINAL_F21"
               }
             ]
           },
@@ -3695,6 +4724,30 @@
             "target": "AGG_TKT"
           },
           {
+            "source": "LOAD_DRV",
+            "target": "T_DRV_K"
+          },
+          {
+            "source": "T_DRV_K",
+            "target": "JOIN_DRV_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_DRV_CAL"
+          },
+          {
+            "source": "JOIN_DRV_CAL",
+            "target": "T_DRV_W"
+          },
+          {
+            "source": "T_DRV_W",
+            "target": "FILTER_DRV"
+          },
+          {
+            "source": "FILTER_DRV",
+            "target": "AGG_DRV"
+          },
+          {
             "source": "T_LABELS",
             "target": "JOIN_F_APP"
           },
@@ -3720,6 +4773,14 @@
           },
           {
             "source": "JOIN_F_TKT",
+            "target": "JOIN_F_DRV"
+          },
+          {
+            "source": "AGG_DRV",
+            "target": "JOIN_F_DRV"
+          },
+          {
+            "source": "JOIN_F_DRV",
             "target": "T_FINAL"
           },
           {

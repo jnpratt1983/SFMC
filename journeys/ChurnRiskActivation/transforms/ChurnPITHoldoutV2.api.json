@@ -60,7 +60,16 @@
        "Renewal_Rating_Version__c",
        "Days_Since_Renewal_Offer_PIT__c",
        "Offer_After_Snapshot__c",
-       "Mailing_State__c"
+       "Mailing_State__c",
+       "Drv_Score_Latest__c",
+       "Drv_Score_Trend__c",
+       "Drv_Trips_Latest__c",
+       "Drv_Miles_Latest__c",
+       "Drv_Discount_Latest__c",
+       "Drv_Discount_Change__c",
+       "Days_Since_Last_Cycle__c",
+       "Drv_Cycles__c",
+       "Drv_PNI_Latest__c"
       ],
       "sampleDetails": {
        "type": "TopN"
@@ -286,6 +295,42 @@
        {
         "sourceField": "Mailing_State__c",
         "targetField": "Mailing_State__c"
+       },
+       {
+        "sourceField": "Drv_Score_Latest__c",
+        "targetField": "Drv_Score_Latest__c"
+       },
+       {
+        "sourceField": "Drv_Score_Trend__c",
+        "targetField": "Drv_Score_Trend__c"
+       },
+       {
+        "sourceField": "Drv_Trips_Latest__c",
+        "targetField": "Drv_Trips_Latest__c"
+       },
+       {
+        "sourceField": "Drv_Miles_Latest__c",
+        "targetField": "Drv_Miles_Latest__c"
+       },
+       {
+        "sourceField": "Drv_Discount_Latest__c",
+        "targetField": "Drv_Discount_Latest__c"
+       },
+       {
+        "sourceField": "Drv_Discount_Change__c",
+        "targetField": "Drv_Discount_Change__c"
+       },
+       {
+        "sourceField": "Days_Since_Last_Cycle__c",
+        "targetField": "Days_Since_Last_Cycle__c"
+       },
+       {
+        "sourceField": "Drv_Cycles__c",
+        "targetField": "Drv_Cycles__c"
+       },
+       {
+        "sourceField": "Drv_PNI_Latest__c",
+        "targetField": "Drv_PNI_Latest__c"
        }
       ],
       "name": "Churn_PIT_Holdout_V2__dll",
@@ -546,6 +591,60 @@
        "label": "Mailing State",
        "name": "Mailing_State__c",
        "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Score Latest",
+       "name": "Drv_Score_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Score Trend",
+       "name": "Drv_Score_Trend__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Trips Latest",
+       "name": "Drv_Trips_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Miles Latest",
+       "name": "Drv_Miles_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Discount Latest",
+       "name": "Drv_Discount_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Discount Change",
+       "name": "Drv_Discount_Change__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Since Last Cycle",
+       "name": "Days_Since_Last_Cycle__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Cycles",
+       "name": "Drv_Cycles__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv PNI Latest",
+       "name": "Drv_PNI_Latest__c",
+       "type": "Number"
       }
      ]
     }

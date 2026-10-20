@@ -55,6 +55,9 @@ views = [
 for name, label, exprs, out_dlo in views:
     d = definition(name, label, exprs, out_dlo)
     json.dump(d, open(os.path.join(HERE, f"{name}.api.json"), "w"), indent=1)
+    if "--put" in sys.argv:
+        r = api(f"/services/data/v64.0/ssot/data-transforms/{name}", "PUT", d)
+        print(name, "PUT ->", (f"updated {r['name']}" if isinstance(r, dict) and r.get("name") else r))
     if "--post" in sys.argv:
         r = api("/services/data/v64.0/ssot/data-transforms", "POST", d)
         print(name, "POST ->", (f"created {r['name']} {r.get('status')}" if isinstance(r, dict) and r.get("name") else r))
