@@ -235,23 +235,197 @@
             ]
           }
         },
-        "LOAD_ACCT": {
+        "LOAD_OFFER": {
           "action": "load",
           "sources": [],
           "parameters": {
             "dataset": {
-              "name": "Account_00D3h0000068eod__dll",
+              "name": "Renewal_Offer_c_00D3h0000068eod__dll",
               "type": "dataLakeObject"
             },
             "fields": [
-              "Id__c",
+              "Account_c__c",
+              "Offer_Date_c__c",
               "Increase_Amount_Dollars_c__c",
-              "Offered_Rate_Change_c__c",
               "Policy_Renewal_Rate_c__c",
-              "Renewal_Offer_Date_c__c"
+              "Prior_Rate_c__c",
+              "Increase_Percent_c__c",
+              "Rating_Version_c__c"
             ],
             "sampleDetails": {
               "type": "TopN"
+            }
+          }
+        },
+        "T_OFFER_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_OFFER"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_OFFER_CAL": {
+          "action": "join",
+          "sources": [
+            "T_OFFER_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_OFFER_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_OFFER_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Offer_Date_c__c &lt;= &quot;Cal.Snap_Date&quot; and Offer_Date_c__c &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 60 DAY then 1 else 0 end",
+                "label": "Offer issued in the 60 days before the snapshot",
+                "name": "Offer_In_Window",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_OFFER_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_OFFER_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "&quot;Cal.Snap_Key&quot;",
+                "label": "Snap key (offer)",
+                "name": "Snap_Key_Offer",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_OFFER": {
+          "action": "filter",
+          "sources": [
+            "T_OFFER_W_F1"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Offer_In_Window",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_OFFER_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_OFFER"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_OFFER_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_OFFER_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "MAX",
+                "label": "Latest offer date",
+                "name": "Latest_Offer_Date",
+                "source": "Offer_Date_c__c"
+              }
+            ],
+            "groupings": [
+              "Account_c__c",
+              "Snap_Key_Offer"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": []
+          }
+        },
+        "JOIN_OFFER_LATEST": {
+          "action": "join",
+          "sources": [
+            "AGG_OFFER_AGG",
+            "LOAD_OFFER"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Account_c__c",
+              "Latest_Offer_Date"
+            ],
+            "rightKeys": [
+              "Account_c__c",
+              "Offer_Date_c__c"
+            ],
+            "rightQualifier": "Off"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Off.Account_c__c",
+                "Off.Offer_Date_c__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
             }
           }
         },
@@ -259,15 +433,17 @@
           "action": "join",
           "sources": [
             "FILTER_BOOK",
-            "LOAD_ACCT"
+            "JOIN_OFFER_LATEST"
           ],
           "parameters": {
             "joinType": "LEFT_OUTER",
             "leftKeys": [
-              "AccountId__c"
+              "AccountId__c",
+              "Cal.Snap_Key"
             ],
             "rightKeys": [
-              "Id__c"
+              "Account_c__c",
+              "Snap_Key_Offer"
             ],
             "rightQualifier": "Acct"
           },
@@ -275,7 +451,8 @@
             "fields": [],
             "slice": {
               "fields": [
-                "Acct.Id__c"
+                "Acct.Account_c__c",
+                "Acct.Snap_Key_Offer"
               ],
               "ignoreMissingFields": true,
               "mode": "DROP"
@@ -647,8 +824,8 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "case when &quot;Acct.Renewal_Offer_Date_c__c&quot; &lt;= &quot;Cal.Snap_Date&quot; and &quot;Acct.Renewal_Offer_Date_c__c&quot; &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 60 DAY then &quot;Acct.Increase_Amount_Dollars_c__c&quot; else null end",
-                "label": "Renewal offer change $ (offer issued in the 60 days before snapshot; CURRENT VALUE until AccountHistory is streamed)",
+                "formulaExpression": "&quot;Acct.Off.Increase_Amount_Dollars_c__c&quot;",
+                "label": "Renewal offer change $ (latest offer in the 60 days before the snapshot; point-in-time from Renewal_Offer__c)",
                 "name": "Renewal_Offer_Change_Dollars",
                 "precision": 10,
                 "scale": 2,
@@ -668,8 +845,8 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "case when &quot;Acct.Renewal_Offer_Date_c__c&quot; &lt;= &quot;Cal.Snap_Date&quot; and &quot;Acct.Renewal_Offer_Date_c__c&quot; &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 60 DAY then &quot;Acct.Policy_Renewal_Rate_c__c&quot; else null end",
-                "label": "Renewal offer monthly rate (same window)",
+                "formulaExpression": "&quot;Acct.Off.Policy_Renewal_Rate_c__c&quot;",
+                "label": "Renewal offer monthly rate",
                 "name": "Renewal_Offer_Rate",
                 "precision": 10,
                 "scale": 2,
@@ -689,8 +866,8 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "case when &quot;Acct.Renewal_Offer_Date_c__c&quot; &lt;= &quot;Cal.Snap_Date&quot; and &quot;Acct.Renewal_Offer_Date_c__c&quot; &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 60 DAY and &quot;Acct.Policy_Renewal_Rate_c__c&quot; - &quot;Acct.Increase_Amount_Dollars_c__c&quot; &gt; 0 then 100 * &quot;Acct.Increase_Amount_Dollars_c__c&quot; / (&quot;Acct.Policy_Renewal_Rate_c__c&quot; - &quot;Acct.Increase_Amount_Dollars_c__c&quot;) else null end",
-                "label": "Renewal offer change % (same window)",
+                "formulaExpression": "&quot;Acct.Off.Increase_Percent_c__c&quot;",
+                "label": "Renewal offer change %",
                 "name": "Renewal_Offer_Change_Pct",
                 "precision": 10,
                 "scale": 2,
@@ -708,13 +885,14 @@
             "expressionType": "SQL",
             "fields": [
               {
-                "businessType": "Text",
+                "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "case when &quot;Acct.Renewal_Offer_Date_c__c&quot; &lt;= &quot;Cal.Snap_Date&quot; and &quot;Acct.Renewal_Offer_Date_c__c&quot; &gt; &quot;Cal.Snap_Date&quot; - INTERVAL 60 DAY then &quot;Acct.Offered_Rate_Change_c__c&quot; else null end",
-                "label": "Rating version on the offer",
-                "name": "Renewal_Rating_Version",
-                "precision": 40,
-                "type": "TEXT"
+                "formulaExpression": "case when &quot;Acct.Latest_Offer_Date&quot; is null then null else datediff(&quot;Cal.Snap_Date&quot;, &quot;Acct.Latest_Offer_Date&quot;) end",
+                "label": "Days since the latest offer (point-in-time)",
+                "name": "Days_Since_Renewal_Offer_PIT",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
               }
             ]
           }
@@ -723,6 +901,26 @@
           "action": "formula",
           "sources": [
             "T_LABELS_F20"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "&quot;Acct.Off.Rating_Version_c__c&quot;",
+                "label": "Rating version on the offer",
+                "name": "Renewal_Rating_Version",
+                "precision": 40,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "T_LABELS_F22": {
+          "action": "formula",
+          "sources": [
+            "T_LABELS_F21"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -1533,7 +1731,7 @@
         "JOIN_F_APP": {
           "action": "join",
           "sources": [
-            "T_LABELS_F21",
+            "T_LABELS_F22",
             "AGG_APP_AGG"
           ],
           "parameters": {
@@ -1972,6 +2170,10 @@
                 "targetField": "Renewal_Rating_Version__c"
               },
               {
+                "sourceField": "Days_Since_Renewal_Offer_PIT",
+                "targetField": "Days_Since_Renewal_Offer_PIT__c"
+              },
+              {
                 "sourceField": "Policy_Renewal_Rate_c__c",
                 "targetField": "Policy_Renewal_Rate__c"
               },
@@ -2186,6 +2388,12 @@
             },
             {
               "isPrimaryKey": false,
+              "label": "Days Since Renewal Offer PIT",
+              "name": "Days_Since_Renewal_Offer_PIT__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
               "label": "Policy Renewal Rate",
               "name": "Policy_Renewal_Rate__c",
               "type": "Number"
@@ -2392,8 +2600,8 @@
             "top": 250,
             "left": 1512
           },
-          "LOAD_ACCT": {
-            "label": "Account renewal offer",
+          "LOAD_OFFER": {
+            "label": "Renewal offers",
             "type": "LOAD_DATASET",
             "top": 1010,
             "left": 112,
@@ -2404,6 +2612,84 @@
               },
               "dataspace": "default"
             }
+          },
+          "T_OFFER_K": {
+            "label": "Offer join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1010,
+            "left": 392,
+            "graph": {
+              "T_OFFER_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_OFFER_CAL": {
+            "label": "Offer x snapshot",
+            "type": "JOIN",
+            "top": 1010,
+            "left": 672
+          },
+          "T_OFFER_W": {
+            "label": "Offer window",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1010,
+            "left": 952,
+            "graph": {
+              "T_OFFER_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Offer issued in the 60 days before the snapshot"
+              },
+              "T_OFFER_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (offer)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_OFFER_W_F0",
+                "target": "T_OFFER_W_F1"
+              }
+            ]
+          },
+          "FILTER_OFFER": {
+            "label": "Offers in window",
+            "type": "FILTER",
+            "top": 1010,
+            "left": 1232
+          },
+          "AGG_OFFER": {
+            "label": "Latest offer per account-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 1010,
+            "left": 1512,
+            "graph": {
+              "AGG_OFFER_EXTRACT": null,
+              "AGG_OFFER_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_OFFER_EXTRACT",
+                "target": "AGG_OFFER_AGG"
+              }
+            ]
+          },
+          "JOIN_OFFER_LATEST": {
+            "label": "Latest offer values",
+            "type": "JOIN",
+            "top": 1010,
+            "left": 1792
           },
           "JOIN_ACCT": {
             "label": "+ renewal offer",
@@ -2524,27 +2810,33 @@
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Renewal offer change $ (offer issued in the 60 days before snapshot; CURRENT VALUE until AccountHistory is streamed)"
+                "label": "Renewal offer change $ (latest offer in the 60 days before the snapshot; point-in-time from Renewal_Offer__c)"
               },
               "T_LABELS_F18": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Renewal offer monthly rate (same window)"
+                "label": "Renewal offer monthly rate"
               },
               "T_LABELS_F19": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Renewal offer change % (same window)"
+                "label": "Renewal offer change %"
               },
               "T_LABELS_F20": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Rating version on the offer"
+                "label": "Days since the latest offer (point-in-time)"
               },
               "T_LABELS_F21": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Rating version on the offer"
+              },
+              "T_LABELS_F22": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
@@ -2635,6 +2927,10 @@
               {
                 "source": "T_LABELS_F20",
                 "target": "T_LABELS_F21"
+              },
+              {
+                "source": "T_LABELS_F21",
+                "target": "T_LABELS_F22"
               }
             ]
           },
@@ -3161,7 +3457,39 @@
             "target": "FILTER_BOOK"
           },
           {
-            "source": "LOAD_ACCT",
+            "source": "LOAD_OFFER",
+            "target": "T_OFFER_K"
+          },
+          {
+            "source": "T_OFFER_K",
+            "target": "JOIN_OFFER_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_OFFER_CAL"
+          },
+          {
+            "source": "JOIN_OFFER_CAL",
+            "target": "T_OFFER_W"
+          },
+          {
+            "source": "T_OFFER_W",
+            "target": "FILTER_OFFER"
+          },
+          {
+            "source": "FILTER_OFFER",
+            "target": "AGG_OFFER"
+          },
+          {
+            "source": "AGG_OFFER",
+            "target": "JOIN_OFFER_LATEST"
+          },
+          {
+            "source": "LOAD_OFFER",
+            "target": "JOIN_OFFER_LATEST"
+          },
+          {
+            "source": "JOIN_OFFER_LATEST",
             "target": "JOIN_ACCT"
           },
           {
