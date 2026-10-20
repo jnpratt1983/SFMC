@@ -117,6 +117,11 @@ Model Builder trains on data model objects, not lake objects.
    (send-driven counts that encode the non-pay journey; keep `Email_Open_Rate_90d__c` and
    `Days_Since_Last_Email_Event__c`). `Mailing_State__c` stays in. `Driver_Role__c` is not in the
    V2 views at all: it is populated only on contacts still active today, so it leaks the label.
+   **Driving features (added 2026-10-20, keep all in):** `Drv_Score_Latest__c`, `Drv_Score_Trend__c`,
+   `Drv_Trips_Latest__c`, `Drv_Miles_Latest__c`, `Drv_Discount_Latest__c`, `Drv_Discount_Change__c`,
+   `Days_Since_Last_Cycle__c`, `Drv_Cycles__c`, `Drv_PNI_Latest__c` (historical PNI flag from the
+   driving cycles; every driving row is a PNI, so 1 = was the PNI with telematics at that time, null = no
+   driving data). Coverage: a latest-cycle score on ~45% of rows in every year; any cycle on ~51%.
    For v1 also deselect the current-value columns `Days_To_Renewal__c`,
    `Days_Since_Renewal_Offer__c`, `Lifetime_Savings__c`, `Telematics_Discount__c`,
    `Policy_Renewal_Rate__c` (they are only point-in-time for the newest snapshot). Everything else
