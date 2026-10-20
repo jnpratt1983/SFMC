@@ -122,6 +122,13 @@ Model Builder trains on data model objects, not lake objects.
    `Days_Since_Last_Cycle__c`, `Drv_Cycles__c`, `Drv_PNI_Latest__c` (historical PNI flag from the
    driving cycles; every driving row is a PNI, so 1 = was the PNI with telematics at that time, null = no
    driving data). Coverage: a latest-cycle score on ~45% of rows in every year; any cycle on ~51%.
+   **Version 3 (2026-10-20, late):** source `Churn_PIT_Train_V3__dlm` (all uncensored rows; no email counts
+   in the view at all). Variables = the version-2 list minus `Email_Opens_90d__c`, plus the five bill
+   columns `Bill_Net_Latest__c`, `Bill_Net_Change_3m__c`, `Bill_Net_Change_3m_Pct__c`, `Bill_Gross_Latest__c`,
+   `Bill_Count__c` (price history only; gross equals net on nearly every bill). 31 predictors. For the
+   renewal-window variant, add a Model Builder filter `Renewal_Offer_Change_Dollars__c is not null`
+   instead of separate views.
+
    For v1 also deselect the current-value columns `Days_To_Renewal__c`,
    `Days_Since_Renewal_Offer__c`, `Lifetime_Savings__c`, `Telematics_Discount__c`,
    `Policy_Renewal_Rate__c` (they are only point-in-time for the newest snapshot). Everything else
