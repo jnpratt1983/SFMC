@@ -14,7 +14,7 @@ One row per contact per monthly snapshot, keyed `Contact_Id_YYYYMM`:
 
 - **Book filter**: Contact (003) with `Policy_Effective_Date` and `CreatedDate` on or before the snapshot and no `Cancel_Date` on or before it.
 - **Labels**: `Label_60__c` / `Label_90__c` = cancelled within 60/90 days with a preventable voluntary reason (Due to high premium, Replacement of insurance carrier, Insured request - other, App issue / UX, poor customer or claims service). `Censored__c` = cancelled within 60 days for any other reason (non-pay, company, unpreventable); **filter `Censored__c = 0` before training**. `Reason__c` is for evaluation only.
-- **Features** (all windowed to dates on or before the snapshot): tenure days and bucket, days since policy effective, estimated days into / to end of a 6-month term, app events 30/90d and recency (`MobileApp` DMO on `Account_Id2`), emails sent / opened / clicked 90d, opens 30d, open rate, recency (**Individual Email Results** lake object on `et4ae5_Contact`), Zendesk tickets 90d and recency (on customer number), lifetime savings, telematics discount, policy renewal rate.
+- **Features** (all windowed to dates on or before the snapshot): tenure days and bucket, days since policy effective, estimated days into / to end of a 6-month term, app events 30/90d and recency (`MobileApp_c_..__dll` on Contact `account_id_c__c`; `Account_Id2_c__c` is empty in the Contact lake object even though the Salesforce field is populated), emails sent / opened / clicked 90d, opens 30d, open rate, recency (**Individual Email Results** lake object on `et4ae5_Contact`), Zendesk tickets 90d and recency (on customer number), lifetime savings, telematics discount, policy renewal rate.
 - **Audit**: `Max_Feature_Date__c` must never exceed `Snapshot_Date__c`.
 - **No payment-derived features**, per the Insurance decision of 2026-10-16.
 
@@ -53,3 +53,12 @@ Either way, set the output to a new DLO `Churn_PIT_Training_Set` with `Row_Key__
 ## Scoring variant
 
 Copy the transform, point `LOAD_CAL` at a one-row calendar for the run date (or filter the calendar to the max date), drop the `T_LABELS` label and censoring steps' downstream filter (score everyone), and write to `Churn_PIT_Scoring_Set__dll` with the same columns minus the labels.
+
+## First-run findings (2026-10-20)
+
+- 237,980 rows over 26 snapshots, 11,725 (2024-07) falling to 7,155 (2026-08). The decline is real: distinct contacts billed per month fell from 11,010 in 2024-06 to about 5,900 in 2026, and the old never-cancelled contacts are in force today (term end in the future, bills in the last 60 days). No in-force filter is needed beyond the policy-effective and cancel-date rule.
+- Preventable-voluntary 60-day label rate among uncensored rows: 7.7% (2024) trending to 4.4% (2026-08). Shorter tenure churns more in every snapshot (under 6 months 7.7%, 2+ years 5.7%), the opposite of the old training set.
+- Leakage audit: 0 rows with a feature date after the snapshot.
+- Censored rows are 43% non-pay, 10% company cancel, the rest unpreventable, as designed.
+- **Source coverage is uneven.** Individual Email Results holds 17.5k contact sends in 2022, 23k in 2023, but only 5.2k in 2024 and 3.7k in 2025, then 46.7k in 2026; the email features are near-empty for 2024 to 2025 snapshots. Zendesk tickets start in 2025. App events cover 2021 to today (2.18M rows, 57k accounts) once the join key is right.
+- First run had zero app events on every row because the join used `Account_Id2_c__c`, which is empty in `Contact__dll`; fixed to `account_id_c__c`.

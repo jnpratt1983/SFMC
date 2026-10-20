@@ -100,7 +100,7 @@
             "fields": [
               "Id__c",
               "AccountId__c",
-              "Account_Id2_c__c",
+              "account_id_c__c",
               "Customer_Number_c__c",
               "CreatedDate__c",
               "Policy_Effective_Date_c__c",
@@ -1734,7 +1734,7 @@
           "parameters": {
             "joinType": "LEFT_OUTER",
             "leftKeys": [
-              "Account_Id2_c__c",
+              "account_id_c__c",
               "Cal.Snap_Key"
             ],
             "rightKeys": [

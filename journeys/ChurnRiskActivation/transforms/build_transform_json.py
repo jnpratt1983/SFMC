@@ -79,7 +79,7 @@ cal_last = transform("T_CAL", "LOAD_CAL", [
 ui_link("LOAD_CAL", "T_CAL")
 
 # ---------------------------------------------------------------- contact book (row 1)
-load("LOAD_CON", "Contact__dll", "dataLakeObject", ["Id__c", "AccountId__c", "Account_Id2_c__c", "Customer_Number_c__c", "CreatedDate__c", "Policy_Effective_Date_c__c",
+load("LOAD_CON", "Contact__dll", "dataLakeObject", ["Id__c", "AccountId__c", "account_id_c__c", "Customer_Number_c__c", "CreatedDate__c", "Policy_Effective_Date_c__c",
      "Cancel_Date_c__c", "Cancellation_Reason_c__c", "Policy_Renewal_Date_c__c", "Renewal_Offer_Date_c__c", "Policy_Renewal_Rate_c__c",
      "Lifetime_Savings_c__c", "Telematic_Discount_Numeric__c", "Current_Term_Effective_Date_c__c", "Current_Term_Expiration_Date_c__c",
      "Last_App_Open_Date_c__c", "Monthly_Safe_Driving_Discount_c__c"], "Contact", 250, 112)
@@ -212,7 +212,7 @@ tk_agg = aggregate("AGG_TKT", "FILTER_TKT", ["Customer_Number_c__c", "Snap_Key_T
 ui_link("FILTER_TKT", "AGG_TKT")
 
 # ---------------------------------------------------------------- assemble (row 1, right side)
-join("JOIN_F_APP", labels, app_agg, ["Account_Id2_c__c", "Cal.Snap_Key"], ["Account_Id_c__c", "Snap_Key_App"], "App", "LEFT_OUTER", "+ app", 250, 2072, drop=["App.Account_Id_c__c", "App.Snap_Key_App"])
+join("JOIN_F_APP", labels, app_agg, ["account_id_c__c", "Cal.Snap_Key"], ["Account_Id_c__c", "Snap_Key_App"], "App", "LEFT_OUTER", "+ app", 250, 2072, drop=["App.Account_Id_c__c", "App.Snap_Key_App"])
 ui_link("T_LABELS", "JOIN_F_APP"); ui_link("AGG_APP", "JOIN_F_APP")
 join("JOIN_F_EMAIL", "JOIN_F_APP", em_agg, ["Id__c", "Cal.Snap_Key"], ["et4ae5_Contact_c__c", "Snap_Key_Email"], "Email", "LEFT_OUTER", "+ email", 250, 2352, drop=["Email.et4ae5_Contact_c__c", "Email.Snap_Key_Email"])
 ui_link("JOIN_F_APP", "JOIN_F_EMAIL"); ui_link("AGG_EMAIL", "JOIN_F_EMAIL")
