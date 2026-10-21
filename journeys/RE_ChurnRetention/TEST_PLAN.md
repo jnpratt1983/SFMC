@@ -1,10 +1,12 @@
 # Test plan: proving the model and the journey lower churn (2026-10-19)
 
-Short version: the model can be proven in weeks, the journey mechanics in a month, but a
-statistically significant churn reduction needs a randomized holdout and **9 to 12 months at the
-widest sensible audience**, or about 20 months at the entry rule as written. Scope is Arizona
-and Rhode Island, which is the whole book (85% and 15% of upcoming renewals; one contact in
-California), so there is no smaller pilot to run first and no larger audience to widen to later. Nothing shorter is honest at
+Updated 2026-10-21 for the final entry rule (renewal price shock plus the v3 model tier). Short
+version: the model is proven (Gate 0 done, see below), the journey mechanics take a month, and a
+statistically significant churn reduction needs the approved 50/50 holdout and **about 15 to 18 months
+of entries for a 25% effect, 7 to 9 months for a 35% effect**, plus the 75-day outcome lag. Scope is
+Arizona and Rhode Island, which is the whole book (85% and 15% of upcoming renewals), so there is no
+smaller pilot and no larger audience. An earlier draft of this plan quoted 8 to 11 months; that assumed
+a larger, lower-rate population than the rule actually produces, and is superseded here. Nothing shorter is honest at
 HiRoad's volumes. The plan below is staged so each gate answers one question and you are never
 waiting a year to learn that the entry rule was wrong.
 
@@ -13,41 +15,43 @@ waiting a year to learn that the entry rule was wrong.
 | Quantity | Value | Source |
 |---|---|---|
 | Renewals per month (term ends) | ~1,250 (AZ ~1,050, RI ~190) | active contacts by `Current_Term_Expiration_Date__c` and `MailingState`, Nov 2026 to Mar 2027 |
-| Entry rule share (High band 10% + Moderate 20% x tenure under 12 months 42%) | ~18% | score deciles and tenure mix on the Aug 22 book |
-| After non-pay-in-90-days and opt-out exclusions (~30%) | ~150 entrants/month (AZ ~130, RI ~20) | non-pay notice volume (~1,500/month) |
+| Entry rule: offered increase > $20 or > 10% (tier 1) OR v3 top decile among offer-covered (tier 2), term end within 45 days | 16% of the renewal window | holdout test of the rule, 911 of 5,601 offer-covered rows |
+| After the 90-day non-pay exclusion and opt-outs | ~150 to 250 entrants/month (AZ ~85%, RI ~15%) | +$20 offers ran 108 to 179/month Apr-Aug 2026; tier 2 adds ~55/month |
 | 2026 preventable voluntary cancels by state | AZ 1,715, RI 338 | `Cancellation_Reason__c`, Jan to Oct 14 |
-| Preventable voluntary cancel rate among entrants, T-45 to T+30 | 12 to 15% | top-decile lift ~2.5x on a ~6% 60-day base |
+| Preventable voluntary cancel rate among entrants, 60 days | 11 to 13% | rule tested on the holdout: 11.4% combined; +$20 offers alone 12.9% |
 | Outcome lag per entrant | 75 days | entry T-45, outcome read at T+30 |
-| Plausible journey effect | 15 to 25% relative reduction | typical for renewal-window retention programs; 35% would be exceptional |
+| Plausible journey effect | 20 to 35% relative reduction | price-shock interventions act on the stated reason; 35% is the optimistic case |
 
-## Months of entries needed for 80% power, two-sided 5%
+## Months of entries needed for 80% power, two-sided 5%, 50/50 split
 
-Two-proportion test on "preventable voluntary cancel by T+30". Add the 75-day outcome lag to
-every figure to get calendar time.
+Two-proportion test on "preventable voluntary cancel within 60 days of entry". Add the 75-day outcome
+lag to every figure to get calendar time. Recomputed 2026-10-21 for the offer-rule population.
 
-| Entrants / month | Base rate | Effect | 50/50 holdout | 80/20 holdout |
+| Entrants / month | Base rate | Effect 20% | Effect 25% | Effect 35% |
 |---|---|---|---|---|
-| 150 (AZ + RI, entry rule as written) | 15% | 25% | 17 mo | 27 mo |
-| 150 | 15% | 15% | 49 mo | 78 mo |
-| 250 (AZ + RI, all Moderate band) | 15% | 25% | 10 mo | 16 mo |
-| 400 (AZ + RI, Moderate + High, no tenure gate) | 12% | 25% | ~8 mo | ~13 mo |
-| 400 | 12% | 35% | ~4 mo | ~6 mo |
+| 150 | 11% | 39 mo | 24 mo | 12 mo |
+| 150 | 13% | 32 mo | 20 mo | 10 mo |
+| 200 | 11% | 29 mo | 18 mo | 9 mo |
+| 200 | 13% | 24 mo | 15 mo | 7 mo |
+| 250 | 11% | 23 mo | 14 mo | 7 mo |
+| 250 | 13% | 19 mo | 12 mo | 6 mo |
 
-Reading it: a 15% effect is not provable at any audience we can assemble. A 25% effect is
-provable in about a year if the audience is widened to the full Moderate and High bands in both
-states with a 50/50 split. Widening further dilutes the base rate and does not help. **Rhode
-Island on its own (~20 to 60 entrants a month) will never reach significance**; randomize within
-state so both are represented, report AZ and RI separately as descriptives, and test on the
-combined population.
+Reading it: plan on about 200 entrants a month at a 12% base rate. A 35% reduction, which is what a
+well-targeted price conversation can produce, proves out in 7 to 9 months of entries. A 25% reduction
+takes 15 to 18 months. A 20% reduction is not provable inside two years at this volume; if the interim
+reads point there, the decision is made on the leading indicators and the secondary reads, not on
+significance. Rhode Island on its own (~30 entrants a month) never reaches significance; randomize
+within state, report AZ and RI separately as descriptives, test on the combined population.
 
 ## The staged plan
 
-### Gate 0: the model predicts (1 week, before launch)
+### Gate 0: the model predicts (done 2026-10-20)
 
-Historical holdout, snapshots May to August 2026, from `../ChurnRiskActivation/BUILD_GUIDE.md`
-phase 5. Pass: AUC >= 0.68, >= 0.05 above tenure alone, >= 0.60 in each tenure bucket, top
-decile >= 2.5x base, monotonic deciles, compliance proxy check passed. This is a one-off read on
-about 1,100 outcomes and needs no waiting.
+Historical holdout, snapshots May to August 2026, 25,419 rows, 1,269 cancellations. v3 result: AUC
+0.627 (tenure 0.560), three of four tenure buckets at or above 0.60, monotonic deciles, top decile
+2.0x, renewal window 0.623, outside the window 0.628. The 0.68 target and 2.5x top decile were not met;
+the entry rule does not depend on them because tier 1 is the offer itself. Non-pay correlation in the
+top decile accepted by decision. Details: `../ChurnRiskActivation/2026-10-20_v3_holdout_validation.md`.
 
 ### Gate 1: the journey runs correctly (first 4 weeks after launch)
 
@@ -80,12 +84,13 @@ split by state (two Random Split activities behind a state decision split, or on
 state recorded) so the AZ:RI mix is identical in both arms. Holdout contacts still
 get every servicing communication. Compliance approved the split on 2026-10-20.
 
-**Primary metric.** Preventable voluntary cancellation by T+30 after term end, per entrant.
-Secondary: any cancellation by T+30; renewal recorded by T+7.
+**Primary metric.** Preventable voluntary cancellation within 60 days of entry (which spans T-45 to
+T+15 around term end), per entrant. Secondary: any cancellation by T+30; renewal recorded by T+7.
 
-**Analysis.** Two-proportion test, stratified by state, tenure bucket and band. Interim looks at month
-4 and month 8 of entries with O'Brien-Fleming boundaries (stop early only for an effect of 35%
-or more); final read at month 12 of entries, so about month 14 to 15 in calendar time.
+**Analysis.** Two-proportion test, stratified by state, tenure bucket and band (OFFER vs HIGH).
+Interim looks at months 4 and 8 of entries with O'Brien-Fleming boundaries (stop early only for an
+effect of 35% or more); a decision read at month 12 of entries, and the plan allows up to month 18 for
+a 25% effect. Calendar time adds about 2.5 months.
 
 **Leading indicators, read monthly from month 2.** Not proof of churn reduction, but they tell
 you within 60 days whether the journey is doing anything: open and click on the T-45 email versus
@@ -100,12 +105,13 @@ year-over-year renewal-cohort curve. They cross-check the randomized read but do
 
 | Month | What |
 |---|---|
-| 0 | Gate 0. Holdout approved (done 2026-10-20). MC Connect fields synced. |
+| 0 | Gate 0 done (v3, 2026-10-20). Holdout approved (2026-10-20). MC Connect fields synced (2026-10-21). DEs created. |
 | 1 | Launch in AZ and RI with the 50/50 split. Gate 1 checks weekly. |
 | 2 to 3 | Gate 2 after batches 1 and 2. Leading indicators from month 2. |
 | 4 to 5 | First interim look at churn (entries from months 1 to 4; outcomes through month 6.5). |
 | 8 to 9 | Second interim look. |
-| 14 to 15 | Final read on 12 months of entries. Decision: scale, change, or stop. |
+| 14 to 15 | Decision read on 12 months of entries: scale, change, or stop. |
+| up to 20 | If the effect is in the 25% range, the test continues to 18 months of entries before the final call. |
 
 Quarterly during the test: retrain the model on closed snapshots and promote only if it beats
 the live model on the same holdout; a model change mid-test is logged with its date so the

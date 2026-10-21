@@ -31,10 +31,9 @@ move the third decimal.
    insured, no non-pay notice in 90 days. That is 100 to 180 customers a month in AZ and RI (the +$20
    share of offers has risen from 108 in April to 179 in August), cancelling at 11 to 21% without
    intervention. It is small and it is where the money is.
-2. **Run the approved 50/50 holdout on exactly that population.** With a 13% base rate and 150
-   entrants a month, a 25% relative reduction reaches significance in about 11 months of entries;
-   a 35% reduction in 6. Both are shorter than the earlier estimate because the base rate is three times
-   higher than a model-selected population's.
+2. **Run the approved 50/50 holdout on exactly that population.** With a 12% base rate and about
+   200 entrants a month, a 35% relative reduction reaches significance in 7 to 9 months of entries and
+   a 25% reduction in 15 to 18 (corrected 2026-10-21; see `../RE_ChurnRetention/TEST_PLAN.md`).
 3. **The "why" is already known: price.** Tracks by top factor are unnecessary for this journey. One
    message family: what the discount is worth over the new term and how to keep it, with the Engage
    content for customers whose driving score has fallen (the second-strongest signal, 7.2% vs 5.9%).
