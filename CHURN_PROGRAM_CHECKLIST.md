@@ -37,8 +37,9 @@ unchecked items are still needed, with the owner. Folder references are in this 
 - [x] Scoring transform `ChurnPITScoringSet` (one snapshot at run time, 7,878 active contacts, runs daily)
 - [x] Models in Einstein Studio: v1 (0.579), v2 (0.599), v3 (0.627, production); holdout scores V1, V2, V3
 - [x] Production predict job `Voluntary Churn 60d v3 - Production Scoring`, Streaming, output `Voluntary_Churn_Score`
-- [ ] Re-map `Churn_PIT_Scoring_Set` DMO to add `Churn_Reason__c` (only needed if a DMO consumer wants the reason; the write-back reads the lake object) — Jennifer, optional
-- [ ] Clean up V1/V2 artifacts: `ChurnPITTrain`, `ChurnPITHoldout`, `ChurnPITTrainV2`, `ChurnPITHoldoutV2` and their lake objects and DMOs; `Voluntary_Churn_Holdout_Scores` and `_V2`; the v1 and v2 models — Jennifer, optional
+- [x] `Churn_PIT_Scoring_Set` DMO re-mapped with `Churn_Reason__c` (63 fields, reason queryable through the DMO) — done 2026-10-21
+- [x] V1/V2 view transforms deleted (`ChurnPITTrain`, `ChurnPITHoldout`, `ChurnPITTrainV2`, `ChurnPITHoldoutV2`); train lake objects and DMOs for V1/V2 deleted — done 2026-10-21
+- [ ] Remaining V1/V2 artifacts are held by the two old holdout predict jobs: in Einstein Studio delete the predict jobs `Voluntary Churn 60d v1 - Holdout Scoring` and `v2 - Holdout Scoring`, then the models `Predicted Label 60` (v1) and `Voluntary Churn 60d v2`; after that the holdout lake objects and DMOs (`Churn_PIT_Holdout`, `_V2`, `Voluntary_Churn_Holdout_Scores`, `_V2`) can be deleted through the API — Jennifer (UI), then Claude, optional
 - [ ] Set the training transform and views to monthly instead of daily (harmless as is) — optional
 
 ## 4. Analysis and documentation (this repo, `journeys/ChurnRiskActivation`)
