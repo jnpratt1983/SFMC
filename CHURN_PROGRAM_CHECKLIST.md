@@ -24,7 +24,7 @@ unchecked items are still needed, with the owner. Folder references are in this 
 - [x] Monthly write-back scheduled: launchd `com.hiroad.churn-writeback` on Jennifer's Mac, 2nd of the month 07:00 Chicago, `~/Desktop/c360-sfdx/scripts/run_churn_writeback.sh`, logs in `~/Library/Logs/churn/`
 - [x] Data Cloud connector permission set reads the new Contact, Account, Renewal Offer and driving fields
 - [x] Marketing Cloud sync user (API SFMC User, System Administrator) reads all new fields
-- [ ] Verify the flow captured the first live offers after the nightly batch (~03:47 UTC 2026-10-21): `SELECT COUNT(Id) FROM Renewal_Offer__c WHERE CreatedDate > 2026-10-20T21:00:00Z` — Claude, morning of 2026-10-21
+- [x] Flow verified on the first live batch, 2026-10-21 03:46 to 03:47 UTC: 31 accounts received an offer dated 2026-10-19 and 31 offer records were created, one per account, no duplicates, all fields populated (26 azV12.0.0 averaging -$12, 5 riV5.2.0 averaging -$7)
 - [ ] Add the Voluntary Churn fields to the Contact page layout so agents can see score, band and reason — Salesforce admin, optional
 - [ ] Send Data Analytics the savings and discount history request (`journeys/ChurnRiskActivation/DATA_REQUEST_savings_discount_history.md`): one row per customer per policy month, 2023-05 to 2026-09, cancelled customers included — Jennifer
 - [ ] Build `Savings_History__c` (13 fields, external ID `External_Id__c`, Contact lookup by customer number) and the 1st-of-month snapshot flow; bulk upsert the backfill and run the acceptance checks — Claude, once the file lands
