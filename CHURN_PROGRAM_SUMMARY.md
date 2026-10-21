@@ -107,24 +107,29 @@ increase carry a 41% non-pay history themselves.
 
 ## The recommendation, in one paragraph
 
-Target renewal price shock. Enter customers whose term ends in 45 days and who were offered an increase of
-more than $20 a month or more than 10% (tier 1), plus those the v3 model puts in its top decile among
-customers with a recent offer (tier 2). Exclude anyone with a non-pay notice in 90 days, and split 50/50
-so the result is causal. Content is switched by the churn reason (price shock, discount erosion, new
-customer, disengaged, low savings, general) and by state, with the band setting intensity. Tested on the
-holdout, this entry rule flags 16% of the renewal window at an 11% cancel rate and captures 37% of its
-preventable cancellations: about 150 to 250 customers a month.
+Target the new-term price change, inside the rules Insurance already set. Enter customers 27 days before
+their term ends, after the policy system has issued the new-term offer (R-32) and after the existing Heads Up
+rate email has landed (R-28/29), when the offer was more than $20 a month or more than 10% up (tier 1) or the
+v3 model puts them in its top decile (tier 2). Exclude anyone with a non-pay notice in 90 days, and split
+50/50 so the result is causal. Send one email at R-21, a coverage check-in with the customer's lifetime
+savings as the value line and no premium or price figures, with content switched by churn reason and state;
+one app push at R-14 for the high band and the app-engaged reasons; a thank-you at R+7. Email and push only.
+Tested on the holdout, this entry rule flags 16% of the term-end window at an 11% cancel rate and captures
+37% of its preventable cancellations: about 150 to 250 customers a month. Both arms keep the existing
+lifecycle flow, so the test reads what the layer adds (aligned with lifecycle comms, 2026-10-21).
 
-## Next step: build the journey (`journeys/RE_ChurnRetention/`)
+## Next step: build the journey (`journeys/RE_ChurnRetention/`, spec v2)
 
-1. Query activities from `01..03_*.sql` and the daily 06:30 automation; run the entry query once and
-   confirm 5 to 10 rows a day with the expected mix of OFFER and HIGH bands (Claude can verify by API).
-2. Eight content blocks and the email template from `CONTENT_SPEC.md`; two push templates; subject lines
-   per reason as the first A/B.
-3. Journey `RE_ChurnRetention_<Month>2026`: entry DE, decision splits on Arm, Band and channel, the step
-   timings per track, exit on the exit DE, goal "not cancelled 30 days after term end"; a one-step
+1. Add `AppOpened`, `LifetimeSavings`, `RatingVersion` to the Entry DE and `RatingVersion` to the History
+   DE (Claude can do this by API on request).
+2. Query activities from `01..03_*.sql` and the daily 10:00 automation, after `Master Customer Journey
+   Daily Sends`; run the entry query once and confirm 5 to 10 rows a day with the expected mix of OFFER
+   and HIGH bands (Claude can verify by API).
+3. Nine content blocks and the R-21 email template from `CONTENT_SPEC.md`; two push variants; subject
+   lines per reason as the first A/B. Irene reviews the copy first, then Insurance.
+4. Journey `RE_ChurnRetention_<Month>2026`: entry DE, Arm split, wait to R-21, email, push-eligibility
+   split, wait to R-14, push, exit on the exit DE, goal "not cancelled 30 days after term end"; a one-step
    thank-you journey on the RENEWED exits.
-4. Insurance review of content and the exclusion rule; three open questions in the checklist.
 5. Launch in AZ and RI with the holdout; measurement gates and timing in `TEST_PLAN.md`.
 6. In parallel, ask Data Analytics for a customer-month backfill of savings and discount history and
    build `Savings_History__c` to hold it, the same pattern as `Renewal_Offer__c`. The exact request,

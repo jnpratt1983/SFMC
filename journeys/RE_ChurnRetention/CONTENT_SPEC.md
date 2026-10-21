@@ -1,75 +1,87 @@
-# RE_ChurnRetention: dynamic content spec (2026-10-20)
+# RE_ChurnRetention: content spec v2 (2026-10-21)
 
-One journey, one email template per step, one push template, with content blocks switched by three
-fields that arrive on every entrant from the Data Cloud scoring batch via Contact:
+One email at R-21, one push at R-14, one thank-you at R+7. Content blocks switch on `ChurnReason` and
+`MailingState`; the Band and Track decide only who gets the push. Supersedes the 2026-10-20 spec, which had
+a rate-change email at T-45 with the dollar change in it.
 
-| Field on the entry DE | Source | Values |
+## Rules that shape every block (Insurance via Irene, 2026-10-21)
+
+1. **No premium amounts, no price change, no rate figures.** The Heads Up email already carries the
+   rate message under the same rule. `OfferChange` is on the entry DE for reporting and is never rendered.
+2. **Discount and savings dollars are allowed.** The existing R-30 email shows the monthly Safe Driving
+   Discount in dollars. `LifetimeSavings` is the value line.
+3. Nothing about payment status, non-pay, credit, the score or the band.
+4. The message is an action the customer can take, not an explanation of the rate: a coverage and
+   deductible check-in in the app. The copy never says "cheaper" or promises a lower rate.
+5. TDLI customers (`RatingVersion` starts `azV12`): the discount is locked for the whole next term, so no
+   block says the discount can change this term. One true line: this term's driving sets the next term's discount.
+6. Email and app push only.
+
+## Fields on the entry DE that the templates read
+
+| Field | Source | Use |
 |---|---|---|
-| `ChurnReason` | `Contact.Voluntary_Churn_Reason__c`, written monthly from the scoring transform's `Churn_Reason__c` | PRICE_SHOCK, DISCOUNT_EROSION, NEW_CUSTOMER, DISENGAGED, LOW_SAVINGS, GENERAL |
-| `Band` | entry query | OFFER (tier 1, price rule) or HIGH (tier 2, v3 top decile) |
-| `MailingState` | Contact | AZ, RI |
-| `OfferChange` | `Contact.Voluntary_Churn_Offer_Change__c` (renewal offer $/month change, last 60 days) | number or blank |
-| `DiscountChange` | `Contact.Voluntary_Churn_Discount_Change__c` (earned discount, latest cycle vs ~3 months earlier) | number or blank |
-| `DrivingScore` | `Contact.Voluntary_Churn_Driving_Score__c` (mean of the four display subscores, latest cycle) | number or blank |
+| `ChurnReason` | `Contact.Voluntary_Churn_Reason__c` | block selection |
+| `MailingState` | Contact | AZ / RI sub-block |
+| `RatingVersion` | latest `Renewal_Offer__c` | TDLI line vs monthly-model line |
+| `LifetimeSavings` | `Contact.Lifetime_Savings__c` | value line, shown when > 0 |
+| `DrivingScore` | `Contact.Voluntary_Churn_Driving_Score__c` | DISCOUNT_EROSION and LOW_SAVINGS personalisation |
+| `DiscountChange` | `Contact.Voluntary_Churn_Discount_Change__c` | DISCOUNT_EROSION, monthly model only |
+| `FirstName` | Contact | greeting |
 
-The reason is assigned in the transform with a fixed priority, so every customer has exactly one:
-price shock (renewal offer > $20 or > 10%, or net premium up > $20 in 3 months), then discount erosion
-(earned discount down 5+ points or driving score down 5+), then new customer (tenure < 180 days), then
-disengaged (no app event in 60 days and no email open in 90), then low savings (earned discount under 5),
-else general. Measured churn by reason is in the validation reports; price shock is 11 to 21%, discount
-erosion 7%, the rest 5 to 6%.
+## R-21 email: "Does your coverage still fit how you drive?"
 
-## Live distribution (first scoring batch, 2026-10-20, 7,878 active contacts)
+Shared frame for every reason: greeting, one paragraph that names the term end in three weeks, the
+value line (lifetime savings), one reason-specific block, one CTA to the coverage review in the app, a
+plain customer care line. Subject line by reason, tested as the first A/B.
 
-| Reason | Contacts | Mean offer change | Mean discount change | Within ~45 days of term end |
+| Reason | Live count 2026-10-20 | Subject line | Reason block (the only part that changes) | State sub-block |
 |---|---|---|---|---|
-| GENERAL | 2,545 | | +12.8 | 23% |
-| NEW_CUSTOMER | 2,447 | | +8.2 | 9% |
-| DISENGAGED | 1,404 | | +10.1 | 20% |
-| PRICE_SHOCK | 986 | +$33.80 | +4.9 | 30% |
-| DISCOUNT_EROSION | 459 | | -15.7 | 19% |
-| LOW_SAVINGS | 37 | | | 32% |
+| **PRICE_SHOCK** | 986 | Does your coverage still fit how you drive? | Coverages and deductibles drift as cars, commutes and household change. A two-minute review in the app shows what you are carrying and what each piece does. For TDLI: your Safe Driving Discount is locked for the full next term; this term's driving sets the one after. For monthly model: your discount is earned each month from your driving. | none |
+| **LOW_SAVINGS** | 37 | What you have saved with HiRoad so far | Savings meter with `LifetimeSavings`; how the driving score turns into the discount; same coverage review CTA. | none |
+| **GENERAL** | 2,545 | Does your coverage still fit how you drive? | PRICE_SHOCK block without the TDLI/monthly line. | none |
+| **DISCOUNT_EROSION** | 459 | Your discount moved. Here is what moves it back | Monthly model only (RI and legacy AZ): discount fell `DiscountChange` points over three cycles; the two subscores that fell; most drivers recover it within two cycles. TDLI customers get the PRICE_SHOCK block instead. | RI: HiGoals rewards progress. AZ: safe-driving discount. |
+| **NEW_CUSTOMER** | 2,447 | Three things to set up before your first term ends | App setup checklist (permissions, trip logging, digital wallet). TDLI: your first locked discount is set from this term's driving. | RI: HiGoals. AZ: safe-driving discount. |
+| **DISENGAGED** | 1,404 | Is your coverage still right? | Plain-text check-in, one question, the coverage review link, lots of white space. | none |
 
-A third of the book is under six months old, which is the reset in action; PRICE_SHOCK is the
-tier-one entry population (about 300 of them are inside the 45-day window at any time).
+Live counts are the whole scored book, not the entry population.
 
-## Content matrix
+## R-14 push: "Your coverage review is ready"
 
-| Reason | What the data says | Mindset | Email angle (T-45) | App / push | Offer or action | CTA | Creative note |
-|---|---|---|---|---|---|---|---|
-| **PRICE_SHOCK** | Offered +$20 or +10% at renewal, or premium up $20+ in 3 months. 11% cancel under $50, 21% above. | "It went up and nobody told me why" | What changed in your rate and what you control: discount earned, how it carries into the new term, the two habits that move it most. Show the dollar change only if `OfferChange` is present. | "Your renewal is 45 days out. Your discount is worth $X this term." | Rate review or coverage check-in; discount recovery if driving data exists | See my renewal | Numbers up front, no marketing tone, one chart: premium vs discount |
-| **DISCOUNT_EROSION** | Earned discount or driving score fell 5+ points over 3 cycles. 7.2% cancel. | "I'm being penalised" | Your discount and what moves it; the two trips habits that help most. Personalise with `DrivingScore` and `DiscountChange`. | Trip tips and how to keep the app tracking reliably | Discount recovery challenge for 30 days | Check my driving score | Driving score dial trending up; RI adds the HiGoals angle |
-| **NEW_CUSTOMER** | Under 180 days tenure; 26% all-cause, 7.7% preventable. | Has not felt the value yet, still comparing | Welcome back to your policy: three things to set up in the app | Your first month of driving: what telematics already shows | Loyalty perk unlock or safe-driving discount preview | Open the app / complete setup | Phone with app onboarding checklist |
-| **DISENGAGED** | No app event in 60 days and no email open in 90. 5.6% cancel. | Quiet churn, lukewarm | Short plain-text check-in: is your coverage still right? | One thing you may not know your policy does | One-question survey or preference update | Tell us what you need | Minimal, single illustration, lots of white space |
-| **LOW_SAVINGS** | Earned discount under 5 points. Does not see the savings; price-shopping likely. | "What am I getting" | Your savings so far, in dollars; how your driving score turns into your rate | Savings meter with the customer's number | Rate review offer or coverage check-in | See my savings | Savings meter |
-| **GENERAL** | None of the above triggered; entered on the model tier. | Unknown | The PRICE_SHOCK email without the dollar line | Standard renewal reminder | None | See my renewal | Default template |
+Eligible: TREAT arm, app opened, and (`Band = 'HIGH'` or `Track = 'ENGAGE'`). Two variants:
 
-Band changes intensity, not message: HIGH gets the T-21 follow-up email and the T-30 SMS; OFFER
-gets T-45 and T+7 only unless the reason is PRICE_SHOCK, which always gets the full sequence.
-State changes one block: RI references HiGoals rewards in DISCOUNT_EROSION and NEW_CUSTOMER; AZ
-references the safe-driving discount.
+- ENGAGE reasons: "Three weeks to your new term. Your coverage review takes two minutes."
+- Everyone else eligible: "Your term ends in two weeks. Make sure your coverage still fits."
 
-## Journey Builder wiring
+Deep link to the coverage review. No amounts of any kind.
 
-1. Entry DE columns `ChurnReason`, `Band`, `MailingState`, `OfferChange`, `DiscountChange`,
-   `DrivingScore` are selected in the entry query from Contact; no decision split needed for reason.
-2. One decision split on `Arm` (holdout), one on `Band` (intensity), one on channel consent. Reason
-   and state are handled inside the templates, not by splits, which keeps the canvas at four paths.
-3. Email template: six AMPscript content blocks keyed on `ChurnReason`, with a state sub-block where
-   noted. Skeleton:
+## R+7 thank-you (journey `RE_ChurnRetention_Renewed`)
+
+"Thanks for staying with HiRoad." Lifetime savings line, one app tip by reason (ENGAGE: trip logging;
+others: digital wallet). No amounts beyond the savings figure.
+
+## AMPscript skeleton (R-21 template)
 
 ```
 %%[
-  SET @reason = AttributeValue("ChurnReason")
-  SET @state  = AttributeValue("MailingState")
-  SET @offer  = AttributeValue("OfferChange")
-  SET @disc   = AttributeValue("DiscountChange")
-  SET @score  = AttributeValue("DrivingScore")
+  SET @reason  = AttributeValue("ChurnReason")
+  SET @state   = AttributeValue("MailingState")
+  SET @rv      = AttributeValue("RatingVersion")
+  SET @tdli    = IIF(Substring(@rv, 1, 5) == "azV12", "true", "false")
+  SET @savings = AttributeValue("LifetimeSavings")
+  SET @score   = AttributeValue("DrivingScore")
+  SET @disc    = AttributeValue("DiscountChange")
   IF Empty(@reason) THEN SET @reason = "GENERAL" ENDIF
+  IF @reason == "DISCOUNT_EROSION" AND @tdli == "true" THEN SET @reason = "PRICE_SHOCK" ENDIF
 ]%%
+%%[ IF NOT Empty(@savings) AND @savings > 0 THEN ]%%
+  <p>Since you joined, safe driving has saved you $%%=FormatNumber(@savings,"N0")=%%.</p>
+%%[ ENDIF ]%%
 %%[ IF @reason == "PRICE_SHOCK" THEN ]%%
-  %%=ContentBlockByKey("RE_Churn_PriceShock")=%%
-  %%[ IF NOT Empty(@offer) AND @offer > 0 THEN ]%% <p>Your renewal offer is $%%=FormatNumber(@offer,"N2")=%% a month higher than your current rate.</p> %%[ ENDIF ]%%
+  %%=ContentBlockByKey("RE_Churn_CoverageFit")=%%
+  %%=ContentBlockByKey(IIF(@tdli == "true", "RE_Churn_TDLI_Line", "RE_Churn_Monthly_Line"))=%%
+%%[ ELSEIF @reason == "LOW_SAVINGS" THEN ]%%
+  %%=ContentBlockByKey("RE_Churn_LowSavings")=%%
 %%[ ELSEIF @reason == "DISCOUNT_EROSION" THEN ]%%
   %%=ContentBlockByKey(IIF(@state == "RI", "RE_Churn_Erosion_RI", "RE_Churn_Erosion_AZ"))=%%
   %%[ IF NOT Empty(@score) THEN ]%% <p>Your driving score this cycle: %%=FormatNumber(@score,"N0")=%%.</p> %%[ ENDIF ]%%
@@ -77,28 +89,17 @@ references the safe-driving discount.
   %%=ContentBlockByKey(IIF(@state == "RI", "RE_Churn_New_RI", "RE_Churn_New_AZ"))=%%
 %%[ ELSEIF @reason == "DISENGAGED" THEN ]%%
   %%=ContentBlockByKey("RE_Churn_Disengaged")=%%
-%%[ ELSEIF @reason == "LOW_SAVINGS" THEN ]%%
-  %%=ContentBlockByKey("RE_Churn_LowSavings")=%%
 %%[ ELSE ]%%
-  %%=ContentBlockByKey("RE_Churn_General")=%%
+  %%=ContentBlockByKey("RE_Churn_CoverageFit")=%%
 %%[ ENDIF ]%%
 ```
 
-4. Content block keys to create in Content Builder: `RE_Churn_PriceShock`, `RE_Churn_Erosion_AZ`,
-   `RE_Churn_Erosion_RI`, `RE_Churn_New_AZ`, `RE_Churn_New_RI`, `RE_Churn_Disengaged`,
-   `RE_Churn_LowSavings`, `RE_Churn_General`. Eight blocks, one template.
-5. Push (Engage reasons only): same `ChurnReason` attribute on the MobilePush contact, two message
-   variants (DISCOUNT_EROSION, NEW_CUSTOMER), everything else gets no push.
-6. Subject lines by reason, tested as the first A/B in the journey:
-   PRICE_SHOCK "What changed in your rate, and what you control";
-   DISCOUNT_EROSION "Your discount moved. Here is how to move it back";
-   NEW_CUSTOMER "Three things to set up before your first renewal";
-   DISENGAGED "Is your coverage still right?";
-   LOW_SAVINGS "Your savings so far, in dollars";
-   GENERAL "Your renewal is 45 days out".
+Content block keys: `RE_Churn_CoverageFit`, `RE_Churn_TDLI_Line`, `RE_Churn_Monthly_Line`,
+`RE_Churn_LowSavings`, `RE_Churn_Erosion_AZ`, `RE_Churn_Erosion_RI`, `RE_Churn_New_AZ`, `RE_Churn_New_RI`,
+`RE_Churn_Disengaged`. Nine blocks, one template, two push variants.
 
-## Insurance review
+## Review path
 
-Every block is reviewed before activation. None mentions payment status, credit, the score, or the
-band. PRICE_SHOCK shows the offered change only when it is present on the record and never quotes
-the new premium itself, which the policy system communicates.
+Irene reviews the R-21 copy first, then Insurance reviews every block. The reviewer checklist: no premium or
+rate figure anywhere, no "cheaper" or "lower rate" promise, no mention of payment, credit, score or band,
+TDLI line only on azV12 records.
