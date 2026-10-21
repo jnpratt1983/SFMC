@@ -3,14 +3,13 @@
 Written 2026-10-21 for HiRoad lifecycle marketing, Insurance and Data Science. Companion to
 `CHURN_PROGRAM_CHECKLIST.md` (status by item) and the detailed reports under `journeys/ChurnRiskActivation/`.
 
-## The question we started with
+## Why the program was rebuilt
 
-"Is `Normalized_Churn_Risk_Score__c` helping predict churn?" It was not. Tested against the 1,117
-cancellations that followed its August snapshot, it scored 0.59 AUC; customer tenure alone scored 0.68.
-Its High band held 99 contacts and 69% of cancellations sat in Low. The cause was the training set:
-55,020 of its 61,215 rows were all-time historical cancellations, so the model learned that long-tenured
-customers churn, which is backwards on the live book (26% of under-six-month customers cancel versus 8%
-of two-year customers). A journey keyed on that score would have reached 99 people and missed 97% of churn.
+Insurance asked that retention effort go to keeping standard customers and not to keeping non-standard
+ones. The existing churn scores could not honour that: they were trained on every cancellation, and
+non-payment is 43% of cancellations, so the customers they ranked highest were largely the ones
+Insurance does not want us to pursue. The program had to be rebuilt from the label up so that the
+score, the reasons and the journey all point at preventable voluntary churn only.
 
 ## What Insurance decided, and what it changed
 
@@ -26,7 +25,7 @@ we can act on." Of 7,765 cancellations in 2026 to mid-October:
 | Unpreventable (sold vehicle, no longer driving, moved, total loss) | 9% | censored |
 
 Preventable voluntary churn runs about 230 customers a month, a 4 to 8% rate over 60 days. Both
-existing models scored 0.51 on it. Compliance separately approved a 50/50 randomized holdout for the
+existing models scored 0.51 on it, no better than chance, because they were built for a different label. Compliance separately approved a 50/50 randomized holdout for the
 journey, which is what makes the eventual result causal rather than an estimate.
 
 ## The data we built, and why each piece
@@ -67,7 +66,7 @@ to mark customers who lapse and re-buy, not customers deciding to leave.
 
 | Version | Inputs | Holdout AUC (May to Aug 2026, 25,419 rows, 1,269 cancels) | Verdict |
 |---|---|---|---|
-| Normalized score (existing) | unknown, trained on all-time cancellations | 0.59 | worse than tenure (0.68 on its own holdout) |
+| Normalized score (existing) | trained on all cancellations, non-pay included | 0.51 on the preventable label | not usable under the Insurance decision |
 | v1 | tenure, term, app, email, tickets, offers | 0.579 | fails; top contributor was the non-pay journey's reminder count |
 | v2 | + driving, email by address, state; no send counts | 0.599 | better, monotonic deciles, still short |
 | **v3** | **+ premium history from bills; no email counts** | **0.627** | **clears tenure + 0.05; three of four tenure buckets pass; first lift outside the renewal window (0.628); production model** |
