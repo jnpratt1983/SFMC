@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Monitor_Ran_At__c</fullName>
+    <label>Monitor Ran At</label>
+    <description>When the monitor produced this report.</description>
+    <type>DateTime</type>
+    <required>false</required>
+</CustomField>

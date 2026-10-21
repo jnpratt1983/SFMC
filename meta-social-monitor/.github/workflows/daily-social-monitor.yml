@@ -1,0 +1,45 @@
+name: Meta Social Monitor
+
+on:
+  schedule:
+    # 12:30 UTC = 7:30 AM CDT / 6:30 AM CST. Meta insights for yesterday are complete by then.
+    - cron: "30 12 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Report day YYYY-MM-DD (blank = yesterday)"
+        required: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Run monitor
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_PAGE_ID: ${{ secrets.META_PAGE_ID }}
+          META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Salesforce push. Leave SF_DOMAIN unset to skip it.
+          SF_DOMAIN: ${{ secrets.SF_DOMAIN }}
+          SF_CLIENT_ID: ${{ secrets.SF_CLIENT_ID }}
+          SF_CLIENT_SECRET: ${{ secrets.SF_CLIENT_SECRET }}
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            python -m monitor.main --date "${{ github.event.inputs.date }}"
+          else
+            python -m monitor.main
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: social-report
+          path: out/
+          retention-days: 30

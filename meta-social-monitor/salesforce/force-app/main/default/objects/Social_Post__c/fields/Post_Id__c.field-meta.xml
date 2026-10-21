@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Post_Id__c</fullName>
+    <label>Post Id</label>
+    <description>Platform post or media id.</description>
+    <type>Text</type>
+    <length>80</length>
+    <required>false</required>
+</CustomField>
