@@ -1,6 +1,10 @@
-# Test plan: proving the model and the journey lower churn (2026-10-19)
+# Test plan: proving the model and the retention layer lower churn (2026-10-19, v2 2026-10-21)
 
-Updated 2026-10-21 for the final entry rule (renewal price shock plus the v3 model tier). Short
+Updated 2026-10-21 for the final entry rule (new-term price change plus the v3 model tier) and for spec v2 of
+the journey (entry at R-27 behind the existing lifecycle flow, R-21 email, R-14 push, no SMS). The question
+the test answers is **whether the layer lowers churn beyond the Heads Up and TDLI emails both arms already
+receive**. A null result means the existing flow already captures the available effect, not that outreach
+does not work. Short
 version: the model is proven (Gate 0 done, see below), the journey mechanics take a month, and a
 statistically significant churn reduction needs the approved 50/50 holdout and **about 15 to 18 months
 of entries for a 25% effect, 7 to 9 months for a 35% effect**, plus the 57-day outcome lag. Scope is
@@ -21,6 +25,7 @@ waiting a year to learn that the entry rule was wrong.
 | Preventable voluntary cancel rate among entrants, 60 days | 11 to 13% | rule tested on the holdout: 11.4% combined; +$20 offers alone 12.9% |
 | Outcome lag per entrant | 57 days | entry R-27, outcome read at R+30 |
 | Plausible journey effect | 20 to 35% relative reduction | price-shock interventions act on the stated reason; 35% is the optimistic case |
+| TDLI effect on volume | tier 1 entrants fall by about a third as AZ migrates (complete 2027-05) | offers above $20: 19% under azV12 vs 30% under azV11 (211 and 1,408 offers) |
 
 ## Months of entries needed for 80% power, two-sided 5%, 50/50 split
 
@@ -36,7 +41,10 @@ lag to every figure to get calendar time. Recomputed 2026-10-21 for the offer-ru
 | 250 | 11% | 23 mo | 14 mo | 7 mo |
 | 250 | 13% | 19 mo | 12 mo | 6 mo |
 
-Reading it: plan on about 200 entrants a month at a 12% base rate. A 35% reduction, which is what a
+Reading it: plan on about 200 entrants a month at a 12% base rate for the first six months, then about
+140 once Arizona is fully on TDLI (tier 1 shrinks by roughly a third; tier 2 is unaffected). At 140 a month,
+a 35% effect takes about 11 months of entries and a 25% effect about 22. The month 4 interim re-checks the
+entrant count against this. A 35% reduction, which is what a
 well-targeted price conversation can produce, proves out in 7 to 9 months of entries. A 25% reduction
 takes 15 to 18 months. A 20% reduction is not provable inside two years at this volume; if the interim
 reads point there, the decision is made on the leading indicators and the secondary reads, not on
@@ -58,35 +66,40 @@ top decile accepted by decision. Details: `../ChurnRiskActivation/2026-10-20_v3_
 Binary checks, no statistics:
 
 - Entrants per day within 50% of the expected ~5 to 8; zero entrants with a non-pay notice in
-  the prior 90 days; zero entrants who are opted out on every channel.
+  the prior 90 days; zero entrants opted out of email with no app activity; zero entrants with a Heads
+  Up send in the prior 48 hours.
+- Heads Up and TDLI send rates equal across TREAT and HOLDOUT (within 5 points), which proves the
+  existing flow is identical in both arms.
 - Every R-21 email goes out within 24 hours of the R-21 wait ending; R-14 push only to app-opened contacts in the eligible bands. No sends before R-21 and no SMS.
 - Exit DE fires: every cancelled or non-pay contact leaves within one day; renewed contacts
   reach the thank-you journey.
-- No contact is in `CurrentlyWaitingInSameInteraction` beyond T+14 (the non-pay journey's
+- No contact is in `CurrentlyWaitingInSameInteraction` beyond R+31 (the non-pay journey's
   failure mode).
 - Unsubscribe rate below 0.5% per send.
 
 ### Gate 2: the model keeps predicting in production (2 monthly batches)
 
-After each scoring batch, re-run `../ChurnRiskActivation/scripts/churn_score_validation.py`
-against the next 60 days of cancellations on the whole scored book (~7,500 contacts, ~250
-preventable cancels per 60 days, AUC standard error ~0.015). Pass twice in a row: AUC >= 0.68
-and top decile >= 2.5x. Two batches are enough; the full book gives far more outcomes than the
-journey does.
+After each scoring batch, score the next 60 days of cancellations on the whole scored book (~7,900
+contacts, ~250 preventable cancels per 60 days, AUC standard error ~0.015) with
+`../ChurnRiskActivation/scripts/validate_holdout.py`. Pass twice in a row: the model holds its holdout
+result, AUC >= 0.60 and top decile >= 2.0x base (v3 scored 0.627 and 2.0x on the holdout; 0.68 was the
+original target and was not met, by decision). Two batches are enough; the full book gives far more
+outcomes than the journey does. Tier 1 does not depend on the model, so a Gate 2 failure narrows the
+journey to tier 1 rather than stopping it.
 
-### Gate 3: the journey lowers churn (9 to 12 months; 50/50 holdout approved by compliance 2026-10-20)
+### Gate 3: the layer lowers churn beyond the existing flow (7 to 18 months of entries; 50/50 holdout approved by compliance 2026-10-20)
 
 **Design.** Randomized 50/50 split assigned in the entry query (`Arm` = TREAT or HOLDOUT, random
-order partitioned by state) and logged in `RE_ChurnRetention_History_AF_10202026`. The journey's first
-activity is a decision split on `Arm`; the HOLDOUT path has no sends and the same exit criteria. Widen entry to the full Moderate and High bands
-in both states to reach ~400 entrants a month; keep the non-pay exclusion. Stratify the random
-split by state (two Random Split activities behind a state decision split, or one split with the
-state recorded) so the AZ:RI mix is identical in both arms. Holdout contacts still
-get every servicing communication. Compliance approved the split on 2026-10-20.
+order partitioned by state so the AZ:RI mix is identical in both arms) and logged in
+`RE_ChurnRetention_History_AF_10202026`. The journey's first activity is a decision split on `Arm`; the
+HOLDOUT path has no sends and the same exit criteria. Entry is the fixed rule (offer tier plus top
+decile, 150 to 250 a month); it is not widened to gain volume, because a wider rule lowers the base rate
+faster than it adds entrants. Both arms keep every existing communication, including the Heads Up rate
+email and the TDLI emails. Compliance approved the split on 2026-10-20.
 
 **Primary metric.** Preventable voluntary cancellation within 60 days of entry (which spans R-27 to
 R+33 around term end), per entrant. Both arms receive the existing lifecycle flow, so this reads the
-incremental effect of the layer. Secondary: any cancellation by T+30; renewal recorded by T+7.
+incremental effect of the layer. Secondary: any cancellation by R+30; renewal recorded by R+7.
 
 **Analysis.** Two-proportion test, stratified by state, tenure bucket, band (OFFER vs HIGH) and rating version (TDLI vs monthly model).
 Interim looks at months 4 and 8 of entries with O'Brien-Fleming boundaries (stop early only for an
@@ -94,10 +107,12 @@ effect of 35% or more); a decision read at month 12 of entries, and the plan all
 a 25% effect. Calendar time adds about 2 months.
 
 **Leading indicators, read monthly from month 2.** Not proof of churn reduction, but they tell
-you within 60 days whether the journey is doing anything: open and click on the R-21 email versus
-the HiGoals announcement benchmark; savings-page visits from the email; app re-activation within
-14 days among the Engage track (holdout gives a clean comparison here with far more power, since
-the base rate is 30 to 50%); early renewal acceptance by T-7.
+you within 60 days whether the layer is doing anything: open and click on the R-21 email versus the
+HiGoals announcement benchmark; coverage review completions in the app within 7 days of the email and
+of the push, TREAT vs HOLDOUT (the holdout gives a clean comparison with far more power than churn,
+since completions run in the tens of percent); push open rate; app re-activation within 14 days among
+the ENGAGE reasons; early renewal acceptance by R-7. Also read by rating version, since the TDLI line
+and the monthly-model line are different copy.
 
 **Secondary reads**, reported alongside: the cut-line comparison at the High cut and the
 year-over-year renewal-cohort curve. They cross-check the randomized read but do not replace it.
@@ -107,9 +122,9 @@ year-over-year renewal-cohort curve. They cross-check the randomized read but do
 | Month | What |
 |---|---|
 | 0 | Gate 0 done (v3, 2026-10-20). Holdout approved (2026-10-20). MC Connect fields synced (2026-10-21). DEs created. |
-| 1 | Launch in AZ and RI with the 50/50 split. Gate 1 checks weekly. |
+| 1 | Irene reviews the R-21 copy, then Insurance. DE columns added, queries and journey built. Launch in AZ and RI with the 50/50 split. Gate 1 checks weekly. |
 | 2 to 3 | Gate 2 after batches 1 and 2. Leading indicators from month 2. |
-| 4 to 5 | First interim look at churn (entries from months 1 to 4; outcomes through month 6.5). |
+| 4 to 5 | First interim look at churn (entries from months 1 to 4; outcomes through month 6). Re-check entrants per month against the TDLI migration. |
 | 8 to 9 | Second interim look. |
 | 14 to 15 | Decision read on 12 months of entries: scale, change, or stop. |
 | up to 20 | If the effect is in the 25% range, the test continues to 18 months of entries before the final call. |
@@ -120,8 +135,9 @@ analysis can be split before and after.
 
 ## What would shorten it
 
-- A bigger effect: at 35% relative, 400 entrants a month proves out in about 4 months of entries.
-- A higher base rate: if the model's top decile reaches 20% churn, every figure above drops by
-  about a third. Gate 0 tells you which base rate to plan on before launch.
-- Nothing else. There are no more states to add, and bands or channels beyond the Moderate
-  line lower the base rate faster than they add volume.
+- A bigger effect: at 35% relative and 200 entrants a month, about 7 months of entries.
+- A mid-term tier. Once savings and discount history exists (`../ChurnRiskActivation/DATA_REQUEST_savings_discount_history.md`),
+  a second entry rule on shrinking savings adds entrants outside the term-end window without lowering the
+  base rate of the first tier. That is the only volume lever that does not cost power.
+- Nothing else. There are no more states to add, and widening the entry rule lowers the base rate faster
+  than it adds volume.
