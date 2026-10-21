@@ -26,6 +26,9 @@ unchecked items are still needed, with the owner. Folder references are in this 
 - [x] Marketing Cloud sync user (API SFMC User, System Administrator) reads all new fields
 - [ ] Verify the flow captured the first live offers after the nightly batch (~03:47 UTC 2026-10-21): `SELECT COUNT(Id) FROM Renewal_Offer__c WHERE CreatedDate > 2026-10-20T21:00:00Z` — Claude, morning of 2026-10-21
 - [ ] Add the Voluntary Churn fields to the Contact page layout so agents can see score, band and reason — Salesforce admin, optional
+- [ ] Send Data Analytics the savings and discount history request (`journeys/ChurnRiskActivation/DATA_REQUEST_savings_discount_history.md`): one row per customer per policy month, 2023-05 to 2026-09, cancelled customers included — Jennifer
+- [ ] Build `Savings_History__c` (13 fields, external ID `External_Id__c`, Contact lookup by customer number) and the 1st-of-month snapshot flow; bulk upsert the backfill and run the acceptance checks — Claude, once the file lands
+- [ ] Add `Savings_History__c` to the Data Cloud CRM stream and to the training transform (six new features); retrain as v4 when renewal offers reach 12 months — Claude, 2026 Q4 at the earliest
 - [ ] After two production batches: point `Customer360PersonaBatch`, the Customer 360 component (`Customer360Controller` still reads `Churn_Risk_Score__c`) and the Wave dataset at the new fields in one change; then disable `ChurnRiskScoreOutput` and `ChurnRiskScoreNormalizedOutput` — Jennifer with Claude, December
 
 ## 3. Data Cloud

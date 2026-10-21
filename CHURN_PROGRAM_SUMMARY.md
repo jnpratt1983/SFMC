@@ -114,8 +114,7 @@ customers with a recent offer (tier 2). Exclude anyone with a non-pay notice in 
 so the result is causal. Content is switched by the churn reason (price shock, discount erosion, new
 customer, disengaged, low savings, general) and by state, with the band setting intensity. Tested on the
 holdout, this entry rule flags 16% of the renewal window at an 11% cancel rate and captures 37% of its
-preventable cancellations: about 150 to 250 customers a month. Stop building models until the offer
-history reaches 18 months or Contact gains history on savings and discount; nothing before that will pass.
+preventable cancellations: about 150 to 250 customers a month.
 
 ## Next step: build the journey (`journeys/RE_ChurnRetention/`)
 
@@ -128,3 +127,10 @@ history reaches 18 months or Contact gains history on savings and discount; noth
    thank-you journey on the RENEWED exits.
 4. Insurance review of content and the exclusion rule; three open questions in the checklist.
 5. Launch in AZ and RI with the holdout; measurement gates and timing in `TEST_PLAN.md`.
+6. In parallel, ask Data Analytics for a customer-month backfill of savings and discount history and
+   build `Savings_History__c` to hold it, the same pattern as `Renewal_Offer__c`. The exact request,
+   column list, and acceptance checks are in
+   `journeys/ChurnRiskActivation/DATA_REQUEST_savings_discount_history.md`. Today Contact holds only
+   the current value of lifetime savings and discount, and Account field history on them starts
+   2025-11-14, so the model has never seen savings shrink before a cancellation. With that history and
+   12 months of renewal offers, v4 can be trained on the same holdout.
