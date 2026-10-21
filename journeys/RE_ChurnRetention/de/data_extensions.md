@@ -27,7 +27,6 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 | SMS_Policy_Opt_In__c | Text(10) |
 | Score | Decimal(5,2) |
 | Band | Text(10): HIGH (model tier) or OFFER (price tier) |
-| TopFactors | Text(255) |
 | ChurnReason | Text(20): PRICE_SHOCK, DISCOUNT_EROSION, NEW_CUSTOMER, DISENGAGED, LOW_SAVINGS, GENERAL |
 | OfferChange | Decimal(10,2), nullable |
 | DiscountChange | Decimal(10,2), nullable |
@@ -41,7 +40,7 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 
 ## RE_ChurnRetention_History (Append; suppression and reporting)
 
-Fields: Id (Text 18), TermEndAtEntry (Date), EntryDate (Date), Band, Track, Score, TopFactors, Arm.
+Fields: Id (Text 18), TermEndAtEntry (Date), EntryDate (Date), Band, Track, Score, Arm.
 Primary key: Id + TermEndAtEntry. Retention: keep all rows; it is the measurement spine.
 
 ## RE_ChurnRetention_Exit (Overwrite daily; journey exit criteria)

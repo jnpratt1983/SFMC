@@ -8,7 +8,6 @@ SELECT
     e.Band,
     e.Track,
     e.Score,
-    e.TopFactors,
     e.Arm
 FROM [RE_ChurnRetention_Entry] e
 WHERE NOT EXISTS (

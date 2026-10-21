@@ -9,10 +9,10 @@ SELECT
         WHEN c.Cancel_Date__c IS NOT NULL
           OR ISNULL(c.canceled__c, 'false') IN ('true', '1', 'Yes', 'Y')                     THEN 'CANCELLED'
         WHEN ISNULL(c.Pending_Cancel_Flag__c, 'false') IN ('true', '1', 'Yes', 'Y')          THEN 'PENDING_CANCEL'
-        WHEN c.Nonpay_Cancel_Notice_Created_At__c > h.EntryDate
-          OR EXISTS (SELECT 1 FROM ENT.Bill__c_Salesforce b
+        WHEN EXISTS (SELECT 1 FROM ENT.Bill__c_Salesforce b
                      WHERE b.Customer_Number__c = c.Customer_Number__c
-                       AND b.Non_pay_cancel_date__c > h.EntryDate)                            THEN 'NONPAY'
+                       AND b.non_pay__c IN ('true', '1', 'True')
+                       AND b.Invoice_Date__c > h.EntryDate)                                    THEN 'NONPAY'
         WHEN CAST(c.Current_Term_Effective_Date__c AS DATE) >= h.TermEndAtEntry                THEN 'RENEWED'
     END                                                 AS ExitReason,
     GETDATE()                                           AS ExitDate
@@ -23,9 +23,9 @@ WHERE h.EntryDate >= DATEADD(DAY, -75, GETDATE())
         c.Cancel_Date__c IS NOT NULL
      OR ISNULL(c.canceled__c, 'false') IN ('true', '1', 'Yes', 'Y')
      OR ISNULL(c.Pending_Cancel_Flag__c, 'false') IN ('true', '1', 'Yes', 'Y')
-     OR c.Nonpay_Cancel_Notice_Created_At__c > h.EntryDate
      OR EXISTS (SELECT 1 FROM ENT.Bill__c_Salesforce b
                 WHERE b.Customer_Number__c = c.Customer_Number__c
-                  AND b.Non_pay_cancel_date__c > h.EntryDate)
+                  AND b.non_pay__c IN ('true', '1', 'True')
+                  AND b.Invoice_Date__c > h.EntryDate)
      OR CAST(c.Current_Term_Effective_Date__c AS DATE) >= h.TermEndAtEntry
       )

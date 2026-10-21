@@ -90,11 +90,11 @@ Content is driven by `ChurnReason` (see `CONTENT_SPEC.md`); `Track` is derived f
 
 ## Prerequisites
 
-1. Marketing Cloud Connect sync adds to `Contact_Salesforce`: `Voluntary_Churn_Risk_Score__c`,
-   `Voluntary_Churn_Top_Factors__c`, `Current_Term_Effective_Date__c`,
-   `Current_Term_Expiration_Date__c`, `Nonpay_Cancel_Notice_Created_At__c`, `Driver_Role__c`
-   (already synced), `DNR_Flag__c`. The entry query fails on the first missing field, which is
-   the intended smoke test.
+1. Marketing Cloud Connect sync (done 2026-10-21): `Contact_Salesforce` carries the seven
+   `Voluntary_Churn_*` fields used (Top Factors is not synced and not needed), both current-term
+   dates, `Driver_Role__c`, `DNR_Flag__c`; `Renewal_Offer__c_Salesforce` carries all offer fields;
+   `Bill__c_Salesforce` supplies the non-pay exclusion via `non_pay__c`. The entry query fails on
+   the first missing field, which is the intended smoke test.
 2. The three DEs and the config DE created from `de/`.
 3. Model holdout pass, Insurance content review, pilot state (Arizona first, matching the
    Data Science payment-stability scope).
