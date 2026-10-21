@@ -3,7 +3,8 @@
    Runs daily 06:30. One row per PNI contact whose term ends in exactly 45 days and who either received
    a renewal offer of more than $20 or 10% (tier 1) or sits in the v3 model's top decile with an offer in
    the last 60 days (tier 2). HighCut comes from RE_ChurnRetention_Config (one row). Requires the
-   Renewal_Offer__c synced DE (Marketing Cloud Connect) and the Voluntary_Churn_Risk_Score__c field.
+   Renewal_Offer__c synced DE (Marketing Cloud Connect) and the Voluntary_Churn_* fields on Contact_Salesforce
+   (synced 2026-10-21; Top Factors is not synced and not used). */
    Arm: 50/50 random split assigned here (approved by compliance 2026-10-20), stratified by state so
    AZ and RI are balanced in both arms. HOLDOUT rows enter the journey and take the no-send path;
    they keep every servicing communication. The arm is logged in RE_ChurnRetention_History. */
@@ -20,7 +21,6 @@ SELECT
     c.SMS_Policy_Opt_In__c,
     c.Voluntary_Churn_Risk_Score__c                     AS Score,
     CASE WHEN c.Voluntary_Churn_Risk_Score__c >= cfg.HighCut THEN 'HIGH' ELSE 'OFFER' END AS Band,
-    c.Voluntary_Churn_Top_Factors__c                    AS TopFactors,
     ISNULL(c.Voluntary_Churn_Reason__c, 'GENERAL')      AS ChurnReason,
     c.Voluntary_Churn_Offer_Change__c                   AS OfferChange,
     c.Voluntary_Churn_Discount_Change__c                AS DiscountChange,
@@ -59,13 +59,13 @@ WHERE
                  AND 100.0 * ro.Increase_Amount_Dollars__c / (ro.Policy_Renewal_Rate__c - ro.Increase_Amount_Dollars__c) > 10)
              OR c.Voluntary_Churn_Risk_Score__c >= cfg.HighCut
           ))
-    /* non-pay exclusions: any notice in the last 90 days, on Contact or on any bill */
-    AND (c.Nonpay_Cancel_Notice_Created_At__c IS NULL
-         OR c.Nonpay_Cancel_Notice_Created_At__c < DATEADD(DAY, -90, GETDATE()))
+    /* non-pay exclusion: a bill flagged non-pay (the real notice) invoiced in the last 90 days.
+       Non_pay_cancel_date__c is populated on every bill and is NOT a notice; do not use it here. */
     AND NOT EXISTS (
         SELECT 1 FROM ENT.Bill__c_Salesforce b
         WHERE b.Customer_Number__c = c.Customer_Number__c
-          AND b.Non_pay_cancel_date__c >= DATEADD(DAY, -90, GETDATE()))
+          AND b.non_pay__c IN ('true', '1', 'True')
+          AND b.Invoice_Date__c >= DATEADD(DAY, -90, GETDATE()))
     AND NOT EXISTS (
         SELECT 1 FROM [TR_NonpaymentJourney_AF_01262026] np WHERE np.Id = c.Id)
     /* one entry per term */
