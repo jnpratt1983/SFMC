@@ -1,13 +1,13 @@
-/* Query activity: RE_ChurnRetention_Entry (automation RE_ChurnRetention, step 1)
-   Target DE: RE_ChurnRetention_Entry (Overwrite). Journey entry audience.
+/* Query activity: RE_ChurnRetention_Entry_AF_10202026 (automation RE_ChurnRetention, step 1)
+   Target DE: RE_ChurnRetention_Entry_AF_10202026 (Overwrite). Journey entry audience.
    Runs daily 06:30. One row per PNI contact whose term ends in exactly 45 days and who either received
    a renewal offer of more than $20 or 10% (tier 1) or sits in the v3 model's top decile with an offer in
-   the last 60 days (tier 2). HighCut comes from RE_ChurnRetention_Config (one row). Requires the
+   the last 60 days (tier 2). HighCut comes from RE_ChurnRetention_Config_AF_10202026 (one row). Requires the
    Renewal_Offer__c synced DE (Marketing Cloud Connect) and the Voluntary_Churn_* fields on Contact_Salesforce
    (synced 2026-10-21; Top Factors is not synced and not used). */
    Arm: 50/50 random split assigned here (approved by compliance 2026-10-20), stratified by state so
    AZ and RI are balanced in both arms. HOLDOUT rows enter the journey and take the no-send path;
-   they keep every servicing communication. The arm is logged in RE_ChurnRetention_History. */
+   they keep every servicing communication. The arm is logged in RE_ChurnRetention_History_AF_10202026. */
 SELECT
     c.Id,
     c.Customer_Number__c,
@@ -37,7 +37,7 @@ SELECT
     CASE WHEN ROW_NUMBER() OVER (PARTITION BY c.MailingState ORDER BY NEWID()) % 2 = 0
          THEN 'TREAT' ELSE 'HOLDOUT' END                 AS Arm
 FROM ENT.Contact_Salesforce c
-CROSS JOIN [RE_ChurnRetention_Config] cfg
+CROSS JOIN [RE_ChurnRetention_Config_AF_10202026] cfg
 WHERE
     c.Driver_Role__c = 'PNI'
     AND c.MailingState IN ('AZ', 'RI')
@@ -70,7 +70,7 @@ WHERE
         SELECT 1 FROM [TR_NonpaymentJourney_AF_01262026] np WHERE np.Id = c.Id)
     /* one entry per term */
     AND NOT EXISTS (
-        SELECT 1 FROM [RE_ChurnRetention_History] h
+        SELECT 1 FROM [RE_ChurnRetention_History_AF_10202026] h
         WHERE h.Id = c.Id
           AND h.TermEndAtEntry = CAST(c.Current_Term_Expiration_Date__c AS DATE))
     /* must be reachable on at least one channel */
