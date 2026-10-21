@@ -1,0 +1,43 @@
+# Meta social monitor settings. Tune thresholds here, not in code.
+
+report:
+  timezone: America/Chicago
+  lookback_days: 35            # same-weekday baseline needs 29; 35 gives a 5 week chart
+  post_window_days: 14         # posts published in this window are reported and synced
+
+meta:
+  page_metrics:                # Facebook Page insights, period=day. Unavailable ones are skipped with a warning.
+    reach: page_impressions_unique
+    impressions: page_impressions
+    engagements: page_post_engagements
+    follows: page_daily_follows
+    unfollows: page_daily_unfollows
+    followers: page_follows
+    profile_views: page_views_total
+  ig_daily_metrics:            # Instagram account insights with period=day
+    reach: reach
+    followers: follower_count
+  ig_total_metrics:            # Instagram metrics that only come as a total per time range
+    profile_views: profile_views
+    website_clicks: website_clicks
+    engagements: accounts_engaged
+  ig_media_metrics: [reach, likes, comments, shares, saved, total_interactions]
+  post_metrics: [post_impressions_unique, post_clicks]
+
+thresholds:
+  min_baseline_reach: 100      # ignore reach rules for accounts below this daily reach
+  reach_drop_pct: 0.50         # yesterday's reach below same-weekday baseline by 50% -> warning
+  reach_spike_pct: 1.00        # above baseline by 100% -> warning (good news still needs a look)
+  zscore_critical: 3.0         # |z| at or above this escalates drop/spike to critical
+  engagement_drop_pct: 0.60
+  unfollow_spike_factor: 3.0   # daily unfollows at 3x the 28 day mean (and at least 10) -> warning
+  unfollow_min: 10
+  follower_drop_pct: 0.01      # followers down 1% day over day -> critical
+  posting_gap_days: 7          # no post in 7 days -> warning
+  hot_post_factor: 5.0         # a post with comments at 5x the window median -> info
+  hot_post_min_comments: 20
+
+claude:
+  enabled: true
+  model: claude-sonnet-5-5
+  max_tokens: 600

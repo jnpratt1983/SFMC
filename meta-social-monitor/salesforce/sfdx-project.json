@@ -1,0 +1,6 @@
+{
+  "packageDirectories": [{ "path": "force-app", "default": true }],
+  "name": "meta-social-monitor-objects",
+  "namespace": "",
+  "sourceApiVersion": "62.0"
+}
