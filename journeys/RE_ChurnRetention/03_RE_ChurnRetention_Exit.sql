@@ -1,5 +1,5 @@
-/* Query activity: RE_ChurnRetention_Exit (automation RE_ChurnRetention, step 3)
-   Target DE: RE_ChurnRetention_Exit (Overwrite). Journey exit criteria = "contact is in this DE".
+/* Query activity: RE_ChurnRetention_Exit_AF_10202026 (automation RE_ChurnRetention, step 3)
+   Target DE: RE_ChurnRetention_Exit_AF_10202026 (Overwrite). Journey exit criteria = "contact is in this DE".
    Evaluated against everyone entered in the last 75 days. ExitReason drives the thank-you
    journey (RENEWED) and reporting. Keyed on Id. */
 SELECT
@@ -16,7 +16,7 @@ SELECT
         WHEN CAST(c.Current_Term_Effective_Date__c AS DATE) >= h.TermEndAtEntry                THEN 'RENEWED'
     END                                                 AS ExitReason,
     GETDATE()                                           AS ExitDate
-FROM [RE_ChurnRetention_History] h
+FROM [RE_ChurnRetention_History_AF_10202026] h
 JOIN ENT.Contact_Salesforce c ON c.Id = h.Id
 WHERE h.EntryDate >= DATEADD(DAY, -75, GETDATE())
   AND (

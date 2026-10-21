@@ -73,7 +73,7 @@ journey does.
 ### Gate 3: the journey lowers churn (9 to 12 months; 50/50 holdout approved by compliance 2026-10-20)
 
 **Design.** Randomized 50/50 split assigned in the entry query (`Arm` = TREAT or HOLDOUT, random
-order partitioned by state) and logged in `RE_ChurnRetention_History`. The journey's first
+order partitioned by state) and logged in `RE_ChurnRetention_History_AF_10202026`. The journey's first
 activity is a decision split on `Arm`; the HOLDOUT path has no sends and the same exit criteria. Widen entry to the full Moderate and High bands
 in both states to reach ~400 entrants a month; keep the non-pay exclusion. Stratify the random
 split by state (two Random Split activities behind a state decision split, or one split with the

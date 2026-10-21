@@ -18,11 +18,11 @@ starts. Non-pay customers are excluded at entry and exited on a new notice, per 
 
 | Step | Query activity | Target DE | Update type |
 |---|---|---|---|
-| 1 | `01_RE_ChurnRetention_Entry.sql` | `RE_ChurnRetention_Entry` | Overwrite |
-| 2 | `02_RE_ChurnRetention_Suppression.sql` | `RE_ChurnRetention_History` | Append |
-| 3 | `03_RE_ChurnRetention_Exit.sql` | `RE_ChurnRetention_Exit` | Overwrite |
+| 1 | `01_RE_ChurnRetention_Entry.sql` | `RE_ChurnRetention_Entry_AF_10202026` | Overwrite |
+| 2 | `02_RE_ChurnRetention_Suppression.sql` | `RE_ChurnRetention_History_AF_10202026` | Append |
+| 3 | `03_RE_ChurnRetention_Exit.sql` | `RE_ChurnRetention_Exit_AF_10202026` | Overwrite |
 
-DE schemas are in `de/`. Band cut points live in `RE_ChurnRetention_Config` (one row) and are
+DE schemas are in `de/`. Band cut points live in `RE_ChurnRetention_Config_AF_10202026` (one row) and are
 updated after each monthly scoring batch, so the SQL never hard-codes a threshold.
 
 ## Entry rule (step 1)
@@ -38,7 +38,7 @@ A contact enters when all of these hold on the run date:
   adds the next tier.)
 - **Exclusions:** any non-pay notice in the last 90 days (Contact or Bill); currently in the
   non-pay journey's entry DE; email opt-out for the email path and mobile opt-out for SMS; DNR
-  flag; already in `RE_ChurnRetention_History` for this term end date.
+  flag; already in `RE_ChurnRetention_History_AF_10202026` for this term end date.
 
 Content is driven by `ChurnReason` (see `CONTENT_SPEC.md`); `Track` is derived from it for the step logic:
 
@@ -51,10 +51,10 @@ Content is driven by `ChurnReason` (see `CONTENT_SPEC.md`); `Track` is derived f
 
 ## Journey Builder settings
 
-- Name `RE_ChurnRetention_<Month>2026`. Entry source: `RE_ChurnRetention_Entry`, scheduled
+- Name `RE_ChurnRetention_<Month>2026`. Entry source: `RE_ChurnRetention_Entry_AF_10202026`, scheduled
   daily after the automation. Re-entry: **single entry across all versions**. No trailing waits
   (the non-pay journey's trailing waits are why 63% of its traced contacts were stuck).
-- First activity: a decision split on `Arm`. `HOLDOUT` goes straight to a wait that ends at T+30 and then exits; it sends nothing and has the same exit criteria, so both arms are tracked identically in `RE_ChurnRetention_History`. Approved by compliance 2026-10-20 as a 50/50 split. `TREAT` continues.
+- First activity: a decision split on `Arm`. `HOLDOUT` goes straight to a wait that ends at T+30 and then exits; it sends nothing and has the same exit criteria, so both arms are tracked identically in `RE_ChurnRetention_History_AF_10202026`. Approved by compliance 2026-10-20 as a 50/50 split. `TREAT` continues.
 - Second split: `MailingState` (AZ / RI) for content; third split: `Track`; fourth split: channel, reusing the "Email Only / Email & SMS / SMS Only /
   Remainder" multi-criteria split from `AC_ReviewQuoteStepJourney` keyed on
   `HasOptedOutOfEmail`, `et4ae5__HasOptedOutOfMobile__c`, `SMS_Policy_Opt_In__c`.
@@ -62,7 +62,7 @@ Content is driven by `ChurnReason` (see `CONTENT_SPEC.md`); `Track` is derived f
 - No call tasks and no Sales Cloud activities: the journey is email, SMS and push only
   (decision 2026-10-19, no call resources). If that changes, the T-21 step is where a task
   would go, using the "Call Lead- Next Best Action" activity pattern.
-- **Exit criteria**, evaluated daily: contact is in `RE_ChurnRetention_Exit`. The exit DE holds
+- **Exit criteria**, evaluated daily: contact is in `RE_ChurnRetention_Exit_AF_10202026`. The exit DE holds
   anyone who cancelled, went pending cancel, received a new non-pay notice after entry (the
   non-pay journey takes over), or renewed (`Current_Term_Effective_Date__c` >= the term end
   recorded at entry). Renewed contacts get the thank-you email via a separate one-step journey
@@ -79,7 +79,7 @@ Content is driven by `ChurnReason` (see `CONTENT_SPEC.md`); `Track` is derived f
 
 ## Measurement (50/50 randomized holdout, approved 2026-10-20)
 
-0. **Primary read.** Preventable voluntary cancellation by T+30 after term end, TREAT vs HOLDOUT from `RE_ChurnRetention_History` joined to Contact; stratified by state, tenure bucket and band. Interim looks at months 4 and 8 of entries, final read at month 12. See `TEST_PLAN.md`.
+0. **Primary read.** Preventable voluntary cancellation by T+30 after term end, TREAT vs HOLDOUT from `RE_ChurnRetention_History_AF_10202026` joined to Contact; stratified by state, tenure bucket and band. Interim looks at months 4 and 8 of entries, final read at month 12. See `TEST_PLAN.md`.
 1. **Cut-line comparison (secondary).** 90-day cancel rate for contacts just above the High cut (entered)
    versus just below it (not entered), same term-end window, same tenure bucket.
 2. **Year-over-year renewal cohort.** Daily retention curve for entered contacts' renewal cohort
