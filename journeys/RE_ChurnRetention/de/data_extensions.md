@@ -1,5 +1,9 @@
 # Data extensions for RE_ChurnRetention
 
+Created 2026-10-21 in the Airflow Data folder (`scripts/create_des.py`). v2 of the spec (2026-10-21) adds
+three columns that are not on the DEs yet: Entry gets `AppOpened`, `LifetimeSavings`, `RatingVersion`; History gets
+`RatingVersion`. The SMS columns and Phone remain on the Entry DE but nothing writes or reads them.
+
 All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. SubscriberKey = Contact Id.
 
 ## RE_ChurnRetention_Config_AF_10202026 (one row, edited after each monthly scoring batch)
@@ -20,15 +24,15 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 | account_id__c | Text(50) |
 | FirstName | Text(100) |
 | Email | EmailAddress(254) |
-| Phone | Phone |
 | MailingState | Text(10) |
 | HasOptedOutOfEmail | Text(10) |
-| et4ae5__HasOptedOutOfMobile__c | Text(10) |
-| SMS_Policy_Opt_In__c | Text(10) |
+| AppOpened | Text(10) (push reachability; replaces the SMS columns, which stay on the DE unused) |
 | Score | Decimal(5,2) |
 | Band | Text(10): HIGH (model tier) or OFFER (price tier) |
 | ChurnReason | Text(20): PRICE_SHOCK, DISCOUNT_EROSION, NEW_CUSTOMER, DISENGAGED, LOW_SAVINGS, GENERAL |
-| OfferChange | Decimal(10,2), nullable |
+| OfferChange | Decimal(10,2), nullable, reporting only, never rendered in copy |
+| LifetimeSavings | Decimal(10,2), nullable. **Add in v2.** |
+| RatingVersion | Text(20), e.g. azV12.0.0 (TDLI), azV11.0.0, riV5.2.0. **Add in v2.** |
 | DiscountChange | Decimal(10,2), nullable |
 | DrivingScore | Decimal(10,2), nullable |
 | Track | Text(10) |
@@ -40,7 +44,7 @@ All in the B2C Lifecycle Marketing BU, folder `Journeys/RE_ChurnRetention`. Subs
 
 ## RE_ChurnRetention_History_AF_10202026 (Append; suppression and reporting)
 
-Fields: Id (Text 18), TermEndAtEntry (Date), EntryDate (Date), Band, Track, Score, Arm.
+Fields: Id (Text 18), TermEndAtEntry (Date), EntryDate (Date), Band, Track, Score, Arm, RatingVersion (Text 20, **add in v2**).
 Primary key: Id + TermEndAtEntry. Retention: keep all rows; it is the measurement spine.
 
 ## RE_ChurnRetention_Exit_AF_10202026 (Overwrite daily; journey exit criteria)

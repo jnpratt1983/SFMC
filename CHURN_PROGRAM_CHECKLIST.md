@@ -58,11 +58,13 @@ unchecked items are still needed, with the owner. Folder references are in this 
 
 - [x] Marketing Cloud Connect sync: seven `Voluntary_Churn_*` fields, both term dates, driver role, DNR on `Contact_Salesforce`; `Renewal_Offer__c_Salesforce`; `Monthly_Driving_Stat__c_Salesforce`
 - [x] Data extensions in Airflow Data: `RE_ChurnRetention_Config_AF_10202026` (row: HighCut 59.99, ModerateCut 49.05, batch 2026-10-20), `_Entry_AF_10202026` (sendable on Id), `_History_AF_10202026`, `_Exit_AF_10202026`
-- [ ] Query activities from `journeys/RE_ChurnRetention/01..03_*.sql` and automation `RE_ChurnRetention` daily 06:30 (entry Overwrite, history Append, exit Overwrite) — Jennifer or Claude via API
-- [ ] Run the entry query once and confirm 5 to 10 rows a day with the expected mix of OFFER and HIGH bands — Claude can verify by API
-- [ ] Eight content blocks and the email template with the AMPscript switch (`CONTENT_SPEC.md`); subject lines per reason — Jennifer
-- [ ] Two push templates for DISCOUNT_EROSION and NEW_CUSTOMER — Jennifer
-- [ ] Journey `RE_ChurnRetention_<Month>2026`: entry source, decision splits on Arm then Band then channel, step timings per track, exit on the exit DE, goal "not cancelled 30 days after term end" — Jennifer
+- [x] Spec v2 (2026-10-21) after reading the live lifecycle flow: entry moved from T-45 to R-27 (the offer is issued at R-32, the Heads Up rate email lands R-28/29); one R-21 coverage check-in email with no premium or price figures; R-14 push for HIGH and ENGAGE; no SMS; `RatingVersion` on entry and history so legacy and TDLI read separately
+- [ ] Add `AppOpened` Text(10), `LifetimeSavings` Decimal(10,2), `RatingVersion` Text(20) to `_Entry_AF_10202026` and `RatingVersion` to `_History_AF_10202026` — Claude via API on request
+- [ ] Query activities from `journeys/RE_ChurnRetention/01..03_*.sql` and automation `RE_ChurnRetention` daily 10:00, after `Master Customer Journey Daily Sends` at 09:00 (entry Overwrite, history Append, exit Overwrite) — Jennifer or Claude via API
+- [ ] Run the entry query once and confirm 5 to 10 rows a day with the expected mix of OFFER and HIGH bands and no row with a Heads Up send in 48 hours — Claude can verify by API
+- [ ] Nine content blocks and the R-21 email template with the AMPscript switch (`CONTENT_SPEC.md` v2); subject lines per reason — Jennifer; Irene reviews the copy before Insurance
+- [ ] Two push variants (ENGAGE reasons; everyone else eligible) — Jennifer
+- [ ] Journey `RE_ChurnRetention_<Month>2026`: entry source, Arm split, wait to R-21, email with STO, push-eligibility split, wait to R-14, push, exit on the exit DE, goal "not cancelled 30 days after term end" — Jennifer
 - [ ] Thank-you journey `RE_ChurnRetention_Renewed` fed by the exit DE's RENEWED rows — Jennifer
 - [ ] Add the journey to the lifecycle-watch list (`lifecycle-watch.md`, `scripts/lifecycle_watch.py` in c360-sfdx) once published — Claude
 - [ ] Launch in AZ and RI with the 50/50 split after Insurance sign-off — Jennifer
@@ -71,7 +73,7 @@ unchecked items are still needed, with the owner. Folder references are in this 
 
 - [ ] Gate 1, first four weeks: entrants per day, zero entrants with a non-pay notice in 90 days, sends within 24 hours, exits within a day, nobody stuck in a wait, unsubscribe rate under 0.5%
 - [ ] Gate 2, monthly: validation row per batch, cut points copied into the config DE (the write-back prints them)
-- [ ] Interim reads at months 4 and 8 of entries; final read on 12 months of entries, stratified by state, tenure and band
+- [ ] Interim reads at months 4 and 8 of entries; decision read on 12 months of entries, stratified by state, tenure, band and rating version
 - [ ] Quarterly: retrain on closed snapshots; promote only if it beats v3 on the same holdout
 
 ## 7. Known constraints to keep in mind

@@ -3,7 +3,7 @@
 Updated 2026-10-21 for the final entry rule (renewal price shock plus the v3 model tier). Short
 version: the model is proven (Gate 0 done, see below), the journey mechanics take a month, and a
 statistically significant churn reduction needs the approved 50/50 holdout and **about 15 to 18 months
-of entries for a 25% effect, 7 to 9 months for a 35% effect**, plus the 75-day outcome lag. Scope is
+of entries for a 25% effect, 7 to 9 months for a 35% effect**, plus the 57-day outcome lag. Scope is
 Arizona and Rhode Island, which is the whole book (85% and 15% of upcoming renewals), so there is no
 smaller pilot and no larger audience. An earlier draft of this plan quoted 8 to 11 months; that assumed
 a larger, lower-rate population than the rule actually produces, and is superseded here. Nothing shorter is honest at
@@ -15,16 +15,16 @@ waiting a year to learn that the entry rule was wrong.
 | Quantity | Value | Source |
 |---|---|---|
 | Renewals per month (term ends) | ~1,250 (AZ ~1,050, RI ~190) | active contacts by `Current_Term_Expiration_Date__c` and `MailingState`, Nov 2026 to Mar 2027 |
-| Entry rule: offered increase > $20 or > 10% (tier 1) OR v3 top decile among offer-covered (tier 2), term end within 45 days | 16% of the renewal window | holdout test of the rule, 911 of 5,601 offer-covered rows |
+| Entry rule: new-term offer > $20 or > 10% (tier 1) OR v3 top decile (tier 2), evaluated at R-27 | 16% of the term-end window | holdout test of the rule, 911 of 5,601 offer-covered rows |
 | After the 90-day non-pay exclusion and opt-outs | ~150 to 250 entrants/month (AZ ~85%, RI ~15%) | +$20 offers ran 108 to 179/month Apr-Aug 2026; tier 2 adds ~55/month |
 | 2026 preventable voluntary cancels by state | AZ 1,715, RI 338 | `Cancellation_Reason__c`, Jan to Oct 14 |
 | Preventable voluntary cancel rate among entrants, 60 days | 11 to 13% | rule tested on the holdout: 11.4% combined; +$20 offers alone 12.9% |
-| Outcome lag per entrant | 75 days | entry T-45, outcome read at T+30 |
+| Outcome lag per entrant | 57 days | entry R-27, outcome read at R+30 |
 | Plausible journey effect | 20 to 35% relative reduction | price-shock interventions act on the stated reason; 35% is the optimistic case |
 
 ## Months of entries needed for 80% power, two-sided 5%, 50/50 split
 
-Two-proportion test on "preventable voluntary cancel within 60 days of entry". Add the 75-day outcome
+Two-proportion test on "preventable voluntary cancel within 60 days of entry". Add the 57-day outcome
 lag to every figure to get calendar time. Recomputed 2026-10-21 for the offer-rule population.
 
 | Entrants / month | Base rate | Effect 20% | Effect 25% | Effect 35% |
@@ -59,7 +59,7 @@ Binary checks, no statistics:
 
 - Entrants per day within 50% of the expected ~5 to 8; zero entrants with a non-pay notice in
   the prior 90 days; zero entrants who are opted out on every channel.
-- Every T-45 send goes out within 24 hours of entry; T-30 SMS only to consented contacts.
+- Every R-21 email goes out within 24 hours of the R-21 wait ending; R-14 push only to app-opened contacts in the eligible bands. No sends before R-21 and no SMS.
 - Exit DE fires: every cancelled or non-pay contact leaves within one day; renewed contacts
   reach the thank-you journey.
 - No contact is in `CurrentlyWaitingInSameInteraction` beyond T+14 (the non-pay journey's
@@ -84,16 +84,17 @@ split by state (two Random Split activities behind a state decision split, or on
 state recorded) so the AZ:RI mix is identical in both arms. Holdout contacts still
 get every servicing communication. Compliance approved the split on 2026-10-20.
 
-**Primary metric.** Preventable voluntary cancellation within 60 days of entry (which spans T-45 to
-T+15 around term end), per entrant. Secondary: any cancellation by T+30; renewal recorded by T+7.
+**Primary metric.** Preventable voluntary cancellation within 60 days of entry (which spans R-27 to
+R+33 around term end), per entrant. Both arms receive the existing lifecycle flow, so this reads the
+incremental effect of the layer. Secondary: any cancellation by T+30; renewal recorded by T+7.
 
-**Analysis.** Two-proportion test, stratified by state, tenure bucket and band (OFFER vs HIGH).
+**Analysis.** Two-proportion test, stratified by state, tenure bucket, band (OFFER vs HIGH) and rating version (TDLI vs monthly model).
 Interim looks at months 4 and 8 of entries with O'Brien-Fleming boundaries (stop early only for an
 effect of 35% or more); a decision read at month 12 of entries, and the plan allows up to month 18 for
-a 25% effect. Calendar time adds about 2.5 months.
+a 25% effect. Calendar time adds about 2 months.
 
 **Leading indicators, read monthly from month 2.** Not proof of churn reduction, but they tell
-you within 60 days whether the journey is doing anything: open and click on the T-45 email versus
+you within 60 days whether the journey is doing anything: open and click on the R-21 email versus
 the HiGoals announcement benchmark; savings-page visits from the email; app re-activation within
 14 days among the Engage track (holdout gives a clean comparison here with far more power, since
 the base rate is 30 to 50%); early renewal acceptance by T-7.
