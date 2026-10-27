@@ -71,6 +71,8 @@ unchecked items are still needed, with the owner. Folder references are in this 
 
 ## 6. Measurement, after launch (`journeys/RE_ChurnRetention/TEST_PLAN.md`)
 
+Jira: [ANA-6132](https://blueowl.atlassian.net/browse/ANA-6132) (sample size and run-time analysis).
+
 - [ ] Gate 1, first four weeks: entrants per day, zero entrants with a non-pay notice in 90 days, sends within 24 hours, exits within a day, nobody stuck in a wait, unsubscribe rate under 0.5%
 - [ ] Gate 2, monthly: validation row per batch, cut points copied into the config DE (the write-back prints them)
 - [ ] Interim reads at months 4 and 8 of entries; decision read on 12 months of entries, stratified by state, tenure, band and rating version

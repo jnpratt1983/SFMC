@@ -1,5 +1,8 @@
 # Test plan: proving the model and the retention layer lower churn (2026-10-19, v2 2026-10-21)
 
+Tracked in Jira as [ANA-6132](https://blueowl.atlassian.net/browse/ANA-6132). This file is the source for the
+sample size and run-time analysis; the ticket links here.
+
 Updated 2026-10-21 for the final entry rule (new-term price change plus the v3 model tier) and for spec v2 of
 the journey (entry at R-27 behind the existing lifecycle flow, R-21 email, R-14 push, no SMS). The question
 the test answers is **whether the layer lowers churn beyond the Heads Up and TDLI emails both arms already
