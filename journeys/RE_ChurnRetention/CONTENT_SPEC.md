@@ -26,7 +26,7 @@ a rate-change email at T-45 with the dollar change in it.
 | `RatingVersion` | latest `Renewal_Offer__c` | TDLI line vs monthly-model line |
 | `LifetimeSavings` | `Contact.Lifetime_Savings__c` | value line, shown when > 0 |
 | `DrivingScore` | `Contact.Voluntary_Churn_Driving_Score__c` | DISCOUNT_EROSION and LOW_SAVINGS personalisation |
-| `DiscountChange` | `Contact.Voluntary_Churn_Discount_Change__c` | DISCOUNT_EROSION, monthly model only |
+| `DiscountChange` | `Contact.Voluntary_Churn_Discount_Change__c` | dollars of monthly earned discount, latest cycle minus ~3 cycles earlier; DISCOUNT_EROSION, monthly model only |
 | `FirstName` | Contact | greeting |
 
 ## R-21 email: "Does your coverage still fit how you drive?"
@@ -40,7 +40,7 @@ plain customer care line. Subject line by reason, tested as the first A/B.
 | **PRICE_SHOCK** | 986 | Does your coverage still fit how you drive? | Coverages and deductibles drift as cars, commutes and household change. A two-minute review in the app shows what you are carrying and what each piece does. For TDLI: your Safe Driving Discount is locked for the full next term; this term's driving sets the one after. For monthly model: your discount is earned each month from your driving. | none |
 | **LOW_SAVINGS** | 37 | What you have saved with HiRoad so far | Savings meter with `LifetimeSavings`; how the driving score turns into the discount; same coverage review CTA. | none |
 | **GENERAL** | 2,545 | Does your coverage still fit how you drive? | PRICE_SHOCK block without the TDLI/monthly line. | none |
-| **DISCOUNT_EROSION** | 459 | Your discount moved. Here is what moves it back | Monthly model only (RI and legacy AZ): discount fell `DiscountChange` points over three cycles; the two subscores that fell; most drivers recover it within two cycles. TDLI customers get the PRICE_SHOCK block instead. | RI: HiGoals rewards progress. AZ: safe-driving discount. |
+| **DISCOUNT_EROSION** | 459 | Your discount moved. Here is what moves it back | Monthly model only (RI and legacy AZ): discount fell $`DiscountChange` a month over three cycles; the two subscores that fell; most drivers recover it within two cycles. TDLI customers get the PRICE_SHOCK block instead. | RI: HiGoals rewards progress. AZ: safe-driving discount. |
 | **NEW_CUSTOMER** | 2,447 | Three things to set up before your first term ends | App setup checklist (permissions, trip logging, digital wallet). TDLI: your first locked discount is set from this term's driving. | RI: HiGoals. AZ: safe-driving discount. |
 | **DISENGAGED** | 1,404 | Is your coverage still right? | Plain-text check-in, one question, the coverage review link, lots of white space. | none |
 
