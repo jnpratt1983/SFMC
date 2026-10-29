@@ -29,7 +29,7 @@ channel test; everyone eligible gets the R-21 email and the R-14 push.
 - `DiscountChange` stays on the entry DE for reporting; nothing renders it.
 - Subject-line test by reason stays; it is the "simultaneous messaging test" Insurance asked for.
 
-## 4. Test plan (`TEST_PLAN.md` becomes v3)
+## 4. Test plan (`TEST_PLAN.md` v3, written in this PR; v2 moved to `TEST_PLAN_v2_holdout_appendix.md`)
 
 - Primary reads, all labelled directional:
   1. Year-over-year term-end cohort: 60-day preventable cancel rate for entrants vs the same term-end
