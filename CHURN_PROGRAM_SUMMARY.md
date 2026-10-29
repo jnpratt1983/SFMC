@@ -46,7 +46,8 @@ number on their Contact record and scored 90.7 out of 100.
 
 **Driving telemetry.** `Monthly_Driving_Stat__c`, 219,710 monthly cycles for 24,672 customers since May
 2023, streamed and joined by customer number: latest score, three-cycle trend, earned discount and its
-change, trips, miles. Where the discount fell five or more points, churn runs 7.2% against 4.9 to 6.2%.
+change, trips, miles. The discount figures are dollars of earned discount per month. Where the discount fell
+$5 or more over three cycles, churn runs 7.2% against 4.9 to 6.2%.
 
 **Price history from bills.** Net premium per invoice, every month, for every billed customer: the latest
 amount and the change over three months. Up $50 or more in three months: 10.8% cancel; flat or down: 4 to
