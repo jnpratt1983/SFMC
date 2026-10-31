@@ -71,7 +71,22 @@
        "Bill_Net_Change_3m_Pct__c",
        "Bill_Gross_Latest__c",
        "Bill_Count__c",
-       "Churn_Reason__c"
+       "Churn_Reason__c",
+       "Drv_Trips_Change_Pct__c",
+       "Drv_Decline_Flag__c",
+       "Sav_Pct_Latest__c",
+       "Sav_Pct_Change_3m__c",
+       "Sav_Discount_Latest__c",
+       "Sav_Discount_Change_3m__c",
+       "Sav_Lifetime_At_Snap__c",
+       "Sav_Per_Tenure_Month__c",
+       "Sav_Standard_Latest__c",
+       "Sav_Net_Latest__c",
+       "Sav_Effective_Rate_Latest__c",
+       "Sav_Earned_Latest__c",
+       "Sav_Disc_Months6__c",
+       "Sav_Cycles__c",
+       "Days_Since_Last_Savings_Cycle__c"
       ],
       "sampleDetails": {
        "type": "TopN"
@@ -341,6 +356,66 @@
        {
         "sourceField": "Churn_Reason__c",
         "targetField": "Churn_Reason__c"
+       },
+       {
+        "sourceField": "Drv_Trips_Change_Pct__c",
+        "targetField": "Drv_Trips_Change_Pct__c"
+       },
+       {
+        "sourceField": "Drv_Decline_Flag__c",
+        "targetField": "Drv_Decline_Flag__c"
+       },
+       {
+        "sourceField": "Sav_Pct_Latest__c",
+        "targetField": "Sav_Pct_Latest__c"
+       },
+       {
+        "sourceField": "Sav_Pct_Change_3m__c",
+        "targetField": "Sav_Pct_Change_3m__c"
+       },
+       {
+        "sourceField": "Sav_Discount_Latest__c",
+        "targetField": "Sav_Discount_Latest__c"
+       },
+       {
+        "sourceField": "Sav_Discount_Change_3m__c",
+        "targetField": "Sav_Discount_Change_3m__c"
+       },
+       {
+        "sourceField": "Sav_Lifetime_At_Snap__c",
+        "targetField": "Sav_Lifetime_At_Snap__c"
+       },
+       {
+        "sourceField": "Sav_Per_Tenure_Month__c",
+        "targetField": "Sav_Per_Tenure_Month__c"
+       },
+       {
+        "sourceField": "Sav_Standard_Latest__c",
+        "targetField": "Sav_Standard_Latest__c"
+       },
+       {
+        "sourceField": "Sav_Net_Latest__c",
+        "targetField": "Sav_Net_Latest__c"
+       },
+       {
+        "sourceField": "Sav_Effective_Rate_Latest__c",
+        "targetField": "Sav_Effective_Rate_Latest__c"
+       },
+       {
+        "sourceField": "Sav_Earned_Latest__c",
+        "targetField": "Sav_Earned_Latest__c"
+       },
+       {
+        "sourceField": "Sav_Disc_Months6__c",
+        "targetField": "Sav_Disc_Months6__c"
+       },
+       {
+        "sourceField": "Sav_Cycles__c",
+        "targetField": "Sav_Cycles__c"
+       },
+       {
+        "sourceField": "Days_Since_Last_Savings_Cycle__c",
+        "targetField": "Days_Since_Last_Savings_Cycle__c"
        }
       ],
       "name": "Churn_PIT_Holdout_V4__dll",
@@ -667,6 +742,96 @@
        "label": "Churn Reason",
        "name": "Churn_Reason__c",
        "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Trips Change Pct",
+       "name": "Drv_Trips_Change_Pct__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Decline Flag",
+       "name": "Drv_Decline_Flag__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Pct Latest",
+       "name": "Sav_Pct_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Pct Change 3m",
+       "name": "Sav_Pct_Change_3m__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Discount Latest",
+       "name": "Sav_Discount_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Discount Change 3m",
+       "name": "Sav_Discount_Change_3m__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Lifetime At Snap",
+       "name": "Sav_Lifetime_At_Snap__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Per Tenure Month",
+       "name": "Sav_Per_Tenure_Month__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Standard Latest",
+       "name": "Sav_Standard_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Net Latest",
+       "name": "Sav_Net_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Effective Rate Latest",
+       "name": "Sav_Effective_Rate_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Earned Latest",
+       "name": "Sav_Earned_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Disc Months6",
+       "name": "Sav_Disc_Months6__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Sav Cycles",
+       "name": "Sav_Cycles__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Since Last Savings Cycle",
+       "name": "Days_Since_Last_Savings_Cycle__c",
+       "type": "Number"
       }
      ]
     }
