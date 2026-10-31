@@ -119,3 +119,19 @@ Savings coverage caveat: 38,353 of the 41,986 backfilled customers have a Contac
 number, so coverage per snapshot should be near the driving branch's. Cycles that started in October 2026 are in
 neither the backfill nor the flow (the flow captures cycles that close after 2026-10-31); the 2026-10 snapshot will
 show a one-month dip in `Sav_Cycles__c` until the exporter is re-run with a later `as_of_date`.
+
+### First v4 run (2026-10-31)
+
+- Savings stream first load 17:04Z (363,264 rows). `ChurnPITTrainingSet` run 17:05 to 17:10Z: 237,547 rows, 78 columns
+  (237,980 on 10/20; the difference is source refresh drift, e.g. snapshot 202608 now 7,128 rows vs 7,155).
+- Savings coverage (`Sav_Cycles__c > 0`): 52% of 2024 rows, 56% of 2025, 58% of 2026; the 3-month change columns are
+  populated on 39% to 46%. Comparable to the driving branch.
+- First read, uncensored rows, 60-day preventable-voluntary label: rated discount fell 5+ points 8.2%, fell 1 to 5
+  points 5.8%, flat 6.6%, rose 1 to 5 points 5.1%, rose 5+ 5.3%. Latest rated discount 0 to 10% = 8.7%, 40%+ = 4.9%,
+  no savings row 6.9%. Discount dollars down $10+ over three months 8.2% vs up $2 to $10 5.0%.
+- `Drv_Decline_Flag__c = 1` on 8.9% / 5.5% / 3.7% of rows by year (2024 / 2025 / 2026); label rate 7.2% vs 6.7% for
+  the rest, so the Insurance exclusion removes a slightly higher-churn slice.
+- V4 views posted and run ~18:25Z: `Churn_PIT_Train_V4__dll` 166,781 rows (V3: 179,196), `Churn_PIT_Holdout_V4__dll`
+  24,450 rows (V3: 25,419), 67 columns each. Both landed in the default data space on creation.
+- API notes: run history is under the `histories` key; a freshly POSTed transform sits in PROCESSING for a minute or
+  two and refuses `actions/run` until ACTIVE.
