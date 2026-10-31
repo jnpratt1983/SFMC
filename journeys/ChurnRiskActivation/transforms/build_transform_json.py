@@ -9,7 +9,8 @@ Outputs (next to this script):
   Churn_PIT_Training_Set.api.json   POST body for /ssot/data-transforms (raw SQL formulas; the API escapes them on storage)
   Churn_Snapshot_Calendar.csv       26 monthly snapshot rows to load as a CSV data stream
 
-Run: python3 build_transform_json.py
+Run: python3 build_transform_json.py [--without-offers] [--with-driving] [--with-bills] [--with-savings] [--scoring]
+     v3 production = --with-driving --with-bills; v4 = --with-driving --with-bills --with-savings (same output object, 13 Sav_* columns and 2 Drv_* columns added)
 """
 import csv, html, json, os, sys
 from datetime import date
@@ -19,7 +20,9 @@ WITH_OFFERS = "--without-offers" not in sys.argv
 WITH_DRIVING = "--with-driving" in sys.argv   # needs the Monthly_Driving_Stat__c data stream (lake object name below)
 DRIVING_DLO = "Monthly_Driving_Stat_c_00D3h0000068eod__dll"   # the Renewal_Offer__c lake object must exist before the offers branch can be posted
 SCORING = "--scoring" in sys.argv               # one snapshot = now(); writes Churn_PIT_Scoring_Set__dll; labels are meaningless and left in place
-WITH_BILLS = "--with-bills" in sys.argv       # price history from Bill__c: net and gross premium; NO payment fields. HiRoad credit is ~0 on 99% of bills, so it is not carried.
+WITH_BILLS = "--with-bills" in sys.argv
+WITH_SAVINGS = "--with-savings" in sys.argv   # customer-month premium, discount and lifetime savings from Savings_History__c (ANA-6320 backfill 2023-05..2026-09 + Savings_History_Capture flow); needs the lake object below
+SAVINGS_DLO = "Savings_History_c_00D3h0000068eod__dll"   # verified 2026-10-31: fields arrive as <Field>_c__c, Telematic_Discount_Pct_c__c is Percent (0-50), Earned_Discount_Pct_c__c is a fraction 0-0.5 (blank on ~10% of backfill rows and on every flow row)       # price history from Bill__c: net and gross premium; NO payment fields. HiRoad credit is ~0 on 99% of bills, so it is not carried.
 SUFFIX = ("" if WITH_OFFERS else ".nooffers") + (".scoring" if "--scoring" in sys.argv else "")
 SNAP = '"Cal.Snap_Date"'
 SNAPKEY = '"Cal.Snap_Key"'
@@ -244,6 +247,7 @@ if WITH_DRIVING:
         num_field("Drv_Score_Latest", "case when Drv_Latest_Window = 1 then Drv_Score else null end", "Score if latest"),
         num_field("Drv_Score_Prior", "case when Drv_Prior_Window = 1 then Drv_Score else null end", "Score if prior"),
         num_field("Drv_Trips_Latest", "case when Drv_Latest_Window = 1 then n_trips_in_curr_month_c__c else null end", "Trips if latest"),
+        num_field("Drv_Trips_Prior", "case when Drv_Prior_Window = 1 then n_trips_in_curr_month_c__c else null end", "Trips if prior"),
         num_field("Drv_Miles_Latest", "case when Drv_Latest_Window = 1 then distance_miles_in_curr_month_c__c else null end", "Miles if latest", 10, 1),
         num_field("Drv_Discount_Latest", "case when Drv_Latest_Window = 1 then earn_discount_curr_month_c__c else null end", "Earned discount if latest", 10, 2),
         num_field("Drv_Discount_Prior", "case when Drv_Prior_Window = 1 then earn_discount_curr_month_c__c else null end", "Earned discount if prior", 10, 2),
@@ -257,6 +261,7 @@ if WITH_DRIVING:
         {"action": "AVG", "label": "Score latest", "name": "Drv_Score_Latest_A", "source": "Drv_Score_Latest"},
         {"action": "AVG", "label": "Score prior", "name": "Drv_Score_Prior_A", "source": "Drv_Score_Prior"},
         {"action": "AVG", "label": "Trips latest", "name": "Drv_Trips_Latest_A", "source": "Drv_Trips_Latest"},
+        {"action": "AVG", "label": "Trips prior", "name": "Drv_Trips_Prior_A", "source": "Drv_Trips_Prior"},
         {"action": "AVG", "label": "Miles latest", "name": "Drv_Miles_Latest_A", "source": "Drv_Miles_Latest"},
         {"action": "AVG", "label": "Discount latest", "name": "Drv_Discount_Latest_A", "source": "Drv_Discount_Latest"},
         {"action": "AVG", "label": "Discount prior", "name": "Drv_Discount_Prior_A", "source": "Drv_Discount_Prior"},
@@ -289,6 +294,46 @@ if WITH_BILLS:
         {"action": "COUNT", "label": "Invoices before snapshot", "name": "Bill_Count", "source": "Invoice_Date_c__c"}], "Bills per contact-snapshot", 1390, 1512)
     ui_link("FILTER_BILL", "AGG_BILL")
 
+if WITH_SAVINGS:
+    # ------------------------------------------------------------ savings (row I): customer-month premium, rated discount and lifetime savings, point-in-time on the cycle close (Period_End).
+    # Cycles are monthly, so the 35-day "latest" window holds one cycle (two around a short month: AVG smooths that); lifetime is a running total, so MAX is exact.
+    load("LOAD_SAV", SAVINGS_DLO, "dataLakeObject", ["Customer_Number_c__c", "Period_Start_c__c", "Period_End_c__c", "Standard_Premium_c__c", "Telematic_Discount_Pct_c__c",
+         "Discount_Amount_c__c", "Net_Premium_c__c", "Lifetime_Savings_To_Date_c__c", "Earned_Discount_Pct_c__c"], "Savings history", 1580, 112)
+    sav_k = transform("T_SAV_K", "LOAD_SAV", [num_field("xk", "1", "Cross-join key")], "Savings join key", 1580, 392)
+    ui_link("LOAD_SAV", "T_SAV_K")
+    join("JOIN_SAV_CAL", sav_k, cal_last, ["xk"], ["xk"], "Cal", "INNER", "Savings x snapshot", 1580, 672, drop=["Cal.xk", "Cal.Snapshot_Date__c", "Cal.Snapshot_Key__c"])
+    ui_link("T_SAV_K", "JOIN_SAV_CAL"); ui_link("T_CAL", "JOIN_SAV_CAL")
+    sav_f = transform("T_SAV_W", "JOIN_SAV_CAL", [
+        num_field("Sav_Before_Snap", f"case when Period_End_c__c <= {SNAP} then 1 else 0 end", "Cycle closed before snapshot"),
+        num_field("Sav_Latest_W", f"case when Period_End_c__c > {SNAP} - INTERVAL 35 DAY and Period_End_c__c <= {SNAP} then 1 else 0 end", "Latest cycle (closed in the 35 days before)"),
+        num_field("Sav_Prior_W", f"case when Period_End_c__c > {SNAP} - INTERVAL 125 DAY and Period_End_c__c <= {SNAP} - INTERVAL 90 DAY then 1 else 0 end", "Prior cycle (closed 90 to 125 days before)"),
+        num_field("Sav_Recent6_W", f"case when Period_End_c__c > {SNAP} - INTERVAL 185 DAY and Period_End_c__c <= {SNAP} then 1 else 0 end", "Cycle closed in the last ~6 months"),
+        num_field("Sav_Pct_Latest", "case when Sav_Latest_W = 1 then Telematic_Discount_Pct_c__c else null end", "Rated discount % if latest", 10, 2),
+        num_field("Sav_Pct_Prior", "case when Sav_Prior_W = 1 then Telematic_Discount_Pct_c__c else null end", "Rated discount % if prior", 10, 2),
+        num_field("Sav_Disc_Latest", "case when Sav_Latest_W = 1 then Discount_Amount_c__c else null end", "Discount $ if latest", 10, 2),
+        num_field("Sav_Disc_Prior", "case when Sav_Prior_W = 1 then Discount_Amount_c__c else null end", "Discount $ if prior", 10, 2),
+        num_field("Sav_Std_Latest", "case when Sav_Latest_W = 1 then Standard_Premium_c__c else null end", "Standard premium if latest", 10, 2),
+        num_field("Sav_Net_Latest", "case when Sav_Latest_W = 1 then Net_Premium_c__c else null end", "Net premium if latest", 10, 2),
+        num_field("Sav_Earned_Latest", "case when Sav_Latest_W = 1 then Earned_Discount_Pct_c__c else null end", "Earned discount fraction if latest", 10, 2),
+        num_field("Sav_Disc_Month6", "case when Sav_Recent6_W = 1 and Discount_Amount_c__c > 0 then 1 else 0 end", "Discounted month in the last 6"),
+        text_field("Snap_Key_Sav", SNAPKEY, "Snap key (savings)", 10),
+    ], "Savings windows", 1580, 952)
+    filt("FILTER_SAV", sav_f, [{"field": "Sav_Before_Snap", "operands": ["1"], "operator": "EQUAL", "type": "NUMBER"}], "Cycles closed before snapshot", 1580, 1232)
+    ui_link("JOIN_SAV_CAL", "T_SAV_W"); ui_link("T_SAV_W", "FILTER_SAV")
+    sav_agg = aggregate("AGG_SAV", "FILTER_SAV", ["Customer_Number_c__c", "Snap_Key_Sav"], [
+        {"action": "MAX", "label": "Last cycle close", "name": "Sav_Last_Period_End", "source": "Period_End_c__c"},
+        {"action": "MAX", "label": "Lifetime savings at snapshot", "name": "Sav_Life_A", "source": "Lifetime_Savings_To_Date_c__c"},
+        {"action": "AVG", "label": "Pct latest", "name": "Sav_Pct_Latest_A", "source": "Sav_Pct_Latest"},
+        {"action": "AVG", "label": "Pct prior", "name": "Sav_Pct_Prior_A", "source": "Sav_Pct_Prior"},
+        {"action": "AVG", "label": "Discount latest", "name": "Sav_Disc_Latest_A", "source": "Sav_Disc_Latest"},
+        {"action": "AVG", "label": "Discount prior", "name": "Sav_Disc_Prior_A", "source": "Sav_Disc_Prior"},
+        {"action": "AVG", "label": "Standard latest", "name": "Sav_Std_Latest_A", "source": "Sav_Std_Latest"},
+        {"action": "AVG", "label": "Net latest", "name": "Sav_Net_Latest_A", "source": "Sav_Net_Latest"},
+        {"action": "AVG", "label": "Earned latest", "name": "Sav_Earned_Latest_A", "source": "Sav_Earned_Latest"},
+        {"action": "SUM", "label": "Discounted months of last 6", "name": "Sav_Disc_Months6", "source": "Sav_Disc_Month6"},
+        {"action": "COUNT", "label": "Cycles before snapshot", "name": "Sav_Cycles", "source": "Period_End_c__c"}], "Savings per customer-snapshot", 1580, 1512)
+    ui_link("FILTER_SAV", "AGG_SAV")
+
 # ---------------------------------------------------------------- assemble (row 1, right side)
 join("JOIN_F_APP", labels, app_agg, ["account_id_c__c", "Cal.Snap_Key"], ["Account_Id_c__c", "Snap_Key_App"], "App", "LEFT_OUTER", "+ app", 250, 2072, drop=["App.Account_Id_c__c", "App.Snap_Key_App"])
 ui_link("T_LABELS", "JOIN_F_APP"); ui_link("AGG_APP", "JOIN_F_APP")
@@ -302,7 +347,12 @@ if WITH_DRIVING:
 if WITH_BILLS:
     join("JOIN_F_BILL", "JOIN_F_DRV" if WITH_DRIVING else "JOIN_F_TKT", bill_agg, ["Id__c", "Cal.Snap_Key"], ["Contact_c__c", "Snap_Key_Bill"], "Bill", "LEFT_OUTER", "+ bills", 250, 2842, drop=["Bill.Contact_c__c", "Bill.Snap_Key_Bill"])
     ui_link("JOIN_F_DRV" if WITH_DRIVING else "JOIN_F_TKT", "JOIN_F_BILL"); ui_link("AGG_BILL", "JOIN_F_BILL")
-final = transform("T_FINAL", "JOIN_F_BILL" if WITH_BILLS else ("JOIN_F_DRV" if WITH_DRIVING else "JOIN_F_TKT"), [
+LAST_JOIN = "JOIN_F_BILL" if WITH_BILLS else ("JOIN_F_DRV" if WITH_DRIVING else "JOIN_F_TKT")
+if WITH_SAVINGS:
+    join("JOIN_F_SAV", LAST_JOIN, sav_agg, ["Customer_Number_c__c", "Cal.Snap_Key"], ["Customer_Number_c__c", "Snap_Key_Sav"], "Sav", "LEFT_OUTER", "+ savings", 250, 2877, drop=["Sav.Customer_Number_c__c", "Sav.Snap_Key_Sav"])  # customer number: 38,353 of 41,986 backfilled customers have a Contact; the key matches all of them
+    ui_link(LAST_JOIN, "JOIN_F_SAV"); ui_link("AGG_SAV", "JOIN_F_SAV")
+    LAST_JOIN = "JOIN_F_SAV"
+final = transform("T_FINAL", LAST_JOIN, [
     num_field("App_Events_30d_F", 'coalesce("App.App_Events_30d", 0)', "App events 30d (final)"),
     num_field("App_Events_90d_F", 'coalesce("App.App_Events_90d", 0)', "App events 90d (final)"),
     num_field("Days_Since_Last_App_Event", f'case when "App.Last_App_Event" is null then 9999 else datediff({SNAP}, "App.Last_App_Event") end', "Days since last app event"),
@@ -317,6 +367,8 @@ final = transform("T_FINAL", "JOIN_F_BILL" if WITH_BILLS else ("JOIN_F_DRV" if W
     *([num_field("Drv_Score_Latest_F", '"Drv.Drv_Score_Latest_A"', "Driving score, latest cycle", 10, 2),
        num_field("Drv_Score_Trend", 'case when "Drv.Drv_Score_Latest_A" is null or "Drv.Drv_Score_Prior_A" is null then null else "Drv.Drv_Score_Latest_A" - "Drv.Drv_Score_Prior_A" end', "Driving score trend (latest minus ~3 cycles earlier)", 10, 2),
        num_field("Drv_Trips_Latest_F", '"Drv.Drv_Trips_Latest_A"', "Trips, latest cycle", 10, 1),
+       num_field("Drv_Trips_Change_Pct", 'case when "Drv.Drv_Trips_Latest_A" is null or "Drv.Drv_Trips_Prior_A" is null or "Drv.Drv_Trips_Prior_A" <= 0 then null else 100 * ("Drv.Drv_Trips_Latest_A" - "Drv.Drv_Trips_Prior_A") / "Drv.Drv_Trips_Prior_A" end', "Trips change vs ~3 cycles earlier (%)", 10, 1),
+       num_field("Drv_Decline_Flag", 'case when "Drv.Drv_Score_Latest_A" is not null and "Drv.Drv_Score_Prior_A" is not null and "Drv.Drv_Score_Prior_A" - "Drv.Drv_Score_Latest_A" >= 5 and coalesce("Drv.Drv_Trips_Latest_A", 0) > 0.5 * coalesce("Drv.Drv_Trips_Prior_A", 0) then 1 else 0 end', "Insurance exclusion: score fell 5+ vs ~3 cycles earlier with trips not halved (1/0)"),
        num_field("Drv_Miles_Latest_F", '"Drv.Drv_Miles_Latest_A"', "Miles, latest cycle", 10, 1),
        num_field("Drv_Discount_Latest_F", '"Drv.Drv_Discount_Latest_A"', "Earned discount, latest cycle", 10, 2),
        num_field("Drv_Discount_Change", 'case when "Drv.Drv_Discount_Latest_A" is null or "Drv.Drv_Discount_Prior_A" is null then null else "Drv.Drv_Discount_Latest_A" - "Drv.Drv_Discount_Prior_A" end', "Earned discount change vs ~3 cycles earlier", 10, 2),
@@ -328,6 +380,19 @@ final = transform("T_FINAL", "JOIN_F_BILL" if WITH_BILLS else ("JOIN_F_DRV" if W
        num_field("Bill_Net_Change_3m_Pct", 'case when "Bill.Bill_Net_Latest_A" is null or "Bill.Bill_Net_Prior_A" is null or "Bill.Bill_Net_Prior_A" <= 0 then null else 100 * ("Bill.Bill_Net_Latest_A" - "Bill.Bill_Net_Prior_A") / "Bill.Bill_Net_Prior_A" end', "Net premium change vs ~3 months earlier (%)", 10, 2),
        num_field("Bill_Gross_Latest_F", '"Bill.Bill_Gross_Latest_A"', "Gross premium, latest invoice", 10, 2),
        num_field("Bill_Count_F", 'coalesce("Bill.Bill_Count", 0)', "Invoices before snapshot")] if WITH_BILLS else []),
+    *([num_field("Sav_Pct_Latest_F", '"Sav.Sav_Pct_Latest_A"', "Rated telematics discount %, latest closed cycle", 10, 2),
+       num_field("Sav_Pct_Change_3m", 'case when "Sav.Sav_Pct_Latest_A" is null or "Sav.Sav_Pct_Prior_A" is null then null else "Sav.Sav_Pct_Latest_A" - "Sav.Sav_Pct_Prior_A" end', "Rated discount % change vs ~3 cycles earlier (points)", 10, 2),
+       num_field("Sav_Discount_Latest_F", '"Sav.Sav_Disc_Latest_A"', "Discount dollars, latest closed cycle", 10, 2),
+       num_field("Sav_Discount_Change_3m", 'case when "Sav.Sav_Disc_Latest_A" is null or "Sav.Sav_Disc_Prior_A" is null then null else "Sav.Sav_Disc_Latest_A" - "Sav.Sav_Disc_Prior_A" end', "Discount dollars change vs ~3 cycles earlier", 10, 2),
+       num_field("Sav_Lifetime_At_Snap", '"Sav.Sav_Life_A"', "Lifetime savings to date at snapshot (point-in-time)", 12, 2),
+       num_field("Sav_Per_Tenure_Month", 'case when "Sav.Sav_Life_A" is null then null when Tenure_Days < 30 then "Sav.Sav_Life_A" else "Sav.Sav_Life_A" / (Tenure_Days / 30.4) end', "Lifetime savings per month of tenure", 10, 2),
+       num_field("Sav_Standard_Latest_F", '"Sav.Sav_Std_Latest_A"', "Standard premium, latest closed cycle", 10, 2),
+       num_field("Sav_Net_Latest_F", '"Sav.Sav_Net_Latest_A"', "Net premium, latest closed cycle", 10, 2),
+       num_field("Sav_Effective_Rate_Latest", 'case when "Sav.Sav_Std_Latest_A" is null or "Sav.Sav_Std_Latest_A" <= 0 or "Sav.Sav_Disc_Latest_A" is null then null else 100 * "Sav.Sav_Disc_Latest_A" / "Sav.Sav_Std_Latest_A" end', "Effective discount % of standard premium, latest cycle", 10, 2),
+       num_field("Sav_Earned_Latest_F", '"Sav.Sav_Earned_Latest_A"', "Earned discount fraction, latest cycle (backfill only)", 10, 2),
+       num_field("Sav_Disc_Months6_F", 'coalesce("Sav.Sav_Disc_Months6", 0)', "Months with a discount in the last 6"),
+       num_field("Sav_Cycles_F", 'coalesce("Sav.Sav_Cycles", 0)', "Savings cycles before snapshot"),
+       num_field("Days_Since_Last_Savings_Cycle", f'case when "Sav.Sav_Last_Period_End" is null then null else datediff({SNAP}, "Sav.Sav_Last_Period_End") end', "Days since the last savings cycle closed")] if WITH_SAVINGS else []),
     # one primary reason per customer, fixed priority, from the same signals the model sees (requires --with-driving --with-bills for the full set)
     text_field("Churn_Reason", 'case '
         + ('when "Acct.Off.Increase_Amount_Dollars_c__c" > 20 or ("Acct.Off.Policy_Renewal_Rate_c__c" - coalesce("Acct.Off.Increase_Amount_Dollars_c__c", 0) > 0 and 100 * coalesce("Acct.Off.Increase_Amount_Dollars_c__c", 0) / ("Acct.Off.Policy_Renewal_Rate_c__c" - coalesce("Acct.Off.Increase_Amount_Dollars_c__c", 0)) > 10) then \'PRICE_SHOCK\' ' if WITH_OFFERS else '')
@@ -340,7 +405,7 @@ final = transform("T_FINAL", "JOIN_F_BILL" if WITH_BILLS else ("JOIN_F_DRV" if W
     date_field("Max_Feature_Date", 'case when "App.Last_App_Event" is not null and ("Email.Last_Email_Event" is null or "App.Last_App_Event" >= "Email.Last_Email_Event") and ("Tkt.Last_Ticket" is null or "App.Last_App_Event" >= "Tkt.Last_Ticket") then "App.Last_App_Event" when "Email.Last_Email_Event" is not null and ("Tkt.Last_Ticket" is null or "Email.Last_Email_Event" >= "Tkt.Last_Ticket") then "Email.Last_Email_Event" else "Tkt.Last_Ticket" end', "Max feature date (audit: must be <= Snap_Date)"),
     *([num_field("Offer_After_Snapshot", f'case when "Acct.Latest_Offer_Date" > {SNAP} then 1 else 0 end', "Audit: offer dated after snapshot (must be 0)")] if WITH_OFFERS else []),
 ], "Final features", 250, 2912, "Null-safe counts, recency, and the leakage audit column")
-ui_link("JOIN_F_BILL" if WITH_BILLS else ("JOIN_F_DRV" if WITH_DRIVING else "JOIN_F_TKT"), "T_FINAL")
+ui_link(LAST_JOIN, "T_FINAL")
 
 mappings = [
     ("Row_Key", "Row_Key__c"), ("Id__c", "Contact_Id__c"), ("Cal.Snap_Date", "Snapshot_Date__c"), ("Cal.Snap_Key", "Snapshot_Key__c"),
@@ -359,9 +424,13 @@ mappings = [
     ("Email_Sends_90d_F", "Email_Sends_90d__c"), ("Email_Opens_30d_F", "Email_Opens_30d__c"), ("Email_Opens_90d_F", "Email_Opens_90d__c"), ("Email_Clicks_90d_F", "Email_Clicks_90d__c"),
     ("Email_Open_Rate_90d", "Email_Open_Rate_90d__c"), ("Days_Since_Last_Email_Event", "Days_Since_Last_Email_Event__c"),
     ("Tickets_90d_F", "Tickets_90d__c"), ("Days_Since_Last_Ticket", "Days_Since_Last_Ticket__c"),
-    *([("Drv_Score_Latest_F", "Drv_Score_Latest__c"), ("Drv_Score_Trend", "Drv_Score_Trend__c"), ("Drv_Trips_Latest_F", "Drv_Trips_Latest__c"), ("Drv_Miles_Latest_F", "Drv_Miles_Latest__c"),
+    *([("Drv_Score_Latest_F", "Drv_Score_Latest__c"), ("Drv_Score_Trend", "Drv_Score_Trend__c"), ("Drv_Trips_Latest_F", "Drv_Trips_Latest__c"), ("Drv_Trips_Change_Pct", "Drv_Trips_Change_Pct__c"), ("Drv_Decline_Flag", "Drv_Decline_Flag__c"), ("Drv_Miles_Latest_F", "Drv_Miles_Latest__c"),
        ("Drv_Discount_Latest_F", "Drv_Discount_Latest__c"), ("Drv_Discount_Change", "Drv_Discount_Change__c"), ("Days_Since_Last_Cycle", "Days_Since_Last_Cycle__c"), ("Drv_Cycles_F", "Drv_Cycles__c"), ("Drv_PNI_Latest_F", "Drv_PNI_Latest__c")] if WITH_DRIVING else []),
     *([("Bill_Net_Latest_F", "Bill_Net_Latest__c"), ("Bill_Net_Change_3m", "Bill_Net_Change_3m__c"), ("Bill_Net_Change_3m_Pct", "Bill_Net_Change_3m_Pct__c"), ("Bill_Gross_Latest_F", "Bill_Gross_Latest__c"), ("Bill_Count_F", "Bill_Count__c")] if WITH_BILLS else []),
+    *([("Sav_Pct_Latest_F", "Sav_Pct_Latest__c"), ("Sav_Pct_Change_3m", "Sav_Pct_Change_3m__c"), ("Sav_Discount_Latest_F", "Sav_Discount_Latest__c"), ("Sav_Discount_Change_3m", "Sav_Discount_Change_3m__c"),
+       ("Sav_Lifetime_At_Snap", "Sav_Lifetime_At_Snap__c"), ("Sav_Per_Tenure_Month", "Sav_Per_Tenure_Month__c"), ("Sav_Standard_Latest_F", "Sav_Standard_Latest__c"), ("Sav_Net_Latest_F", "Sav_Net_Latest__c"),
+       ("Sav_Effective_Rate_Latest", "Sav_Effective_Rate_Latest__c"), ("Sav_Earned_Latest_F", "Sav_Earned_Latest__c"), ("Sav_Disc_Months6_F", "Sav_Disc_Months6__c"), ("Sav_Cycles_F", "Sav_Cycles__c"),
+       ("Days_Since_Last_Savings_Cycle", "Days_Since_Last_Savings_Cycle__c")] if WITH_SAVINGS else []),
     ("Churn_Reason", "Churn_Reason__c"),
     ("Max_Feature_Date", "Max_Feature_Date__c"), *([("Offer_After_Snapshot", "Offer_After_Snapshot__c")] if WITH_OFFERS else []),
 ]

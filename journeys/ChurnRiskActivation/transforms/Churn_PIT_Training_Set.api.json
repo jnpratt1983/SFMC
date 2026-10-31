@@ -2038,11 +2038,11 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "case when Drv_Latest_Window = 1 then distance_miles_in_curr_month_c__c else null end",
-                "label": "Miles if latest",
-                "name": "Drv_Miles_Latest",
-                "precision": 10,
-                "scale": 1,
+                "formulaExpression": "case when Drv_Prior_Window = 1 then n_trips_in_curr_month_c__c else null end",
+                "label": "Trips if prior",
+                "name": "Drv_Trips_Prior",
+                "precision": 18,
+                "scale": 0,
                 "type": "NUMBER"
               }
             ]
@@ -2059,11 +2059,11 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "case when Drv_Latest_Window = 1 then earn_discount_curr_month_c__c else null end",
-                "label": "Earned discount if latest",
-                "name": "Drv_Discount_Latest",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then distance_miles_in_curr_month_c__c else null end",
+                "label": "Miles if latest",
+                "name": "Drv_Miles_Latest",
                 "precision": 10,
-                "scale": 2,
+                "scale": 1,
                 "type": "NUMBER"
               }
             ]
@@ -2080,9 +2080,9 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "case when Drv_Prior_Window = 1 then earn_discount_curr_month_c__c else null end",
-                "label": "Earned discount if prior",
-                "name": "Drv_Discount_Prior",
+                "formulaExpression": "case when Drv_Latest_Window = 1 then earn_discount_curr_month_c__c else null end",
+                "label": "Earned discount if latest",
+                "name": "Drv_Discount_Latest",
                 "precision": 10,
                 "scale": 2,
                 "type": "NUMBER"
@@ -2101,6 +2101,27 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
+                "formulaExpression": "case when Drv_Prior_Window = 1 then earn_discount_curr_month_c__c else null end",
+                "label": "Earned discount if prior",
+                "name": "Drv_Discount_Prior",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_DRV_W_F10": {
+          "action": "formula",
+          "sources": [
+            "T_DRV_W_F9"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
                 "formulaExpression": "case when Drv_Latest_Window = 1 and driver_role_c__c = 'PNI' then 1 when Drv_Latest_Window = 1 then 0 else null end",
                 "label": "PNI at latest cycle (historical)",
                 "name": "Drv_PNI_Latest",
@@ -2111,10 +2132,10 @@
             ]
           }
         },
-        "T_DRV_W_F10": {
+        "T_DRV_W_F11": {
           "action": "formula",
           "sources": [
-            "T_DRV_W_F9"
+            "T_DRV_W_F10"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -2134,7 +2155,7 @@
         "FILTER_DRV": {
           "action": "filter",
           "sources": [
-            "T_DRV_W_F10"
+            "T_DRV_W_F11"
           ],
           "parameters": {
             "filterExpressions": [
@@ -2188,6 +2209,12 @@
                 "label": "Trips latest",
                 "name": "Drv_Trips_Latest_A",
                 "source": "Drv_Trips_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Trips prior",
+                "name": "Drv_Trips_Prior_A",
+                "source": "Drv_Trips_Prior"
               },
               {
                 "action": "AVG",
@@ -2536,6 +2563,484 @@
             ]
           }
         },
+        "LOAD_SAV": {
+          "action": "load",
+          "sources": [],
+          "parameters": {
+            "dataset": {
+              "name": "Savings_History_c_00D3h0000068eod__dll",
+              "type": "dataLakeObject"
+            },
+            "fields": [
+              "Customer_Number_c__c",
+              "Period_Start_c__c",
+              "Period_End_c__c",
+              "Standard_Premium_c__c",
+              "Telematic_Discount_Pct_c__c",
+              "Discount_Amount_c__c",
+              "Net_Premium_c__c",
+              "Lifetime_Savings_To_Date_c__c",
+              "Earned_Discount_Pct_c__c"
+            ],
+            "sampleDetails": {
+              "type": "TopN"
+            }
+          }
+        },
+        "T_SAV_K_F0": {
+          "action": "formula",
+          "sources": [
+            "LOAD_SAV"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "1",
+                "label": "Cross-join key",
+                "name": "xk",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "JOIN_SAV_CAL": {
+          "action": "join",
+          "sources": [
+            "T_SAV_K_F0",
+            "T_CAL_F2"
+          ],
+          "parameters": {
+            "joinType": "INNER",
+            "leftKeys": [
+              "xk"
+            ],
+            "rightKeys": [
+              "xk"
+            ],
+            "rightQualifier": "Cal"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Cal.xk",
+                "Cal.Snapshot_Date__c",
+                "Cal.Snapshot_Key__c"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
+        "T_SAV_W_F0": {
+          "action": "formula",
+          "sources": [
+            "JOIN_SAV_CAL"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Period_End_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Cycle closed before snapshot",
+                "name": "Sav_Before_Snap",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F1": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F0"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Period_End_c__c > \"Cal.Snap_Date\" - INTERVAL 35 DAY and Period_End_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Latest cycle (closed in the 35 days before)",
+                "name": "Sav_Latest_W",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F2": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F1"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Period_End_c__c > \"Cal.Snap_Date\" - INTERVAL 125 DAY and Period_End_c__c <= \"Cal.Snap_Date\" - INTERVAL 90 DAY then 1 else 0 end",
+                "label": "Prior cycle (closed 90 to 125 days before)",
+                "name": "Sav_Prior_W",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F3": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F2"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Period_End_c__c > \"Cal.Snap_Date\" - INTERVAL 185 DAY and Period_End_c__c <= \"Cal.Snap_Date\" then 1 else 0 end",
+                "label": "Cycle closed in the last ~6 months",
+                "name": "Sav_Recent6_W",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F4": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F3"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Sav_Latest_W = 1 then Telematic_Discount_Pct_c__c else null end",
+                "label": "Rated discount % if latest",
+                "name": "Sav_Pct_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F5": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F4"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Sav_Prior_W = 1 then Telematic_Discount_Pct_c__c else null end",
+                "label": "Rated discount % if prior",
+                "name": "Sav_Pct_Prior",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F6": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F5"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Sav_Latest_W = 1 then Discount_Amount_c__c else null end",
+                "label": "Discount $ if latest",
+                "name": "Sav_Disc_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F7": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F6"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Sav_Prior_W = 1 then Discount_Amount_c__c else null end",
+                "label": "Discount $ if prior",
+                "name": "Sav_Disc_Prior",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F8": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F7"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Sav_Latest_W = 1 then Standard_Premium_c__c else null end",
+                "label": "Standard premium if latest",
+                "name": "Sav_Std_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F9": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F8"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Sav_Latest_W = 1 then Net_Premium_c__c else null end",
+                "label": "Net premium if latest",
+                "name": "Sav_Net_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F10": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F9"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Sav_Latest_W = 1 then Earned_Discount_Pct_c__c else null end",
+                "label": "Earned discount fraction if latest",
+                "name": "Sav_Earned_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F11": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F10"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when Sav_Recent6_W = 1 and Discount_Amount_c__c > 0 then 1 else 0 end",
+                "label": "Discounted month in the last 6",
+                "name": "Sav_Disc_Month6",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_SAV_W_F12": {
+          "action": "formula",
+          "sources": [
+            "T_SAV_W_F11"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Text",
+                "defaultValue": "",
+                "formulaExpression": "\"Cal.Snap_Key\"",
+                "label": "Snap key (savings)",
+                "name": "Snap_Key_Sav",
+                "precision": 10,
+                "type": "TEXT"
+              }
+            ]
+          }
+        },
+        "FILTER_SAV": {
+          "action": "filter",
+          "sources": [
+            "T_SAV_W_F12"
+          ],
+          "parameters": {
+            "filterExpressions": [
+              {
+                "field": "Sav_Before_Snap",
+                "operands": [
+                  "1"
+                ],
+                "operator": "EQUAL",
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "AGG_SAV_EXTRACT": {
+          "action": "extractGrains",
+          "sources": [
+            "FILTER_SAV"
+          ],
+          "parameters": {
+            "grainExtractions": []
+          }
+        },
+        "AGG_SAV_AGG": {
+          "action": "aggregate",
+          "sources": [
+            "AGG_SAV_EXTRACT"
+          ],
+          "parameters": {
+            "aggregations": [
+              {
+                "action": "MAX",
+                "label": "Last cycle close",
+                "name": "Sav_Last_Period_End",
+                "source": "Period_End_c__c"
+              },
+              {
+                "action": "MAX",
+                "label": "Lifetime savings at snapshot",
+                "name": "Sav_Life_A",
+                "source": "Lifetime_Savings_To_Date_c__c"
+              },
+              {
+                "action": "AVG",
+                "label": "Pct latest",
+                "name": "Sav_Pct_Latest_A",
+                "source": "Sav_Pct_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Pct prior",
+                "name": "Sav_Pct_Prior_A",
+                "source": "Sav_Pct_Prior"
+              },
+              {
+                "action": "AVG",
+                "label": "Discount latest",
+                "name": "Sav_Disc_Latest_A",
+                "source": "Sav_Disc_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Discount prior",
+                "name": "Sav_Disc_Prior_A",
+                "source": "Sav_Disc_Prior"
+              },
+              {
+                "action": "AVG",
+                "label": "Standard latest",
+                "name": "Sav_Std_Latest_A",
+                "source": "Sav_Std_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Net latest",
+                "name": "Sav_Net_Latest_A",
+                "source": "Sav_Net_Latest"
+              },
+              {
+                "action": "AVG",
+                "label": "Earned latest",
+                "name": "Sav_Earned_Latest_A",
+                "source": "Sav_Earned_Latest"
+              },
+              {
+                "action": "SUM",
+                "label": "Discounted months of last 6",
+                "name": "Sav_Disc_Months6",
+                "source": "Sav_Disc_Month6"
+              },
+              {
+                "action": "COUNT",
+                "label": "Cycles before snapshot",
+                "name": "Sav_Cycles",
+                "source": "Period_End_c__c"
+              }
+            ],
+            "groupings": [
+              "Customer_Number_c__c",
+              "Snap_Key_Sav"
+            ],
+            "nodeType": "STANDARD"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "Sav_Disc_Months6",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              },
+              {
+                "name": "Sav_Cycles",
+                "newProperties": {
+                  "typeProperties": {
+                    "precision": 18,
+                    "scale": 0,
+                    "type": "NUMBER"
+                  }
+                }
+              }
+            ]
+          }
+        },
         "JOIN_F_APP": {
           "action": "join",
           "sources": [
@@ -2686,10 +3191,40 @@
             }
           }
         },
+        "JOIN_F_SAV": {
+          "action": "join",
+          "sources": [
+            "JOIN_F_BILL",
+            "AGG_SAV_AGG"
+          ],
+          "parameters": {
+            "joinType": "LEFT_OUTER",
+            "leftKeys": [
+              "Customer_Number_c__c",
+              "Cal.Snap_Key"
+            ],
+            "rightKeys": [
+              "Customer_Number_c__c",
+              "Snap_Key_Sav"
+            ],
+            "rightQualifier": "Sav"
+          },
+          "schema": {
+            "fields": [],
+            "slice": {
+              "fields": [
+                "Sav.Customer_Number_c__c",
+                "Sav.Snap_Key_Sav"
+              ],
+              "ignoreMissingFields": true,
+              "mode": "DROP"
+            }
+          }
+        },
         "T_FINAL_F0": {
           "action": "formula",
           "sources": [
-            "JOIN_F_BILL"
+            "JOIN_F_SAV"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -2991,9 +3526,9 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "\"Drv.Drv_Miles_Latest_A\"",
-                "label": "Miles, latest cycle",
-                "name": "Drv_Miles_Latest_F",
+                "formulaExpression": "case when \"Drv.Drv_Trips_Latest_A\" is null or \"Drv.Drv_Trips_Prior_A\" is null or \"Drv.Drv_Trips_Prior_A\" <= 0 then null else 100 * (\"Drv.Drv_Trips_Latest_A\" - \"Drv.Drv_Trips_Prior_A\") / \"Drv.Drv_Trips_Prior_A\" end",
+                "label": "Trips change vs ~3 cycles earlier (%)",
+                "name": "Drv_Trips_Change_Pct",
                 "precision": 10,
                 "scale": 1,
                 "type": "NUMBER"
@@ -3012,6 +3547,48 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
+                "formulaExpression": "case when \"Drv.Drv_Score_Latest_A\" is not null and \"Drv.Drv_Score_Prior_A\" is not null and \"Drv.Drv_Score_Prior_A\" - \"Drv.Drv_Score_Latest_A\" >= 5 and coalesce(\"Drv.Drv_Trips_Latest_A\", 0) > 0.5 * coalesce(\"Drv.Drv_Trips_Prior_A\", 0) then 1 else 0 end",
+                "label": "Insurance exclusion: score fell 5+ vs ~3 cycles earlier with trips not halved (1/0)",
+                "name": "Drv_Decline_Flag",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F16": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F15"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Drv.Drv_Miles_Latest_A\"",
+                "label": "Miles, latest cycle",
+                "name": "Drv_Miles_Latest_F",
+                "precision": 10,
+                "scale": 1,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F17": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F16"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
                 "formulaExpression": "\"Drv.Drv_Discount_Latest_A\"",
                 "label": "Earned discount, latest cycle",
                 "name": "Drv_Discount_Latest_F",
@@ -3022,10 +3599,10 @@
             ]
           }
         },
-        "T_FINAL_F16": {
+        "T_FINAL_F18": {
           "action": "formula",
           "sources": [
-            "T_FINAL_F15"
+            "T_FINAL_F17"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -3043,48 +3620,6 @@
             ]
           }
         },
-        "T_FINAL_F17": {
-          "action": "formula",
-          "sources": [
-            "T_FINAL_F16"
-          ],
-          "parameters": {
-            "expressionType": "SQL",
-            "fields": [
-              {
-                "businessType": "Number",
-                "defaultValue": "",
-                "formulaExpression": "case when \"Drv.Drv_Last_Cycle_End\" is null then null else datediff(\"Cal.Snap_Date\", \"Drv.Drv_Last_Cycle_End\") end",
-                "label": "Days since the last driving cycle ended",
-                "name": "Days_Since_Last_Cycle",
-                "precision": 18,
-                "scale": 0,
-                "type": "NUMBER"
-              }
-            ]
-          }
-        },
-        "T_FINAL_F18": {
-          "action": "formula",
-          "sources": [
-            "T_FINAL_F17"
-          ],
-          "parameters": {
-            "expressionType": "SQL",
-            "fields": [
-              {
-                "businessType": "Number",
-                "defaultValue": "",
-                "formulaExpression": "coalesce(\"Drv.Drv_Cycles\", 0)",
-                "label": "Driving cycles before snapshot",
-                "name": "Drv_Cycles_F",
-                "precision": 18,
-                "scale": 0,
-                "type": "NUMBER"
-              }
-            ]
-          }
-        },
         "T_FINAL_F19": {
           "action": "formula",
           "sources": [
@@ -3096,9 +3631,9 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "\"Drv.Drv_PNI_Latest_A\"",
-                "label": "PNI at latest cycle (historical, 1/0/null)",
-                "name": "Drv_PNI_Latest_F",
+                "formulaExpression": "case when \"Drv.Drv_Last_Cycle_End\" is null then null else datediff(\"Cal.Snap_Date\", \"Drv.Drv_Last_Cycle_End\") end",
+                "label": "Days since the last driving cycle ended",
+                "name": "Days_Since_Last_Cycle",
                 "precision": 18,
                 "scale": 0,
                 "type": "NUMBER"
@@ -3117,11 +3652,11 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "\"Bill.Bill_Net_Latest_A\"",
-                "label": "Net premium, latest invoice",
-                "name": "Bill_Net_Latest_F",
-                "precision": 10,
-                "scale": 2,
+                "formulaExpression": "coalesce(\"Drv.Drv_Cycles\", 0)",
+                "label": "Driving cycles before snapshot",
+                "name": "Drv_Cycles_F",
+                "precision": 18,
+                "scale": 0,
                 "type": "NUMBER"
               }
             ]
@@ -3138,11 +3673,11 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "case when \"Bill.Bill_Net_Latest_A\" is null or \"Bill.Bill_Net_Prior_A\" is null then null else \"Bill.Bill_Net_Latest_A\" - \"Bill.Bill_Net_Prior_A\" end",
-                "label": "Net premium change vs ~3 months earlier ($)",
-                "name": "Bill_Net_Change_3m",
-                "precision": 10,
-                "scale": 2,
+                "formulaExpression": "\"Drv.Drv_PNI_Latest_A\"",
+                "label": "PNI at latest cycle (historical, 1/0/null)",
+                "name": "Drv_PNI_Latest_F",
+                "precision": 18,
+                "scale": 0,
                 "type": "NUMBER"
               }
             ]
@@ -3159,9 +3694,9 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "case when \"Bill.Bill_Net_Latest_A\" is null or \"Bill.Bill_Net_Prior_A\" is null or \"Bill.Bill_Net_Prior_A\" <= 0 then null else 100 * (\"Bill.Bill_Net_Latest_A\" - \"Bill.Bill_Net_Prior_A\") / \"Bill.Bill_Net_Prior_A\" end",
-                "label": "Net premium change vs ~3 months earlier (%)",
-                "name": "Bill_Net_Change_3m_Pct",
+                "formulaExpression": "\"Bill.Bill_Net_Latest_A\"",
+                "label": "Net premium, latest invoice",
+                "name": "Bill_Net_Latest_F",
                 "precision": 10,
                 "scale": 2,
                 "type": "NUMBER"
@@ -3180,9 +3715,9 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
-                "formulaExpression": "\"Bill.Bill_Gross_Latest_A\"",
-                "label": "Gross premium, latest invoice",
-                "name": "Bill_Gross_Latest_F",
+                "formulaExpression": "case when \"Bill.Bill_Net_Latest_A\" is null or \"Bill.Bill_Net_Prior_A\" is null then null else \"Bill.Bill_Net_Latest_A\" - \"Bill.Bill_Net_Prior_A\" end",
+                "label": "Net premium change vs ~3 months earlier ($)",
+                "name": "Bill_Net_Change_3m",
                 "precision": 10,
                 "scale": 2,
                 "type": "NUMBER"
@@ -3201,6 +3736,48 @@
               {
                 "businessType": "Number",
                 "defaultValue": "",
+                "formulaExpression": "case when \"Bill.Bill_Net_Latest_A\" is null or \"Bill.Bill_Net_Prior_A\" is null or \"Bill.Bill_Net_Prior_A\" <= 0 then null else 100 * (\"Bill.Bill_Net_Latest_A\" - \"Bill.Bill_Net_Prior_A\") / \"Bill.Bill_Net_Prior_A\" end",
+                "label": "Net premium change vs ~3 months earlier (%)",
+                "name": "Bill_Net_Change_3m_Pct",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F25": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F24"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Bill.Bill_Gross_Latest_A\"",
+                "label": "Gross premium, latest invoice",
+                "name": "Bill_Gross_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F26": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F25"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
                 "formulaExpression": "coalesce(\"Bill.Bill_Count\", 0)",
                 "label": "Invoices before snapshot",
                 "name": "Bill_Count_F",
@@ -3211,10 +3788,283 @@
             ]
           }
         },
-        "T_FINAL_F25": {
+        "T_FINAL_F27": {
           "action": "formula",
           "sources": [
-            "T_FINAL_F24"
+            "T_FINAL_F26"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Sav.Sav_Pct_Latest_A\"",
+                "label": "Rated telematics discount %, latest closed cycle",
+                "name": "Sav_Pct_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F28": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F27"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Sav.Sav_Pct_Latest_A\" is null or \"Sav.Sav_Pct_Prior_A\" is null then null else \"Sav.Sav_Pct_Latest_A\" - \"Sav.Sav_Pct_Prior_A\" end",
+                "label": "Rated discount % change vs ~3 cycles earlier (points)",
+                "name": "Sav_Pct_Change_3m",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F29": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F28"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Sav.Sav_Disc_Latest_A\"",
+                "label": "Discount dollars, latest closed cycle",
+                "name": "Sav_Discount_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F30": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F29"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Sav.Sav_Disc_Latest_A\" is null or \"Sav.Sav_Disc_Prior_A\" is null then null else \"Sav.Sav_Disc_Latest_A\" - \"Sav.Sav_Disc_Prior_A\" end",
+                "label": "Discount dollars change vs ~3 cycles earlier",
+                "name": "Sav_Discount_Change_3m",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F31": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F30"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Sav.Sav_Life_A\"",
+                "label": "Lifetime savings to date at snapshot (point-in-time)",
+                "name": "Sav_Lifetime_At_Snap",
+                "precision": 12,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F32": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F31"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Sav.Sav_Life_A\" is null then null when Tenure_Days < 30 then \"Sav.Sav_Life_A\" else \"Sav.Sav_Life_A\" / (Tenure_Days / 30.4) end",
+                "label": "Lifetime savings per month of tenure",
+                "name": "Sav_Per_Tenure_Month",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F33": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F32"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Sav.Sav_Std_Latest_A\"",
+                "label": "Standard premium, latest closed cycle",
+                "name": "Sav_Standard_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F34": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F33"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Sav.Sav_Net_Latest_A\"",
+                "label": "Net premium, latest closed cycle",
+                "name": "Sav_Net_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F35": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F34"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Sav.Sav_Std_Latest_A\" is null or \"Sav.Sav_Std_Latest_A\" <= 0 or \"Sav.Sav_Disc_Latest_A\" is null then null else 100 * \"Sav.Sav_Disc_Latest_A\" / \"Sav.Sav_Std_Latest_A\" end",
+                "label": "Effective discount % of standard premium, latest cycle",
+                "name": "Sav_Effective_Rate_Latest",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F36": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F35"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "\"Sav.Sav_Earned_Latest_A\"",
+                "label": "Earned discount fraction, latest cycle (backfill only)",
+                "name": "Sav_Earned_Latest_F",
+                "precision": 10,
+                "scale": 2,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F37": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F36"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Sav.Sav_Disc_Months6\", 0)",
+                "label": "Months with a discount in the last 6",
+                "name": "Sav_Disc_Months6_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F38": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F37"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "coalesce(\"Sav.Sav_Cycles\", 0)",
+                "label": "Savings cycles before snapshot",
+                "name": "Sav_Cycles_F",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F39": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F38"
+          ],
+          "parameters": {
+            "expressionType": "SQL",
+            "fields": [
+              {
+                "businessType": "Number",
+                "defaultValue": "",
+                "formulaExpression": "case when \"Sav.Sav_Last_Period_End\" is null then null else datediff(\"Cal.Snap_Date\", \"Sav.Sav_Last_Period_End\") end",
+                "label": "Days since the last savings cycle closed",
+                "name": "Days_Since_Last_Savings_Cycle",
+                "precision": 18,
+                "scale": 0,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        },
+        "T_FINAL_F40": {
+          "action": "formula",
+          "sources": [
+            "T_FINAL_F39"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -3231,10 +4081,10 @@
             ]
           }
         },
-        "T_FINAL_F26": {
+        "T_FINAL_F41": {
           "action": "formula",
           "sources": [
-            "T_FINAL_F25"
+            "T_FINAL_F40"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -3251,10 +4101,10 @@
             ]
           }
         },
-        "T_FINAL_F27": {
+        "T_FINAL_F42": {
           "action": "formula",
           "sources": [
-            "T_FINAL_F26"
+            "T_FINAL_F41"
           ],
           "parameters": {
             "expressionType": "SQL",
@@ -3275,7 +4125,7 @@
         "OUTPUT0": {
           "action": "outputD360",
           "sources": [
-            "T_FINAL_F27"
+            "T_FINAL_F42"
           ],
           "parameters": {
             "dedupOrder": [],
@@ -3453,6 +4303,14 @@
                 "targetField": "Drv_Trips_Latest__c"
               },
               {
+                "sourceField": "Drv_Trips_Change_Pct",
+                "targetField": "Drv_Trips_Change_Pct__c"
+              },
+              {
+                "sourceField": "Drv_Decline_Flag",
+                "targetField": "Drv_Decline_Flag__c"
+              },
+              {
                 "sourceField": "Drv_Miles_Latest_F",
                 "targetField": "Drv_Miles_Latest__c"
               },
@@ -3495,6 +4353,58 @@
               {
                 "sourceField": "Bill_Count_F",
                 "targetField": "Bill_Count__c"
+              },
+              {
+                "sourceField": "Sav_Pct_Latest_F",
+                "targetField": "Sav_Pct_Latest__c"
+              },
+              {
+                "sourceField": "Sav_Pct_Change_3m",
+                "targetField": "Sav_Pct_Change_3m__c"
+              },
+              {
+                "sourceField": "Sav_Discount_Latest_F",
+                "targetField": "Sav_Discount_Latest__c"
+              },
+              {
+                "sourceField": "Sav_Discount_Change_3m",
+                "targetField": "Sav_Discount_Change_3m__c"
+              },
+              {
+                "sourceField": "Sav_Lifetime_At_Snap",
+                "targetField": "Sav_Lifetime_At_Snap__c"
+              },
+              {
+                "sourceField": "Sav_Per_Tenure_Month",
+                "targetField": "Sav_Per_Tenure_Month__c"
+              },
+              {
+                "sourceField": "Sav_Standard_Latest_F",
+                "targetField": "Sav_Standard_Latest__c"
+              },
+              {
+                "sourceField": "Sav_Net_Latest_F",
+                "targetField": "Sav_Net_Latest__c"
+              },
+              {
+                "sourceField": "Sav_Effective_Rate_Latest",
+                "targetField": "Sav_Effective_Rate_Latest__c"
+              },
+              {
+                "sourceField": "Sav_Earned_Latest_F",
+                "targetField": "Sav_Earned_Latest__c"
+              },
+              {
+                "sourceField": "Sav_Disc_Months6_F",
+                "targetField": "Sav_Disc_Months6__c"
+              },
+              {
+                "sourceField": "Sav_Cycles_F",
+                "targetField": "Sav_Cycles__c"
+              },
+              {
+                "sourceField": "Days_Since_Last_Savings_Cycle",
+                "targetField": "Days_Since_Last_Savings_Cycle__c"
               },
               {
                 "sourceField": "Churn_Reason",
@@ -3782,6 +4692,18 @@
             },
             {
               "isPrimaryKey": false,
+              "label": "Drv Trips Change Pct",
+              "name": "Drv_Trips_Change_Pct__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Drv Decline Flag",
+              "name": "Drv_Decline_Flag__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
               "label": "Drv Miles Latest",
               "name": "Drv_Miles_Latest__c",
               "type": "Number"
@@ -3844,6 +4766,84 @@
               "isPrimaryKey": false,
               "label": "Bill Count",
               "name": "Bill_Count__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Pct Latest",
+              "name": "Sav_Pct_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Pct Change 3m",
+              "name": "Sav_Pct_Change_3m__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Discount Latest",
+              "name": "Sav_Discount_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Discount Change 3m",
+              "name": "Sav_Discount_Change_3m__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Lifetime At Snap",
+              "name": "Sav_Lifetime_At_Snap__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Per Tenure Month",
+              "name": "Sav_Per_Tenure_Month__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Standard Latest",
+              "name": "Sav_Standard_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Net Latest",
+              "name": "Sav_Net_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Effective Rate Latest",
+              "name": "Sav_Effective_Rate_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Earned Latest",
+              "name": "Sav_Earned_Latest__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Disc Months6",
+              "name": "Sav_Disc_Months6__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Sav Cycles",
+              "name": "Sav_Cycles__c",
+              "type": "Number"
+            },
+            {
+              "isPrimaryKey": false,
+              "label": "Days Since Last Savings Cycle",
+              "name": "Days_Since_Last_Savings_Cycle__c",
               "type": "Number"
             },
             {
@@ -4794,27 +5794,33 @@
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Miles if latest"
+                "label": "Trips if prior"
               },
               "T_DRV_W_F7": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Earned discount if latest"
+                "label": "Miles if latest"
               },
               "T_DRV_W_F8": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Earned discount if prior"
+                "label": "Earned discount if latest"
               },
               "T_DRV_W_F9": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "PNI at latest cycle (historical)"
+                "label": "Earned discount if prior"
               },
               "T_DRV_W_F10": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "PNI at latest cycle (historical)"
+              },
+              "T_DRV_W_F11": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
@@ -4861,6 +5867,10 @@
               {
                 "source": "T_DRV_W_F9",
                 "target": "T_DRV_W_F10"
+              },
+              {
+                "source": "T_DRV_W_F10",
+                "target": "T_DRV_W_F11"
               }
             ]
           },
@@ -5022,6 +6032,201 @@
               }
             ]
           },
+          "LOAD_SAV": {
+            "label": "Savings history",
+            "type": "LOAD_DATASET",
+            "top": 1580,
+            "left": 112,
+            "parameters": {
+              "sampleSize": 500,
+              "sampleDetails": {
+                "type": "TopN"
+              },
+              "dataspace": "default"
+            }
+          },
+          "T_SAV_K": {
+            "label": "Savings join key",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1580,
+            "left": 392,
+            "graph": {
+              "T_SAV_K_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cross-join key"
+              }
+            },
+            "connectors": []
+          },
+          "JOIN_SAV_CAL": {
+            "label": "Savings x snapshot",
+            "type": "JOIN",
+            "top": 1580,
+            "left": 672
+          },
+          "T_SAV_W": {
+            "label": "Savings windows",
+            "description": "",
+            "type": "TRANSFORM",
+            "top": 1580,
+            "left": 952,
+            "graph": {
+              "T_SAV_W_F0": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cycle closed before snapshot"
+              },
+              "T_SAV_W_F1": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Latest cycle (closed in the 35 days before)"
+              },
+              "T_SAV_W_F2": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Prior cycle (closed 90 to 125 days before)"
+              },
+              "T_SAV_W_F3": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Cycle closed in the last ~6 months"
+              },
+              "T_SAV_W_F4": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Rated discount % if latest"
+              },
+              "T_SAV_W_F5": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Rated discount % if prior"
+              },
+              "T_SAV_W_F6": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Discount $ if latest"
+              },
+              "T_SAV_W_F7": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Discount $ if prior"
+              },
+              "T_SAV_W_F8": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Standard premium if latest"
+              },
+              "T_SAV_W_F9": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Net premium if latest"
+              },
+              "T_SAV_W_F10": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount fraction if latest"
+              },
+              "T_SAV_W_F11": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Discounted month in the last 6"
+              },
+              "T_SAV_W_F12": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Snap key (savings)"
+              }
+            },
+            "connectors": [
+              {
+                "source": "T_SAV_W_F0",
+                "target": "T_SAV_W_F1"
+              },
+              {
+                "source": "T_SAV_W_F1",
+                "target": "T_SAV_W_F2"
+              },
+              {
+                "source": "T_SAV_W_F2",
+                "target": "T_SAV_W_F3"
+              },
+              {
+                "source": "T_SAV_W_F3",
+                "target": "T_SAV_W_F4"
+              },
+              {
+                "source": "T_SAV_W_F4",
+                "target": "T_SAV_W_F5"
+              },
+              {
+                "source": "T_SAV_W_F5",
+                "target": "T_SAV_W_F6"
+              },
+              {
+                "source": "T_SAV_W_F6",
+                "target": "T_SAV_W_F7"
+              },
+              {
+                "source": "T_SAV_W_F7",
+                "target": "T_SAV_W_F8"
+              },
+              {
+                "source": "T_SAV_W_F8",
+                "target": "T_SAV_W_F9"
+              },
+              {
+                "source": "T_SAV_W_F9",
+                "target": "T_SAV_W_F10"
+              },
+              {
+                "source": "T_SAV_W_F10",
+                "target": "T_SAV_W_F11"
+              },
+              {
+                "source": "T_SAV_W_F11",
+                "target": "T_SAV_W_F12"
+              }
+            ]
+          },
+          "FILTER_SAV": {
+            "label": "Cycles closed before snapshot",
+            "type": "FILTER",
+            "top": 1580,
+            "left": 1232
+          },
+          "AGG_SAV": {
+            "label": "Savings per customer-snapshot",
+            "description": "",
+            "type": "AGGREGATE",
+            "top": 1580,
+            "left": 1512,
+            "graph": {
+              "AGG_SAV_EXTRACT": null,
+              "AGG_SAV_AGG": null
+            },
+            "connectors": [
+              {
+                "source": "AGG_SAV_EXTRACT",
+                "target": "AGG_SAV_AGG"
+              }
+            ]
+          },
           "JOIN_F_APP": {
             "label": "+ app",
             "type": "JOIN",
@@ -5051,6 +6256,12 @@
             "type": "JOIN",
             "top": 250,
             "left": 2842
+          },
+          "JOIN_F_SAV": {
+            "label": "+ savings",
+            "type": "JOIN",
+            "top": 250,
+            "left": 2877
           },
           "T_FINAL": {
             "label": "Final features",
@@ -5147,81 +6358,171 @@
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Miles, latest cycle"
+                "label": "Trips change vs ~3 cycles earlier (%)"
               },
               "T_FINAL_F15": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Earned discount, latest cycle"
+                "label": "Insurance exclusion: score fell 5+ vs ~3 cycles earlier with trips not halved (1/0)"
               },
               "T_FINAL_F16": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Earned discount change vs ~3 cycles earlier"
+                "label": "Miles, latest cycle"
               },
               "T_FINAL_F17": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Days since the last driving cycle ended"
+                "label": "Earned discount, latest cycle"
               },
               "T_FINAL_F18": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Driving cycles before snapshot"
+                "label": "Earned discount change vs ~3 cycles earlier"
               },
               "T_FINAL_F19": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "PNI at latest cycle (historical, 1/0/null)"
+                "label": "Days since the last driving cycle ended"
               },
               "T_FINAL_F20": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Net premium, latest invoice"
+                "label": "Driving cycles before snapshot"
               },
               "T_FINAL_F21": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Net premium change vs ~3 months earlier ($)"
+                "label": "PNI at latest cycle (historical, 1/0/null)"
               },
               "T_FINAL_F22": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Net premium change vs ~3 months earlier (%)"
+                "label": "Net premium, latest invoice"
               },
               "T_FINAL_F23": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Gross premium, latest invoice"
+                "label": "Net premium change vs ~3 months earlier ($)"
               },
               "T_FINAL_F24": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Invoices before snapshot"
+                "label": "Net premium change vs ~3 months earlier (%)"
               },
               "T_FINAL_F25": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Primary churn reason (priority: price shock, discount erosion, new customer, disengaged, low savings, general)"
+                "label": "Gross premium, latest invoice"
               },
               "T_FINAL_F26": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
-                "label": "Max feature date (audit: must be <= Snap_Date)"
+                "label": "Invoices before snapshot"
               },
               "T_FINAL_F27": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Rated telematics discount %, latest closed cycle"
+              },
+              "T_FINAL_F28": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Rated discount % change vs ~3 cycles earlier (points)"
+              },
+              "T_FINAL_F29": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Discount dollars, latest closed cycle"
+              },
+              "T_FINAL_F30": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Discount dollars change vs ~3 cycles earlier"
+              },
+              "T_FINAL_F31": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Lifetime savings to date at snapshot (point-in-time)"
+              },
+              "T_FINAL_F32": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Lifetime savings per month of tenure"
+              },
+              "T_FINAL_F33": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Standard premium, latest closed cycle"
+              },
+              "T_FINAL_F34": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Net premium, latest closed cycle"
+              },
+              "T_FINAL_F35": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Effective discount % of standard premium, latest cycle"
+              },
+              "T_FINAL_F36": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Earned discount fraction, latest cycle (backfill only)"
+              },
+              "T_FINAL_F37": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Months with a discount in the last 6"
+              },
+              "T_FINAL_F38": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Savings cycles before snapshot"
+              },
+              "T_FINAL_F39": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Days since the last savings cycle closed"
+              },
+              "T_FINAL_F40": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Primary churn reason (priority: price shock, discount erosion, new customer, disengaged, low savings, general)"
+              },
+              "T_FINAL_F41": {
+                "parameters": {
+                  "type": "BASE_FORMULA_UI"
+                },
+                "label": "Max feature date (audit: must be <= Snap_Date)"
+              },
+              "T_FINAL_F42": {
                 "parameters": {
                   "type": "BASE_FORMULA_UI"
                 },
@@ -5336,6 +6637,66 @@
               {
                 "source": "T_FINAL_F26",
                 "target": "T_FINAL_F27"
+              },
+              {
+                "source": "T_FINAL_F27",
+                "target": "T_FINAL_F28"
+              },
+              {
+                "source": "T_FINAL_F28",
+                "target": "T_FINAL_F29"
+              },
+              {
+                "source": "T_FINAL_F29",
+                "target": "T_FINAL_F30"
+              },
+              {
+                "source": "T_FINAL_F30",
+                "target": "T_FINAL_F31"
+              },
+              {
+                "source": "T_FINAL_F31",
+                "target": "T_FINAL_F32"
+              },
+              {
+                "source": "T_FINAL_F32",
+                "target": "T_FINAL_F33"
+              },
+              {
+                "source": "T_FINAL_F33",
+                "target": "T_FINAL_F34"
+              },
+              {
+                "source": "T_FINAL_F34",
+                "target": "T_FINAL_F35"
+              },
+              {
+                "source": "T_FINAL_F35",
+                "target": "T_FINAL_F36"
+              },
+              {
+                "source": "T_FINAL_F36",
+                "target": "T_FINAL_F37"
+              },
+              {
+                "source": "T_FINAL_F37",
+                "target": "T_FINAL_F38"
+              },
+              {
+                "source": "T_FINAL_F38",
+                "target": "T_FINAL_F39"
+              },
+              {
+                "source": "T_FINAL_F39",
+                "target": "T_FINAL_F40"
+              },
+              {
+                "source": "T_FINAL_F40",
+                "target": "T_FINAL_F41"
+              },
+              {
+                "source": "T_FINAL_F41",
+                "target": "T_FINAL_F42"
               }
             ]
           },
@@ -5552,6 +6913,30 @@
             "target": "AGG_BILL"
           },
           {
+            "source": "LOAD_SAV",
+            "target": "T_SAV_K"
+          },
+          {
+            "source": "T_SAV_K",
+            "target": "JOIN_SAV_CAL"
+          },
+          {
+            "source": "T_CAL",
+            "target": "JOIN_SAV_CAL"
+          },
+          {
+            "source": "JOIN_SAV_CAL",
+            "target": "T_SAV_W"
+          },
+          {
+            "source": "T_SAV_W",
+            "target": "FILTER_SAV"
+          },
+          {
+            "source": "FILTER_SAV",
+            "target": "AGG_SAV"
+          },
+          {
             "source": "T_LABELS",
             "target": "JOIN_F_APP"
           },
@@ -5593,6 +6978,14 @@
           },
           {
             "source": "JOIN_F_BILL",
+            "target": "JOIN_F_SAV"
+          },
+          {
+            "source": "AGG_SAV",
+            "target": "JOIN_F_SAV"
+          },
+          {
+            "source": "JOIN_F_SAV",
             "target": "T_FINAL"
           },
           {
