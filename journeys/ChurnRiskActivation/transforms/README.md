@@ -74,3 +74,48 @@ each to a DMO (Data Lake Objects > object > Map Fields > new custom DMO) before 
 Rule learned the hard way: before adding any Contact field as a feature, group the training set by
 its value and year and look at the label rate. A populated value with a ~0% label rate means the
 field is only written for customers who are still around.
+
+## Savings history branch and v4 (added 2026-10-31)
+
+`python3 build_transform_json.py --with-driving --with-bills --with-savings` adds row I: `Savings_History__c`
+(lake object `Savings_History_c_00D3h0000068eod__dll`, one row per customer per billing cycle, backfilled 2023-05 to
+2026-09 from the ANA-6320 warehouse extract and extended nightly by the `Savings_History_Capture` Account flow).
+Joined on customer number and snapshot like tickets and driving; point-in-time on `Period_End` (the cycle close).
+
+| Column | Meaning |
+|---|---|
+| `Sav_Pct_Latest__c`, `Sav_Pct_Change_3m__c` | rated telematics discount % on the latest closed cycle and its change vs the cycle ~3 months earlier (points) |
+| `Sav_Discount_Latest__c`, `Sav_Discount_Change_3m__c` | discount dollars on the latest cycle and the change vs ~3 months earlier |
+| `Sav_Lifetime_At_Snap__c` | lifetime savings to date **as of the snapshot** (replaces the current-value `Lifetime_Savings__c` for training) |
+| `Sav_Per_Tenure_Month__c` | lifetime savings divided by months of tenure |
+| `Sav_Standard_Latest__c`, `Sav_Net_Latest__c`, `Sav_Effective_Rate_Latest__c` | standard and net premium on the latest cycle; discount as % of standard (runs ~2 points under the rated % because only part of the premium is discountable) |
+| `Sav_Earned_Latest__c` | driving-earned discount fraction (0 to 0.5) from the warehouse; blank on ~10% of backfill rows and on every flow-written row, so it is a backfill-era feature only |
+| `Sav_Disc_Months6__c`, `Sav_Cycles__c`, `Days_Since_Last_Savings_Cycle__c` | months with a discount in the last 6, cycles seen, recency |
+
+The same run adds two driving columns: `Drv_Trips_Change_Pct__c` and `Drv_Decline_Flag__c` (1 when the mean
+display subscore fell 5+ points vs ~3 cycles earlier while trips did not fall by half, the Insurance exclusion of
+2026-10-29, same test as `RE_ChurnRetention/v3-draft/01_entry_v3_driving_exclusion.sql`). `--v4` in
+`build_view_transforms.py` drops those rows from both train and holdout (`coalesce(Drv_Decline_Flag__c, 0) = 0`)
+on top of the v3 column drops.
+
+Order of operations (the view builder reads the live schema of `Churn_PIT_Training_Set__dll`, so it must run after
+the training transform has produced the new columns):
+
+```
+python3 build_transform_json.py --with-driving --with-bills --with-savings      # regenerate
+sf api request rest "/services/data/v64.0/ssot/data-transforms/ChurnPITTrainingSet" -o blueowl-prod -X PUT --body @Churn_PIT_Training_Set.api.json
+sf api request rest "/services/data/v64.0/ssot/data-transforms/ChurnPITTrainingSet/actions/run" -o blueowl-prod -X POST --body @empty.json
+python3 build_view_transforms.py --v4 --post --run                               # Churn_PIT_Train_V4__dll / Churn_PIT_Holdout_V4__dll
+```
+
+Then (UI): add both V4 outputs to the default data space, map to DMOs, train `Voluntary Churn 60d v4` with the v3
+variable list plus the 13 `Sav_*` columns minus `Lifetime_Savings__c` and `Telematics_Discount__c` (current-value
+leakage now that the point-in-time versions exist), score `Churn_PIT_Holdout_V4__dlm`, and run
+`scripts/validate_holdout.py --scores <v4 scores DMO> --holdout Churn_PIT_Holdout_V4__dlm`. Also score the V3 holdout
+with v4 for an apples-to-apples read against v3's 0.627. The scoring transform (`--scoring`) was regenerated with the
+same columns but **not** re-posted; PUT `ChurnPITScoringSet` and re-map its DMO only when v4 is promoted.
+
+Savings coverage caveat: 38,353 of the 41,986 backfilled customers have a Contact, and the join is on customer
+number, so coverage per snapshot should be near the driving branch's. Cycles that started in October 2026 are in
+neither the backfill nor the flow (the flow captures cycles that close after 2026-10-31); the 2026-10 snapshot will
+show a one-month dip in `Sav_Cycles__c` until the exporter is re-run with a later `as_of_date`.

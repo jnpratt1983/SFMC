@@ -1,0 +1,736 @@
+{
+ "label": "Churn PIT Holdout V4",
+ "name": "ChurnPITHoldoutV4",
+ "dataSpaceName": "default",
+ "type": "BATCH",
+ "description": "Churn PIT Holdout V4",
+ "definitions": [
+  {
+   "label": "Churn PIT Holdout V4",
+   "name": "ChurnPITHoldoutV4",
+   "version": "56.0",
+   "type": "STL",
+   "nodes": {
+    "LOAD0": {
+     "action": "load",
+     "sources": [],
+     "parameters": {
+      "dataset": {
+       "name": "Churn_PIT_Training_Set__dll",
+       "type": "dataLakeObject"
+      },
+      "fields": [
+       "Row_Key__c",
+       "Contact_Id__c",
+       "Snapshot_Date__c",
+       "Snapshot_Key__c",
+       "Label_60__c",
+       "Label_90__c",
+       "Censored__c",
+       "Reason__c",
+       "Tenure_Days__c",
+       "Tenure_Bucket__c",
+       "Policy_Days__c",
+       "Days_Into_Term_Est__c",
+       "Days_To_Term_End_Est__c",
+       "Days_To_Renewal__c",
+       "Days_Since_Renewal_Offer__c",
+       "Days_Into_Term__c",
+       "Days_To_Term_End__c",
+       "Days_Since_Last_App_Open__c",
+       "Monthly_Safe_Driving_Discount__c",
+       "Policy_Renewal_Rate__c",
+       "Lifetime_Savings__c",
+       "Telematics_Discount__c",
+       "App_Events_30d__c",
+       "App_Events_90d__c",
+       "Days_Since_Last_App_Event__c",
+       "Email_Open_Rate_90d__c",
+       "Days_Since_Last_Email_Event__c",
+       "Tickets_90d__c",
+       "Days_Since_Last_Ticket__c",
+       "Max_Feature_Date__c",
+       "Renewal_Offer_Change_Dollars__c",
+       "Renewal_Offer_Rate__c",
+       "Renewal_Offer_Change_Pct__c",
+       "Renewal_Rating_Version__c",
+       "Days_Since_Renewal_Offer_PIT__c",
+       "Offer_After_Snapshot__c",
+       "Mailing_State__c",
+       "Drv_Score_Latest__c",
+       "Drv_Score_Trend__c",
+       "Drv_Trips_Latest__c",
+       "Drv_Miles_Latest__c",
+       "Drv_Discount_Latest__c",
+       "Drv_Discount_Change__c",
+       "Days_Since_Last_Cycle__c",
+       "Drv_Cycles__c",
+       "Drv_PNI_Latest__c",
+       "Bill_Net_Latest__c",
+       "Bill_Net_Change_3m__c",
+       "Bill_Net_Change_3m_Pct__c",
+       "Bill_Gross_Latest__c",
+       "Bill_Count__c",
+       "Churn_Reason__c"
+      ],
+      "sampleDetails": {
+       "type": "TopN"
+      }
+     }
+    },
+    "FORMULA0": {
+     "action": "formula",
+     "sources": [
+      "LOAD0"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "case when Snapshot_Key__c >= '202605' and coalesce(Drv_Decline_Flag__c, 0) = 0 then 1 else 0 end",
+        "label": "In view",
+        "name": "In_View",
+        "precision": 18,
+        "scale": 0,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "FILTER0": {
+     "action": "filter",
+     "sources": [
+      "FORMULA0"
+     ],
+     "parameters": {
+      "filterBooleanLogic": "1 AND 2",
+      "filterExpressions": [
+       {
+        "field": "Censored__c",
+        "operands": [
+         "0"
+        ],
+        "operator": "EQUAL",
+        "type": "NUMBER"
+       },
+       {
+        "field": "In_View",
+        "operands": [
+         "1"
+        ],
+        "operator": "EQUAL",
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "OUTPUT0": {
+     "action": "outputD360",
+     "sources": [
+      "FILTER0"
+     ],
+     "parameters": {
+      "dedupOrder": [],
+      "fieldsMappings": [
+       {
+        "sourceField": "Row_Key__c",
+        "targetField": "Row_Key__c"
+       },
+       {
+        "sourceField": "Contact_Id__c",
+        "targetField": "Contact_Id__c"
+       },
+       {
+        "sourceField": "Snapshot_Date__c",
+        "targetField": "Snapshot_Date__c"
+       },
+       {
+        "sourceField": "Snapshot_Key__c",
+        "targetField": "Snapshot_Key__c"
+       },
+       {
+        "sourceField": "Label_60__c",
+        "targetField": "Label_60__c"
+       },
+       {
+        "sourceField": "Label_90__c",
+        "targetField": "Label_90__c"
+       },
+       {
+        "sourceField": "Censored__c",
+        "targetField": "Censored__c"
+       },
+       {
+        "sourceField": "Reason__c",
+        "targetField": "Reason__c"
+       },
+       {
+        "sourceField": "Tenure_Days__c",
+        "targetField": "Tenure_Days__c"
+       },
+       {
+        "sourceField": "Tenure_Bucket__c",
+        "targetField": "Tenure_Bucket__c"
+       },
+       {
+        "sourceField": "Policy_Days__c",
+        "targetField": "Policy_Days__c"
+       },
+       {
+        "sourceField": "Days_Into_Term_Est__c",
+        "targetField": "Days_Into_Term_Est__c"
+       },
+       {
+        "sourceField": "Days_To_Term_End_Est__c",
+        "targetField": "Days_To_Term_End_Est__c"
+       },
+       {
+        "sourceField": "Days_To_Renewal__c",
+        "targetField": "Days_To_Renewal__c"
+       },
+       {
+        "sourceField": "Days_Since_Renewal_Offer__c",
+        "targetField": "Days_Since_Renewal_Offer__c"
+       },
+       {
+        "sourceField": "Days_Into_Term__c",
+        "targetField": "Days_Into_Term__c"
+       },
+       {
+        "sourceField": "Days_To_Term_End__c",
+        "targetField": "Days_To_Term_End__c"
+       },
+       {
+        "sourceField": "Days_Since_Last_App_Open__c",
+        "targetField": "Days_Since_Last_App_Open__c"
+       },
+       {
+        "sourceField": "Monthly_Safe_Driving_Discount__c",
+        "targetField": "Monthly_Safe_Driving_Discount__c"
+       },
+       {
+        "sourceField": "Policy_Renewal_Rate__c",
+        "targetField": "Policy_Renewal_Rate__c"
+       },
+       {
+        "sourceField": "Lifetime_Savings__c",
+        "targetField": "Lifetime_Savings__c"
+       },
+       {
+        "sourceField": "Telematics_Discount__c",
+        "targetField": "Telematics_Discount__c"
+       },
+       {
+        "sourceField": "App_Events_30d__c",
+        "targetField": "App_Events_30d__c"
+       },
+       {
+        "sourceField": "App_Events_90d__c",
+        "targetField": "App_Events_90d__c"
+       },
+       {
+        "sourceField": "Days_Since_Last_App_Event__c",
+        "targetField": "Days_Since_Last_App_Event__c"
+       },
+       {
+        "sourceField": "Email_Open_Rate_90d__c",
+        "targetField": "Email_Open_Rate_90d__c"
+       },
+       {
+        "sourceField": "Days_Since_Last_Email_Event__c",
+        "targetField": "Days_Since_Last_Email_Event__c"
+       },
+       {
+        "sourceField": "Tickets_90d__c",
+        "targetField": "Tickets_90d__c"
+       },
+       {
+        "sourceField": "Days_Since_Last_Ticket__c",
+        "targetField": "Days_Since_Last_Ticket__c"
+       },
+       {
+        "sourceField": "Max_Feature_Date__c",
+        "targetField": "Max_Feature_Date__c"
+       },
+       {
+        "sourceField": "Renewal_Offer_Change_Dollars__c",
+        "targetField": "Renewal_Offer_Change_Dollars__c"
+       },
+       {
+        "sourceField": "Renewal_Offer_Rate__c",
+        "targetField": "Renewal_Offer_Rate__c"
+       },
+       {
+        "sourceField": "Renewal_Offer_Change_Pct__c",
+        "targetField": "Renewal_Offer_Change_Pct__c"
+       },
+       {
+        "sourceField": "Renewal_Rating_Version__c",
+        "targetField": "Renewal_Rating_Version__c"
+       },
+       {
+        "sourceField": "Days_Since_Renewal_Offer_PIT__c",
+        "targetField": "Days_Since_Renewal_Offer_PIT__c"
+       },
+       {
+        "sourceField": "Offer_After_Snapshot__c",
+        "targetField": "Offer_After_Snapshot__c"
+       },
+       {
+        "sourceField": "Mailing_State__c",
+        "targetField": "Mailing_State__c"
+       },
+       {
+        "sourceField": "Drv_Score_Latest__c",
+        "targetField": "Drv_Score_Latest__c"
+       },
+       {
+        "sourceField": "Drv_Score_Trend__c",
+        "targetField": "Drv_Score_Trend__c"
+       },
+       {
+        "sourceField": "Drv_Trips_Latest__c",
+        "targetField": "Drv_Trips_Latest__c"
+       },
+       {
+        "sourceField": "Drv_Miles_Latest__c",
+        "targetField": "Drv_Miles_Latest__c"
+       },
+       {
+        "sourceField": "Drv_Discount_Latest__c",
+        "targetField": "Drv_Discount_Latest__c"
+       },
+       {
+        "sourceField": "Drv_Discount_Change__c",
+        "targetField": "Drv_Discount_Change__c"
+       },
+       {
+        "sourceField": "Days_Since_Last_Cycle__c",
+        "targetField": "Days_Since_Last_Cycle__c"
+       },
+       {
+        "sourceField": "Drv_Cycles__c",
+        "targetField": "Drv_Cycles__c"
+       },
+       {
+        "sourceField": "Drv_PNI_Latest__c",
+        "targetField": "Drv_PNI_Latest__c"
+       },
+       {
+        "sourceField": "Bill_Net_Latest__c",
+        "targetField": "Bill_Net_Latest__c"
+       },
+       {
+        "sourceField": "Bill_Net_Change_3m__c",
+        "targetField": "Bill_Net_Change_3m__c"
+       },
+       {
+        "sourceField": "Bill_Net_Change_3m_Pct__c",
+        "targetField": "Bill_Net_Change_3m_Pct__c"
+       },
+       {
+        "sourceField": "Bill_Gross_Latest__c",
+        "targetField": "Bill_Gross_Latest__c"
+       },
+       {
+        "sourceField": "Bill_Count__c",
+        "targetField": "Bill_Count__c"
+       },
+       {
+        "sourceField": "Churn_Reason__c",
+        "targetField": "Churn_Reason__c"
+       }
+      ],
+      "name": "Churn_PIT_Holdout_V4__dll",
+      "type": "dataLakeObject",
+      "writeMode": "OVERWRITE"
+     }
+    }
+   },
+   "outputDataObjects": [
+    {
+     "category": "Other",
+     "label": "Churn PIT Holdout V4",
+     "name": "Churn_PIT_Holdout_V4__dll",
+     "type": "dataLakeObject",
+     "fields": [
+      {
+       "isPrimaryKey": true,
+       "label": "Row Key",
+       "name": "Row_Key__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Contact Id",
+       "name": "Contact_Id__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Snapshot Date",
+       "name": "Snapshot_Date__c",
+       "type": "DateTime"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Snapshot Key",
+       "name": "Snapshot_Key__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Label 60",
+       "name": "Label_60__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Label 90",
+       "name": "Label_90__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Censored",
+       "name": "Censored__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Reason",
+       "name": "Reason__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Tenure Days",
+       "name": "Tenure_Days__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Tenure Bucket",
+       "name": "Tenure_Bucket__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Policy Days",
+       "name": "Policy_Days__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Into Term Est",
+       "name": "Days_Into_Term_Est__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days To Term End Est",
+       "name": "Days_To_Term_End_Est__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days To Renewal",
+       "name": "Days_To_Renewal__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Since Renewal Offer",
+       "name": "Days_Since_Renewal_Offer__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Into Term",
+       "name": "Days_Into_Term__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days To Term End",
+       "name": "Days_To_Term_End__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Since Last App Open",
+       "name": "Days_Since_Last_App_Open__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Monthly Safe Driving Discount",
+       "name": "Monthly_Safe_Driving_Discount__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Policy Renewal Rate",
+       "name": "Policy_Renewal_Rate__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Lifetime Savings",
+       "name": "Lifetime_Savings__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Telematics Discount",
+       "name": "Telematics_Discount__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "App Events 30d",
+       "name": "App_Events_30d__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "App Events 90d",
+       "name": "App_Events_90d__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Since Last App Event",
+       "name": "Days_Since_Last_App_Event__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Email Open Rate 90d",
+       "name": "Email_Open_Rate_90d__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Since Last Email Event",
+       "name": "Days_Since_Last_Email_Event__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Tickets 90d",
+       "name": "Tickets_90d__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Since Last Ticket",
+       "name": "Days_Since_Last_Ticket__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Max Feature Date",
+       "name": "Max_Feature_Date__c",
+       "type": "DateTime"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Renewal Offer Change Dollars",
+       "name": "Renewal_Offer_Change_Dollars__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Renewal Offer Rate",
+       "name": "Renewal_Offer_Rate__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Renewal Offer Change Pct",
+       "name": "Renewal_Offer_Change_Pct__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Renewal Rating Version",
+       "name": "Renewal_Rating_Version__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Since Renewal Offer PIT",
+       "name": "Days_Since_Renewal_Offer_PIT__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Offer After Snapshot",
+       "name": "Offer_After_Snapshot__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Mailing State",
+       "name": "Mailing_State__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Score Latest",
+       "name": "Drv_Score_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Score Trend",
+       "name": "Drv_Score_Trend__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Trips Latest",
+       "name": "Drv_Trips_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Miles Latest",
+       "name": "Drv_Miles_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Discount Latest",
+       "name": "Drv_Discount_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Discount Change",
+       "name": "Drv_Discount_Change__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Days Since Last Cycle",
+       "name": "Days_Since_Last_Cycle__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv Cycles",
+       "name": "Drv_Cycles__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Drv PNI Latest",
+       "name": "Drv_PNI_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Net Latest",
+       "name": "Bill_Net_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Net Change 3m",
+       "name": "Bill_Net_Change_3m__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Net Change 3m Pct",
+       "name": "Bill_Net_Change_3m_Pct__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Gross Latest",
+       "name": "Bill_Gross_Latest__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Bill Count",
+       "name": "Bill_Count__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Churn Reason",
+       "name": "Churn_Reason__c",
+       "type": "Text"
+      }
+     ]
+    }
+   ],
+   "ui": {
+    "nodes": {
+     "LOAD0": {
+      "label": "Churn_PIT_Training_Set__dll",
+      "type": "LOAD_DATASET",
+      "top": 112,
+      "left": 112,
+      "parameters": {
+       "sampleSize": 500,
+       "sampleDetails": {
+        "type": "TopN"
+       },
+       "dataspace": "default"
+      }
+     },
+     "T0": {
+      "label": "Window flag",
+      "description": "",
+      "type": "TRANSFORM",
+      "top": 112,
+      "left": 392,
+      "graph": {
+       "FORMULA0": {
+        "parameters": {
+         "type": "BASE_FORMULA_UI"
+        },
+        "label": "In view"
+       }
+      },
+      "connectors": []
+     },
+     "FILTER0": {
+      "label": "Churn PIT Holdout V4",
+      "type": "FILTER",
+      "top": 112,
+      "left": 672
+     },
+     "OUTPUT0": {
+      "label": "Churn_PIT_Holdout_V4__dll",
+      "type": "OUTPUT",
+      "top": 112,
+      "left": 952
+     }
+    },
+    "connectors": [
+     {
+      "source": "LOAD0",
+      "target": "T0"
+     },
+     {
+      "source": "T0",
+      "target": "FILTER0"
+     },
+     {
+      "source": "FILTER0",
+      "target": "OUTPUT0"
+     }
+    ],
+    "hiddenColumns": []
+   }
+  }
+ ]
+}
