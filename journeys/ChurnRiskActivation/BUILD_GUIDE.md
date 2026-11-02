@@ -133,6 +133,30 @@ Model Builder trains on data model objects, not lake objects.
    `Days_Since_Renewal_Offer__c`, `Lifetime_Savings__c`, `Telematics_Discount__c`,
    `Policy_Renewal_Rate__c` (they are only point-in-time for the newest snapshot). Everything else
    stays: tenure, policy days, tenure bucket, estimated term position, app, email, tickets.
+
+   **Version 4 (2026-10-31):** source `Churn_PIT_Train_V4__dlm` (67 columns; Insurance driving-decline rows
+   already removed by the view). Goal `Label_60__c`. The v3 model's 31 predictors were confirmed from the
+   distinct `TopContributor*` names in `Voluntary_Churn_Holdout_Scores_V3__dlm` (exactly 31; `Drv_PNI_Latest__c`
+   was not among them). Select 45 variables:
+   - v3's 31: `Tenure_Days__c`, `Tenure_Bucket__c`, `Policy_Days__c`, `Days_Into_Term_Est__c`,
+     `Days_To_Term_End_Est__c`, `Mailing_State__c`, `Renewal_Offer_Rate__c`, `Renewal_Offer_Change_Dollars__c`,
+     `Renewal_Offer_Change_Pct__c`, `Renewal_Rating_Version__c`, `Days_Since_Renewal_Offer_PIT__c`,
+     `Bill_Net_Latest__c`, `Bill_Gross_Latest__c`, `Bill_Net_Change_3m__c`, `Bill_Net_Change_3m_Pct__c`,
+     `Bill_Count__c`, `Drv_Score_Latest__c`, `Drv_Score_Trend__c`, `Drv_Trips_Latest__c`, `Drv_Miles_Latest__c`,
+     `Drv_Discount_Latest__c`, `Drv_Discount_Change__c`, `Drv_Cycles__c`, `Days_Since_Last_Cycle__c`,
+     `App_Events_30d__c`, `App_Events_90d__c`, `Days_Since_Last_App_Event__c`, `Email_Open_Rate_90d__c`,
+     `Days_Since_Last_Email_Event__c`, `Tickets_90d__c`, `Days_Since_Last_Ticket__c`.
+   - 13 savings: `Sav_Pct_Latest__c`, `Sav_Pct_Change_3m__c`, `Sav_Discount_Latest__c`, `Sav_Discount_Change_3m__c`,
+     `Sav_Lifetime_At_Snap__c`, `Sav_Per_Tenure_Month__c`, `Sav_Standard_Latest__c`, `Sav_Net_Latest__c`,
+     `Sav_Effective_Rate_Latest__c`, `Sav_Earned_Latest__c`, `Sav_Disc_Months6__c`, `Sav_Cycles__c`,
+     `Days_Since_Last_Savings_Cycle__c`.
+   - 1 new driving column: `Drv_Trips_Change_Pct__c` (point-in-time, from the same cycles as the other `Drv_*`).
+
+   Deselect the other 21: identifiers and labels `Row_Key__c`, `Contact_Id__c`, `Snapshot_Date__c`, `Snapshot_Key__c`,
+   `Label_90__c`, `Censored__c`, `Reason__c`, `Churn_Reason__c`, `Max_Feature_Date__c`, `Offer_After_Snapshot__c`;
+   current-value columns `Days_To_Renewal__c`, `Days_Since_Renewal_Offer__c`, `Days_Into_Term__c`, `Days_To_Term_End__c`,
+   `Days_Since_Last_App_Open__c`, `Lifetime_Savings__c`, `Telematics_Discount__c`, `Monthly_Safe_Driving_Discount__c`,
+   `Policy_Renewal_Rate__c`; `Drv_PNI_Latest__c` (not in v3); `Drv_Decline_Flag__c` (constant 0 in the V4 views).
 4. **Algorithm.** Leave on Auto (XGBoost). Do not enable class balancing for v1.
 5. Turn on **Explanations** (prediction factors) if the toggle is offered; it is what gives the
    "why" per contact.
