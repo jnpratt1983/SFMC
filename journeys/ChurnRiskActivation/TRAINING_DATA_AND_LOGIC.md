@@ -1,7 +1,7 @@
 # Voluntary churn model: training data and logic
 
-Prepared for Legal review. HiRoad lifecycle marketing, 2026-11-02. Companion to the RE_ChurnRetention
-journey mockup. Technical detail for the Data Science audience is in `CHURN_MODEL_FOR_DATA_SCIENCE.md`;
+Prepared for Legal review via Insurance. HiRoad lifecycle marketing, 2026-11-02. Companion to the retention test
+package (side-by-side of existing communications and the proposed test journey). Technical detail for the Data Science audience is in `CHURN_MODEL_FOR_DATA_SCIENCE.md`;
 every build step is in `journeys/ChurnRiskActivation/BUILD_GUIDE.md`.
 
 ## 1. What the model is and what it is used for
@@ -19,9 +19,9 @@ or any wording derived from them.
 | Item | Value |
 |---|---|
 | Model type | Gradient-boosted classifier, Salesforce Model Builder (Einstein Studio), Data Cloud |
-| Current production version | v3 (live since 2026-10-20); v4 trained 2026-10-31, promotion pending |
+| Current version | v4, trained 2026-10-31 with the Insurance exclusions applied (non-payment censored, driving-decline rows removed); v3 has been in production since 2026-10-20 and v4 replaces it on promotion |
 | Scored population | Active policyholders in Arizona and Rhode Island (about 7,900 contacts) |
-| Scoring cadence | Daily feature refresh; score written to the Contact record monthly on the 2nd |
+| Scoring cadence | Daily feature refresh; score written to the Contact record monthly on the 2nd; the model is retrained about every 60 days as new months close |
 | Outputs on the Contact record | Score (0 to 100), band (High = top decile, Moderate = next two deciles, Low), scored date, top three contributing factors, a rule-based primary reason code |
 | Where the outputs are visible | Salesforce CRM (internal users), Marketing Cloud (as journey entry data) |
 
@@ -80,6 +80,15 @@ trips change). The exact lists are in the build guide.
 
 ## 5. Data that is deliberately not used
 
+No data that could be construed as discriminatory is used. The model sees no protected-class attribute
+and nothing that stands in for one: no age or date of birth, no sex or gender, no race, ethnicity or national
+origin, no religion, no marital or familial status, no disability, no occupation or income, no credit or
+payment history, and no address, ZIP code or garaging location. The only geographic field is the state
+(Arizona or Rhode Island), which is also the level at which the journey is split so that each state is read
+on its own. Everything the model uses describes the policy, the price offered or billed, the customer's own
+driving as measured by the app, the savings they earned, and whether they open the app, open emails or
+contact support.
+
 | Excluded | Why |
 |---|---|
 | Payment Stability Score, credit score, any credit-derived field | Insurance decision 2026-10-16: credit-based signals stay out of retention targeting |
@@ -88,7 +97,7 @@ trips change). The exact lists are in the build guide.
 | Driver role on the Contact record | Populated only for customers still active today, so it leaks the outcome |
 | Current-value fields (today's lifetime savings, today's discount, real term dates) | Describe the present, not the snapshot month; the point-in-time versions are used instead |
 | Lead and quote attributes, post-purchase re-quotes | Tested; no signal for voluntary churn |
-| Demographic attributes: age, date of birth, gender, marital status, occupation, household composition | Not in the training table. Location enters only as the state (AZ or RI) |
+| Protected-class and demographic attributes: age, date of birth, sex or gender, race, ethnicity, national origin, religion, marital or familial status, disability, occupation, income, household composition | Not in the training table. The transform selects only the columns listed in section 4 from each source object; fields such as birthday month that exist on the Contact object are never read. Location enters only as the state (AZ or RI) |
 | Claims history, vehicle details, garaging address | Not in the training table |
 | Any data from outside HiRoad's Salesforce org | None is used |
 
@@ -104,9 +113,12 @@ trips change). The exact lists are in the build guide.
 3. **What the customer receives does not depend on the score.** Everyone who enters gets the same
    coverage check-in email for their state. The score and band decide only whether the app push follows.
    No copy mentions the score, the band, payment status, credit, a premium amount, a price change or a rate.
-4. **No randomized holdout.** Insurance ruled on 2026-10-29 that no customer is withheld from the
-   journey for measurement. The effect is read year over year and by comparing customers just above and
-   just below the entry cut.
+4. **Measurement.** The proposal under review is a randomized 50/50 holdout within each state, for up to
+   12 months of entries, so that the effect on cancellations can be read against a comparable group. The
+   holdout half keeps every existing communication (permissions, trip logging, rewards, payment, renewal)
+   and receives nothing extra. If a holdout is not approved, the fallback is to send one of two message
+   variants to everyone flagged and read the result year over year and against customers just below the
+   entry cut, which is directional only.
 5. **Human review.** Every content block is reviewed by lifecycle communications, then Insurance, then
    Legal before launch. The exclusion count is reported monthly.
 
@@ -145,9 +157,11 @@ Known limits, all documented in the validation reports:
 - Any retrain is evaluated with the same script and the same pass lines, compared with the previous
   version on identical rows, and documented in a dated validation report before promotion.
 - Decisions log: 2026-10-16 Insurance (exclude non-payment, no credit signals); 2026-10-20 compliance
-  approved a 50/50 holdout, later withdrawn; 2026-10-20 program owner shipped v3 as is; 2026-10-21
-  Insurance via lifecycle comms (no premium, price or rate figures; email and push only); 2026-10-29
-  Insurance (driving-decline exclusion, no discount-drop messaging, no holdout).
+  approved a 50/50 holdout; 2026-10-20 program owner shipped v3 as is; 2026-10-21 Insurance via lifecycle
+  comms (no premium, price or rate figures; no locked-in-rate language; email and push only); 2026-10-29
+  Insurance (driving-decline exclusion applied to the journey and to training; discount-drop messaging only
+  for credibility cases); 2026-11-02 Insurance call (v4 exclusions confirmed; holdout to go to Legal with a
+  side-by-side of existing communications; variants A/B as the fallback).
 
 ## 9. Where to look
 
