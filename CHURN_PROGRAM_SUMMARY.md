@@ -1,7 +1,8 @@
 # Voluntary churn program: what was built, why, and what comes next
 
-Written 2026-10-21 for HiRoad lifecycle marketing, Insurance and Data Science. Companion to
-`CHURN_PROGRAM_CHECKLIST.md` (status by item) and the detailed reports under `journeys/ChurnRiskActivation/`.
+Written 2026-10-21 for HiRoad lifecycle marketing, Insurance and Data Science; updated 2026-11-02 with the v4
+model and the savings history it runs on. Companion to `CHURN_PROGRAM_CHECKLIST.md` (status by item) and the
+detailed reports under `journeys/ChurnRiskActivation/`.
 
 ## Why the program was rebuilt
 
@@ -58,19 +59,57 @@ before conversion stay on the lead record. Matching Individual Email Results on 
 of the contact lookup found 87,529 customer-period sends in 2024 and 106,197 in 2025, where the lookup
 found 5,181 and 3,652.
 
+**Savings and discount history, backfilled and captured (2026-10-31).** Lifetime savings and the telematics
+discount lived on Account as one running total and one current percent, so the model had never seen savings
+shrink before a cancellation. Data Analytics delivered a customer-month extract (ANA-6320, Liz Pund): 363,264
+rows, May 2023 to September 2026, cancelled customers included. We built `Savings_History__c`, one row per
+customer per billing cycle with standard and net premium, rated discount percent, discount dollars, lifetime
+savings to date and the driving-earned discount fraction, loaded the backfill, and an Account flow
+(`Savings_History_Capture`) now writes each cycle as it closes. The earned fraction is a warehouse figure that
+no Salesforce field holds, so version 2 of the flow reconstructs it from the driving cycle's earned dollars
+over the discountable base; on backfill cycles since mid-2025 it lands within 0.01 of the extract on 83%.
+Streamed into Data Cloud and joined to each snapshot on customer number, point-in-time on the cycle close, it
+covers 52 to 58% of training rows by year, in line with the driving branch. The first read of it, before any
+model:
+
+| Savings history signal (uncensored rows) | Preventable cancel within 60 days |
+|---|---|
+| fell 5 points or more over about three months | 8.2% |
+| flat | 6.6% |
+| rose 5 points or more | 5.3% |
+| latest rated discount under 10% | 8.7% |
+| latest rated discount 40% and over | 4.9% |
+
 **What was deliberately left out.** Every payment-behaviour field (notices, late rates, days past due,
 Payment Stability Score, credit score). `Driver_Role__c`, which is populated only on customers still
 active and would have leaked the label. Lead attributes and post-purchase re-quotes, which turned out
-to mark customers who lapse and re-buy, not customers deciding to leave.
+to mark customers who lapse and re-buy, not customers deciding to leave. From v4 onward, the current-value
+lifetime savings and telematics discount columns, replaced by their point-in-time versions; and every row
+that meets the Insurance driving-decline rule of 2026-10-29 (display score fell 5 or more points over about
+three cycles while trips did not halve), removed from both training and holdout. That rule marks 4 to 9% of
+rows by year and the slice it removes cancels slightly more often (7.2% against 6.7%).
 
 ## The models, honestly
 
-| Version | Inputs | Holdout AUC (May to Aug 2026, 25,419 rows, 1,269 cancels) | Verdict |
+| Version | Inputs | Holdout AUC (snapshots May to Aug 2026; 25,419 rows and 1,269 cancels through v3, 24,450 rows and 1,209 cancels for v4 after the driving-decline exclusion) | Verdict |
 |---|---|---|---|
 | Normalized score (existing) | trained on all cancellations, non-pay included | 0.51 on the preventable label | not usable under the Insurance decision |
 | v1 | tenure, term, app, email, tickets, offers | 0.579 | fails; top contributor was the non-pay journey's reminder count |
 | v2 | + driving, email by address, state; no send counts | 0.599 | better, monotonic deciles, still short |
-| **v3** | **+ premium history from bills; no email counts** | **0.627** | **clears tenure + 0.05; three of four tenure buckets pass; first lift outside the renewal window (0.628); production model** |
+| v3 | + premium history from bills; no email counts | 0.627 | clears tenure + 0.05; three of four tenure buckets pass; first lift outside the renewal window (0.628); **the production model today** |
+| **v4** | **+ 13 savings-history columns and trips change; current-value savings fields out; driving-decline rows out** | **0.639 (v3 scores the same 24,450 rows at 0.628)** | **beats v3 on identical rows, gain +0.003 to +0.020 at 95%, ahead in 200 of 200 resamples; all four tenure buckets pass 0.60; top decile 11.3% (2.28x) against 10.0%; trained 2026-10-31, promotion pending** |
+
+v4 still does not reach the 0.68 target or a 2.5x top decile. Its gain comes from the savings history: the
+driving-earned discount fraction is the single largest contributor (9.0% of importance), ahead of the bill
+columns, and the latest net and standard premium and the count of savings cycles also sit in the top fifteen.
+Deciles, top first (base 4.9%): 11.3, 6.5, 5.2, 5.6, 4.8, 4.6, 3.6, 3.2, 2.7, 2.0; against v3 on the same
+rows it lifts the top decile by 1.3 points and lowers the bottom one by 0.6, so it separates the tails better
+and flattens the middle. By cancel reason it scores 0.665 on high premium (line 0.70), 0.611 on carrier
+switch (0.65) and 0.612 on insured request (0.60). Model Builder's own cross-validation figure for v4 (0.673)
+is inflated by contacts appearing on both sides of a random split and is not quoted, as with v3. The 45
+variables and the comparison method are in `BUILD_GUIDE.md` (Version 4) and
+`2026-10-31_v4_holdout_validation.md`; a v4 model must not be scored on the v3 holdout object, which lacks
+14 of its inputs, so versions are compared by joining their score objects on the row key.
 
 On the renewal window, customers with an offer in the prior 60 days, every version lands at 0.61 to 0.62
 and a one-line rule, "offered increase over $20", lands at 0.614. The renewal offer is the prediction. v3's
@@ -94,7 +133,7 @@ increase carry a 41% non-pay history themselves.
 
 ## What is live today
 
-- **Score on every active customer.** 7,878 contacts scored on 2026-10-20 with v3: 795 High (score 59.99
+- **Score on every active customer, from v3.** 7,878 contacts scored on 2026-10-20 with v3: 795 High (score 59.99
   and up), 1,568 Moderate (49.05 and up), 5,515 Low. Written to eight Contact fields with the band, the
   three top factors in plain words, and a primary churn reason assigned by fixed priority from the same
   signals: 986 price shock, 459 discount erosion, 2,447 new customer, 1,404 disengaged, 37 low savings,
@@ -105,6 +144,16 @@ increase carry a 41% non-pay history themselves.
 - **Marketing Cloud ready for the journey.** The synced Contact carries the new fields and term dates; the
   offer object and driving cycles are synced; four data extensions exist in the Airflow Data folder
   (`RE_ChurnRetention_Config/Entry/History/Exit_AF_10202026`) with the cut points loaded.
+- **v4 trained and validated, not yet scoring production.** The training transform carries the savings
+  branch (237,547 rows, 78 columns) and the V4 train and holdout views exist with the driving-decline rows
+  removed. Promotion was made conditional on the capture flow populating the earned discount fraction, the
+  model's top input, once the backfill ages out. Read on 2026-11-02: the flow has written 237 cycle rows since
+  the 2026-11-01 nightly batch, 175 of them with a discount, and 115 of those (66%) carry the earned fraction
+  (mean 0.30, range 0.03 to 0.50). The gap is cycles with no matching driving record, and the driving feed has
+  carried primary drivers only since September 2026, so coverage in production will sit below the backfill's
+  roughly 90%. The model treats a missing value as "no driving data", which it saw in training, so this is a
+  known degradation rather than a break; a recurring feed of the engine's own value from Data Analytics would
+  close it.
 
 ## The recommendation, in one paragraph
 
@@ -132,10 +181,17 @@ lifecycle flow, so the test reads what the layer adds (aligned with lifecycle co
    split, wait to R-14, push, exit on the exit DE, goal "not cancelled 30 days after term end"; a one-step
    thank-you journey on the RENEWED exits.
 5. Launch in AZ and RI with the holdout; measurement gates and timing in `TEST_PLAN.md`.
-6. In parallel, ask Data Analytics for a customer-month backfill of savings and discount history and
-   build `Savings_History__c` to hold it, the same pattern as `Renewal_Offer__c`. The exact request,
-   column list, and acceptance checks are in
-   `journeys/ChurnRiskActivation/DATA_REQUEST_savings_discount_history.md`. Today Contact holds only
-   the current value of lifetime savings and discount, and Account field history on them starts
-   2025-11-14, so the model has never seen savings shrink before a cancellation. With that history and
-   12 months of renewal offers, v4 can be trained on the same holdout.
+6. Done 2026-10-31: the savings and discount backfill (ANA-6320) landed, `Savings_History__c` and its
+   capture flow are live, and v4 was trained and validated on it (see "The models, honestly").
+7. Promote v4 to production scoring, now that the flow is writing rows. Accept or resolve the earned-fraction
+   coverage noted above (66% of discount cycles against about 90% in the backfill), then: update the scoring
+   transform `ChurnPITScoringSet` from the regenerated definition, run it and re-map its object so the savings
+   columns are visible; create the production predict job on v4 and retire the v3 job after the first v4 batch;
+   point `write_back_scores.py` at the new output and re-derive the High and Moderate cut points into the
+   journey's config DE. Claude does the transform and write-back by API; the predict job is a UI step.
+8. Keep re-reading the holdout as snapshots close: the next genuinely new read comes when the 2026-09 snapshot's
+   60-day window closes, and the first live read of production scores against real cancellations is
+   2026-12-19. Promote a later version only if it beats the live model on the same rows, as v4 did.
+9. Raise two acceptance gaps from the backfill with Data Analytics: lifetime savings ties out to the Account
+   field within $1 on only 46% of current cycles, and 3,633 customers in the extract (2023 to 2024 leavers)
+   have no Contact. Ask for the engine's earned discount fraction as a recurring feed.
