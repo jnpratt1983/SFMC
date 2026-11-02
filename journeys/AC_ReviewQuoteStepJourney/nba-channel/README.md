@@ -25,31 +25,50 @@ Three Einstein Studio binary classifiers (Custom, Legacy), all retrained 2026-08
 Verdict: retire all three models, the `Predicted_Channel__c` rule, and `Recommended_Channel__c`.
 Do not retrain them on the same labels; the label is the problem, not the algorithm.
 
+## The goal, and why the label is the whole problem
+
+The goal is unchanged: predict how a lead wants to be communicated with (some people pick up the
+phone, some answer a text, some never open an email) by looking at leads with similar attributes
+and seeing how they responded and converted. That is a sound goal. The legacy models failed it
+because they never saw a response. Their label was "which channel had a record nearest the
+purchase date", so a lead who bought after ignoring five emails is an Email lead, and a lead who
+phoned us is a Phone lead. A preference model needs, for each channel, "we used this channel on
+this lead and the lead did / did not respond", observed at the lead level. That is what the files
+below build, channel by channel, from the records that exist today:
+
+| Channel | Response we can see per lead | Source |
+|---|---|---|
+| Email | opened / clicked the first journey email | `ssot__EmailEngagement__dlm` |
+| Call | picked up and talked, per the rep's note on the Next Best Action ticket | `Zen_Desk_Ticket_Bronze__dlm`, subject `New Lead- Next Best Action +<LeadId>` |
+| SMS | delivered only; clicks sit in Bitly per link, not per lead | `SMS__c`, Bitly |
+
+Put together, the preference is: score each lead with the three response models, weight each by
+the purchase rate of leads who responded on that channel, and route to the highest. The
+factorial test matters for one reason: today a lead only has a call label if the old router chose to
+call them, so the call model would learn the old router's choices. Randomizing who gets called
+removes that.
+
 ## What a channel model has to predict
 
-"How does this lead want to be contacted" is only answerable as "which channel changes whether
-this lead buys". That is an uplift question and needs randomized treatment data. The 2x2 factorial
-test (call yes/no x SMS yes/no, email to all) produces it. Until that data exists, the only honest
-models are per-channel response models with point-in-time labels:
+"Which channel changes whether this lead buys" is the uplift form of the same question and needs
+randomized treatment data; the 2x2 factorial test (call yes/no x SMS yes/no, email to all) produces
+it. Until then the per-channel response models carry the goal:
 
 | Channel | Response label available today | Status |
 |---|---|---|
 | Email | Opened / clicked within 3 days of the first quote-journey email. 3.8M engagement rows, 642k leads, 133k opens in 2026 alone. | Build now (`Email_Response_*` below). |
-| Call | None for the calls the router triggers. All 1,009 "Call Lead- Next Best Action" tasks since Jan 28 are still Open with no disposition, duration or notes (17 touched by hand). Of those 1,009 leads, 2 have a Zendesk ticket in the 7 days after the task, both inbound. Inbound quote calls are well recorded (2,218 prospect call tickets in 2026, 96% with a Genesys interaction URL, 70% linked to a Lead, agent time and notes on every one) but they are leads calling us, not us reaching them. | Blocked until the outbound call leaves a record. No tagging needed: the ticket fields already carry outcome (`Genesys_URL__c`, `Total_time_spent_sec_int__c`, `Comments__c`, `Replies__c`). What is missing is the ticket itself. Either Genesys creates a Zendesk ticket for outbound quote calls the way it does for inbound, or the rep closes the Task with a disposition. Label = reached (ticket or closed task with talk time) vs not. |
+| Call | Reached / not reached, from the rep's internal comment on the "New Lead- Next Best Action +<LeadId>" ticket that the router creates alongside the Task (reps work from Zendesk, not Salesforce; the Tasks are never touched). 969 tickets since 2026-04 (Jan-Mar tasks made none), 97% with `Lead__c` set, the rest carry the lead id in the subject. Tags exist on 63% (answer 44, no_answer 414); the comment text labels the other 37% ("lvm", "no answer", "answered, still shopping"). Reach rate 14% of calls; 9% of tickets were never dialed (ex-customers, bad numbers). | Label available now (`Call_Response_Training_Set__cio.sql`). About 135 positives, +30 a month: enough to read the test's call arm, not yet enough to train a score. No tags needed; the comment is the record. |
 | SMS | Delivery per lead only (`SMS__c` in CRM, 206k rows, and `ssot__MessageEngagement__dlm`). Clicks are tracked in Bitly: every review SMS carries one static branded link per message (`hiroad.cc/3StjPBu`, `/3Sq4KjS`, `/43RxeZF`, `/3tWMxkF`), the same for all recipients, redirecting to `quote.hiroad.com/discovery?utm_source=sfmc&utm_medium=sms&utm_campaign=review...`. Bitly reports clicks per link per hour, not per recipient, and nothing from Bitly lands in Data Cloud or Salesforce today. | Partly blocked. A Bitly API pull (clicks by link by hour, joined to the SMS send batches) gives the SMS arm a campaign-level click rate for the test readout; that is worth doing. A per-lead label needs one of: SFMC tracked links (MobileConnect link tracking writes click events per subscriber), per-recipient Bitly links created at send time, or the quote app attributing the `utm_medium=sms` session to the lead (`Quote_Session_ID__c` style). |
 | Purchase uplift by channel | Needs the factorial test arm on the Lead (`NBA_Test_Arm__c`, `NBA_Entry_At__c`). | Build after the test has ~1,700 leads per factor (`Channel_Uplift_*` below). |
 
 ## Outcome capture for calls and SMS (prerequisite for the test readout)
 
-The factorial test can be read on purchase alone, but to learn anything about channel response it
-needs the two outbound touches to leave a record:
-
-- Call: today the router creates a Task and nothing closes it. Options, cheapest first: (a) reps set
-  Task Status and `CallDisposition` (Reached / Voicemail / No answer / Bad number) when they work the
-  task; (b) Genesys outbound interactions on the quote queue create a Zendesk ticket like inbound ones
-  do, so the existing ticket fields (Genesys URL, time spent, comments) carry the outcome and the
-  nightly Zendesk sync brings it to `Zen_Desk_Ticket__c` with `Lead__c` set from the dialed number.
-  (b) is the durable one; it needs no tags and no rep behaviour change.
+- Call: the Next Best Action ticket is the record, and the fields on it are enough. Two things
+  keep it clean: reps write the outcome comment on every ticket (97% already do, median 26 hours
+  after the call), and tickets the rep decided not to dial say so (today 9% say "ex customer" or
+  "bad number"; those are not non-responses). The `next_best_action_answer` / `_no_answer` tags are
+  optional; the comment rule in the SQL covers untagged tickets, and the Zendesk AI classifier can
+  replace the rule when it runs on these tickets. Nothing about Salesforce Tasks is needed.
 - SMS: pull Bitly click counts by link and hour over the API for the four review links and store them
   against the SMS send batches (`SMS__c.CreateDate_c__c`, message name). That gives clicks per 100
   delivered by arm and by message. For per-lead clicks switch the SMS copy to MobileConnect tracked
@@ -64,7 +83,10 @@ needs the two outbound touches to leave a record:
    channel scores are deliberately excluded (current-state values, they leak).
 2. `Email_Response_Scoring_Set__cio.sql` - same columns for leads created in the last 14 days with no
    journey email yet. Refresh hourly after the lead sync.
-3. `Channel_Uplift_Training_Set__cio.sql` - rows from the factorial test. One row per test lead with
+3. `Call_Response_Training_Set__cio.sql` - one row per Next Best Action call ticket, lead attributes at
+   creation plus email behaviour before the call, labels `Called__c` and `Call_Reached__c` from the tag or
+   the comment text. Create it now so the label accrues; train when positives pass ~1,000.
+4. `Channel_Uplift_Training_Set__cio.sql` - rows from the factorial test. One row per test lead with
    arm flags, entry-time features and `Purchased_30d__c`. Train two Model Builder models on it
    (T-learner): `Purchase given call` on rows where Call_Arm__c = true, `Purchase given no call` on
    rows where it is false, score every lead with both, and the difference is the call uplift. Same for
@@ -83,10 +105,13 @@ needs the two outbound touches to leave a record:
 4. Do NOT route on this score during the factorial test. Log it on the Lead at entry
    (`NBA_Entry_Email_Score__c`) so the interaction analysis can test whether high-score leads gain
    less from calls.
-5. After the test: create `Channel_Uplift_Training_Set`, train the four T-learner models, publish
+5. Create `Call_Response_Training_Set` now (daily). Report reach rate by month from it; it is the
+   call arm's response metric in the test readout. Train `Call_Reached__c` only once positives pass
+   ~1,000 and the test has randomized who is called.
+6. After the test: create `Channel_Uplift_Training_Set`, train the four T-learner models, publish
    `Call_Uplift__c` and `SMS_Uplift__c` to the Lead. The new routing rule is: call if
    Call_Uplift >= cost-of-call threshold, SMS if SMS_Uplift >= threshold, email otherwise.
-6. Retire: the three legacy models, `Lead_Multi_Channel_Scoring`, `Lead_SMS_Channel_Scoring`
+7. Retire: the three legacy models, `Lead_Multi_Channel_Scoring`, `Lead_SMS_Channel_Scoring`
    (stale, newest lead 2025-12-15), the `Predicted_Channel__c` rule, `Recommended_Channel__c`,
    and `Prediction_NextBestAction__dlm` (leads only through 2025-12-10).
 
