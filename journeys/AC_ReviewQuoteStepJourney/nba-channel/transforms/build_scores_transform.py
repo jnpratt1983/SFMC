@@ -10,7 +10,7 @@ for i, a in enumerate(sys.argv[1:]):          # optional overrides: dmo:prefix f
     if i == 0: SMS = (d, p)
     if i == 1: EMAIL = (d, p)
     if i == 2: PHONE = (d, p)
-NAME, LBL, OUT = "ChannelScores", "Channel Scores", "Channel_Scores__dll"
+NAME, LBL, OUT = "ChannelScores", "Channel Scores", "Channel_Scores__dlm"
 nodes, ui_nodes, ui_conn = {}, {}, []
 def load(nid, dmo, prefix, label, top):
     nodes[nid] = {"action":"load","sources":[],"parameters":{"dataset":{"name":dmo,"type":"dataModelObject"},
@@ -55,9 +55,9 @@ out_fields = [{"isPrimaryKey":True,"label":"Lead Id","name":"Lead_Id__c","type":
               {"isPrimaryKey":False,"label":"Scored At","name":"Scored_At__c","type":"DateTime"}]
 maps = [{"sourceField":"Lead_Id__c","targetField":"Lead_Id__c"},{"sourceField":"Email_Score_Out__c","targetField":"Email_Score__c"},
         {"sourceField":"SMS_Score__c","targetField":"SMS_Score__c"},{"sourceField":"Call_Score_Out__c","targetField":"Call_Score__c"},{"sourceField":"Scored_At__c","targetField":"Scored_At__c"}]
-nodes["OUTPUT0"] = {"action":"outputD360","sources":["F_OUT_TS"],"parameters":{"dedupOrder":[],"fieldsMappings":maps,"name":OUT,"type":"dataLakeObject","writeMode":"OVERWRITE"}}
+nodes["OUTPUT0"] = {"action":"outputD360","sources":["F_OUT_TS"],"parameters":{"dedupOrder":[],"fieldsMappings":maps,"name":OUT,"type":"dataModelObject","writeMode":"OVERWRITE"}}
 ui_nodes["OUTPUT0"] = {"label":LBL,"type":"OUTPUT","top":60,"left":1160}
 ui_conn = [{"source":"LOAD_SMS","target":"T_SMS"},{"source":"LOAD_EMAIL","target":"T_EMAIL"},{"source":"LOAD_PHONE","target":"T_PHONE"},{"source":"T_SMS","target":"JOIN_E"},{"source":"T_EMAIL","target":"JOIN_E"},{"source":"JOIN_E","target":"JOIN_P"},{"source":"T_PHONE","target":"JOIN_P"},{"source":"JOIN_P","target":"T_OUT"},{"source":"T_OUT","target":"OUTPUT0"}]
-definition = {"label":LBL,"name":NAME+"Definition","version":"56.0","type":"STL","nodes":nodes,"outputDataObjects":[{"category":"Other","label":LBL,"name":OUT,"type":"dataLakeObject","fields":out_fields}],"ui":{"nodes":ui_nodes,"connectors":ui_conn,"hiddenColumns":[]}}
+definition = {"label":LBL,"name":NAME+"Definition","version":"56.0","type":"STL","nodes":nodes,"outputDataObjects":[{"category":"Other","label":LBL,"name":OUT,"type":"dataModelObject","fields":out_fields}],"ui":{"nodes":ui_nodes,"connectors":ui_conn,"hiddenColumns":[]}}
 api = {"label":LBL,"name":NAME,"dataSpaceName":"default","type":"BATCH","description":"Three channel model probabilities (positive class, 0-100) per scored lead, for the copy-field enrichment to Lead. Built 2026-11-03.","definitions":[definition]}
 json.dump(api, open("pit/ChannelScores.api.json","w"), indent=1); print("written; inputs:", SMS, EMAIL, PHONE)

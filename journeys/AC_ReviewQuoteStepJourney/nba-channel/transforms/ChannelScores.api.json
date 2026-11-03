@@ -358,8 +358,8 @@
         "targetField": "Scored_At__c"
        }
       ],
-      "name": "Channel_Scores__dll",
-      "type": "dataLakeObject",
+      "name": "Channel_Scores__dlm",
+      "type": "dataModelObject",
       "writeMode": "OVERWRITE"
      }
     }
@@ -368,8 +368,8 @@
     {
      "category": "Other",
      "label": "Channel Scores",
-     "name": "Channel_Scores__dll",
-     "type": "dataLakeObject",
+     "name": "Channel_Scores__dlm",
+     "type": "dataModelObject",
      "fields": [
       {
        "isPrimaryKey": true,

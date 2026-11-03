@@ -322,8 +322,9 @@ Steps:
    Quote step drives the SMS score (step 1: 0.53, step 3: 0.35, step 4+: 0.40); domain barely moves it.
 6. Write-back without hand-wiring three enrichments: `transforms/ChannelScores.api.json` (generator
    `build_scores_transform.py`) reads the three prediction DMOs, takes the positive-class probability from whichever
-   slot it landed in, scales it to 0-100 and writes `Channel_Scores__dll` (Lead_Id, Email_Score, SMS_Score,
-   Call_Score, Scored_At). Map it to a DMO related to Lead on Lead_Id, then ONE copy-field enrichment maps
+   slot it landed in, scales it to 0-100 and writes the DMO `Channel_Scores__dlm` directly (Lead_Id, Email_Score, SMS_Score,
+   Call_Score, Scored_At); a transform with DMO inputs must write a DMO, so no lake-object mapping is needed. Add a
+   relationship Lead_Id -> ssot__Lead__dlm.ssot__Id__c, then ONE copy-field enrichment maps
    Email_Score -> `Email_Score__c`, SMS_Score -> `SMS_Score__c`, Call_Score -> `Call_Score__c`,
    Scored_At -> `Last_Channel_Scoring_Date__c`. The prediction DMO and column names in the generator assume the jobs
    were named Email_Open_Prediction / SMS_Click_Prediction / Phone_Preference_Prediction with targets
