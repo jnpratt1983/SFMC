@@ -21,12 +21,13 @@ Done 2026-11-02 over the API:
   text from `SMS_Data_feed.md`). Run once by hand: 471 rows / 462 subscribers for 2026-11-01, against
   1,041 raw rows.
 
-Still to do in the UI (one click each):
-1. Automation `SMS Data` > step 1: add activity `SMSData_v2` next to `SMSData`. Save. It then runs daily
-   at 10:00 server time with the rest of the automation.
-2. After the Apex has run clean for a few days: remove step 2 (the `SMS Creation` journey entry) and
+- `SMSData_v2` added as the second activity of step 1 in automation `SMS Data` (done in the UI
+  2026-11-02, confirmed over the API; next run 2026-11-03 10:00 server time = 16:00 UTC).
+
+Still to do in the UI:
+1. After the Apex has run clean for a few days: remove step 2 (the `SMS Creation` journey entry) and
    stop journey `SMS Creation` v1. Optionally remove the old `SMSData` query and `smsmessagetracking`.
-3. The Marketing Cloud installed package behind `SFMC_Auth` needs the scope Data Extensions > Read.
+2. The Marketing Cloud installed package behind `SFMC_Auth` needs the scope Data Extensions > Read.
    Check in Setup > Installed Packages > (package) > API Integration.
 
 ## 2. Sales Cloud (once)
