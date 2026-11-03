@@ -16,7 +16,7 @@ SELECT
   CASE WHEN ssot__Lead__dlm.Currently_Insured_Status__c = TRUE THEN 1 ELSE 0 END AS Currently_Insured__c,
   CASE WHEN ssot__Lead__dlm.App_Downloaded__c = TRUE THEN 1 ELSE 0 END AS App_Downloaded__c,
   CASE WHEN ssot__Lead__dlm.Purchased__c = TRUE THEN 1 ELSE 0 END AS Purchased__c,
-  CASE WHEN ssot__Lead__dlm.Purchased_Date__c IS NOT NULL AND DATEDIFF(ssot__Lead__dlm.Purchased_Date__c, ssot__Lead__dlm.NBA_Entry_At__c) BETWEEN 0 AND 30 THEN 1 ELSE 0 END AS Purchased_30d__c,
+  CASE WHEN ssot__Lead__dlm.Purchased_Date__c IS NOT NULL AND DATEDIFF(ssot__Lead__dlm.Purchased_Date__c, ssot__Lead__dlm.NBA_Entry_At__c) >= 0 AND DATEDIFF(ssot__Lead__dlm.Purchased_Date__c, ssot__Lead__dlm.NBA_Entry_At__c) <= 30 THEN 1 ELSE 0 END AS Purchased_30d__c,
   MAX(ssot__Lead__dlm.NBA_Entry_At__c) AS Entry_At__c,
   MAX(ssot__Lead__dlm.ssot__CreatedDate__c) AS Lead_Created__c,
   MAX(DATEDIFF(ssot__Lead__dlm.NBA_Entry_At__c, ssot__Lead__dlm.ssot__CreatedDate__c)) AS Days_Create_To_Entry__c,

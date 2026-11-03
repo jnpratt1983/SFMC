@@ -32,7 +32,7 @@ FROM (SELECT ssot__EmailEngagement__dlm.ssot__LeadlId__c AS Lead_Id__c, MIN(ssot
 JOIN ssot__Lead__dlm ON (ssot__Lead__dlm.ssot__Id__c = first_send.Lead_Id__c)
 JOIN ssot__EmailEngagement__dlm ON (ssot__EmailEngagement__dlm.ssot__LeadlId__c = first_send.Lead_Id__c AND ssot__EmailEngagement__dlm.ssot__SentDateTm__c = first_send.First_Send_At__c)
 WHERE DATEDIFF(NOW(), ssot__Lead__dlm.ssot__CreatedDate__c) <= 700
-  AND DATEDIFF(first_send.First_Send_At__c, ssot__Lead__dlm.ssot__CreatedDate__c) BETWEEN 0 AND 30
+  AND DATEDIFF(first_send.First_Send_At__c, ssot__Lead__dlm.ssot__CreatedDate__c) >= 0 AND DATEDIFF(first_send.First_Send_At__c, ssot__Lead__dlm.ssot__CreatedDate__c) <= 30
   AND DATEDIFF(NOW(), first_send.First_Send_At__c) >= 8
   AND (ssot__Lead__dlm.Internal_Traffic__c IS NULL OR ssot__Lead__dlm.Internal_Traffic__c = FALSE)
 GROUP BY Lead_Id__c, First_Email_Name__c, Email_Domain__c, State__c, Previous_Insurance__c, Vehicle_Make__c, UTM_Source__c, UTM_Medium__c, Lead_Source__c, Publisher__c, Email_Opt_Out__c, Declined__c, Saved_Quote__c, Currently_Insured__c, Mobile_Opt_Out__c, Has_Mobile__c, App_Downloaded__c, Opened_First_Email__c, Clicked_First_Email__c
