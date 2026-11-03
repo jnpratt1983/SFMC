@@ -95,7 +95,7 @@ Steps, in order:
 4. **Write the assignment to the Lead immediately after**, one Salesforce "Update Lead" activity per
    landing point (five of them): `NBA_Test_Arm__c` = SMS | CALL | CALL_SMS, `NBA_Assignment__c` =
    MODEL | RANDOM, `NBA_Entry_At__c` = now, `NBA_Entry_Email_Model_Score__c` and the three legacy
-   entry scores. Six new Lead fields; add them to the CRM connector. Mirror the row to a DE
+   entry scores. Seven new Lead fields (deployed 2026-11-03, permission set `NBA_Test_Access`); add them to the CRM connector `Lead` data stream. Mirror the row to a DE
    `AC_ReviewNBA_TestLog` (Update Contact) for SFMC-side counts.
 5. **Build the three paths** by copying the existing Call + Email path (ES1 -> 2h -> SALESCLOUDACTIVITY
    -> 2d -> STO -> ES2 -> 4d -> STO -> ES3 -> 3d) and adding or removing SE1/SE2/SE3 and the call step

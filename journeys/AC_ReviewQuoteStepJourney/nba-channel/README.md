@@ -1,7 +1,7 @@
 # Next Best Action channel model: diagnosis and rebuild
 
 Reviewed 2026-11-02 in blueowl-prod (Data Cloud + Marketing Cloud + CRM). This folder holds the
-replacement training sets and the plan. Nothing here has been created in the org yet.
+replacement training sets and the plan. Nothing here has been created in the org yet; the SQL was rewritten on 2026-11-03 to the Calculated Insights editor's rules after a first paste failed.
 
 ## What the current models are
 
@@ -80,6 +80,37 @@ it. Until then the per-channel response models carry the goal:
   link, and keep the identity rules matching new quote leads to the earlier lead of the same person.
   Bitly click counts by link and hour remain the campaign-level check. MobileConnect tracked links
   would remove the identity hop and catch clicks that resume an existing quote.
+
+## Calculated Insights editor: the rules these files follow
+
+Learned from the editor's own error list on 2026-11-03 and from the org's working insights
+(`Lead_Level_Attributes__cio`, `Contact_Cancellation__cio`, `HiRoad_Contact_Ticket_Signals__cio`):
+
+- One statement, no comments anywhere inside it. Documentation lives here, not in the SQL.
+- Fully qualified object names (`ssot__Lead__dlm.Field__c`). A derived table is allowed only as
+  `FROM ( SELECT ... ) AS alias`; a plain table alias on a DMO is not used.
+- Every non-aggregated column is a dimension, must appear in `GROUP BY` (by alias), and there can be at
+  most 20. Numbers, dates and 0/1 flags that can live inside `MAX(...)` or `SUM(CASE ...)` are measures
+  and do not count. At least one measure is required; `COUNT(x) AS Row_Count__c` is the cheap one.
+- `SUM(CASE ... THEN 1 ELSE 0 END)` and `COUNT(CASE ...)` are allowed; `MAX(CASE ...)` and `MIN(CASE ...)`
+  are not. `MAX`/`MIN` take a number or date only. `COUNT(DISTINCT ...)` is rejected; use
+  `APPROX_COUNT_DISTINCT`.
+- `DATEDIFF(end, start)`, `NOW()`, `HOUR()`, `DAYOFWEEK()`, `MONTH()`, window functions (`LEAD`,
+  `ROW_NUMBER() OVER`) and `LIKE` all pass. Booleans compare with `= TRUE` / `= FALSE`.
+- Attribute names must be unique across the insight.
+- Watch out when a one-to-many join (email engagement, identity siblings) is present: a lead flag written
+  as `SUM(CASE ...)` is multiplied by the number of joined rows. Write such flags as `CASE ... END`
+  dimensions instead, which is why the files below carry 0/1 dimension flags.
+
+Data Cloud facts that shaped the rewrite: `ssot__Lead__dlm.Max_Quote_Step__c` is a number, `Email_Opt_Out__c`
+is text, `Email_Open_Likelihood__c` is text, and `Purchased_Date__c` is NOT in the Lead DMO (add it to the
+`Lead` data stream together with the seven NBA fields; until then the uplift set uses `Purchased__c`).
+`SMS__c` arrives in Data Cloud as `ssot__MessageEngagement__dlm` (`Subscriber_Key__c`, `ssot__Name__c`,
+`Create_Date_Custom__c`, `SMS_Status_Code_Id__c`), so no extra SMS object mapping is needed.
+
+Label columns after the rewrite: `Opened_First_Email__c` / `Clicked_First_Email__c` (0/1, on the first
+AC_ email itself), `Call_Reached__c` and `Called__c` (0/1), `Click_Leads_14d__c` (count of same-person
+sms-UTM leads inside 14 days; filter `<= 1` or treat `> 0` as the positive), `Purchased__c` (0/1).
 
 ## Files
 
