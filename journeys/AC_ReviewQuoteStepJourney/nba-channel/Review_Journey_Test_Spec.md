@@ -90,9 +90,11 @@ Steps, in order:
    null, mobile present, `Mobile_Opt_Out_Date__c` null, `DoNotCall` false for the test population, so
    all three arms are possible for every entrant. Leads failing that go down the existing Email Only
    path with arm `INELIGIBLE` written (step 4).
-2. **Entry snapshot carries the scores.** Add `Email_Open_Likelihood__c` (the new model's output),
-   `Call_Score__c`, `Email_Score__c`, `SMS_Score__c` to the `AC_ReviewNBA_v8` select, so the decision
-   reads the value the lead had at entry and the Lead keeps a record of it.
+2. **Entry snapshot carries the scores.** `sfmc/AC_ReviewNBA_v9.sql` replaces v8 in automation `AC_NBATEST` step 2:
+   it adds `Call_Score__c`, `Email_Score__c`, `SMS_Score__c`, `Last_Channel_Scoring_Date__c`, `DoNotCall` and
+   `MobilePhone` to the select. Add the same six columns to the entry DE `AC_ReviewNBATest_AF_01272026` first, and
+   confirm they are in the Marketing Cloud Connect Lead sync. The automation itself does not change (every 15 min;
+   step 1 `NBA_Lead_Channel_Current`, step 3 the journey entry). Filters are unchanged; widening is optional.
 3. **Replace MCD-4** (the `predicted_channel__c` decision) with: RANDOMSPLIT 80/20; on the 80% path a
    MULTICRITERIADECISION on `Email_Open_Likelihood__c` with two outcomes (low -> CALL_SMS, high ->
    SMS; threshold = the score at the bottom third of the training set, written in the activity name so
