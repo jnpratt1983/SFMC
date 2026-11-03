@@ -261,7 +261,12 @@ Steps:
      model. `Max_Quote_Step__c`, `Saved_Quote__c`, `App_Downloaded__c` are also current-state and partly downstream of
      the first email; they stay in for now because the scoring set carries the same current-state values for new
      leads, but they are the reason a point-in-time transform is the next improvement.
-   Retrain both with the exclusions below, then re-read the AUCs; a drop is expected and honest.
+   Retrained 2026-11-03 on the point-in-time sets (`POINT_IN_TIME_SNAPSHOT.md`):
+   | Model (PIT) | AUC | Top contributors | Status |
+   |---|---|---|---|
+   | Email open | 0.662 | Email_Domain 32%, Max_Quote_Step 15%, Credit_Score 10%, UTM_Medium 9%, Mobile_Opt_Out 8%, Lead_Created_Month 8% | active |
+   | Phone preference | 0.792 | Max_Quote_Step 25%, UTM_Source 22%, State 11%, UTM_Medium 11%, Credit_Score 9% | active |
+   | SMS click | 0.722 with Lead_Created_Month 42% and SMS_Status_Code 18% still in; v2 without them pending | | retraining |
 2. Activate each model and create one prediction job per model on `Email_Response_Scoring_Set__cio` (every model's
    features are lead attributes, so one scoring set serves all three), output DMOs `Email_Open_Prediction`,
    `SMS_Click_Prediction`, `Phone_Preference_Prediction`, daily after the scoring insight refreshes.
