@@ -21,6 +21,7 @@
       },
       "fields": [
        "PrimaryObjectPk__c",
+       "KQ_PrimaryObjectPk__c",
        "PredictedClicked_14d1__c",
        "PredictedClicked_14d1Value__c",
        "PredictedClicked_14d2__c",
@@ -52,10 +53,30 @@
       ]
      }
     },
-    "F_SMS": {
+    "F_SMS_KQ": {
      "action": "formula",
      "sources": [
       "F_SMS_KEY"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Text",
+        "defaultValue": "",
+        "formulaExpression": "KQ_PrimaryObjectPk__c",
+        "label": "Key Qualifier Lead Id",
+        "name": "KQ_Lead_Id__c",
+        "precision": 255,
+        "type": "TEXT"
+       }
+      ]
+     }
+    },
+    "F_SMS": {
+     "action": "formula",
+     "sources": [
+      "F_SMS_KQ"
      ],
      "parameters": {
       "expressionType": "SQL",
@@ -83,6 +104,7 @@
       },
       "fields": [
        "PrimaryObjectPk__c",
+       "KQ_PrimaryObjectPk__c",
        "PredictedOpened_First_Email1__c",
        "PredictedOpened_First_Email1Value__c",
        "PredictedOpened_First_Email2__c",
@@ -145,6 +167,7 @@
       },
       "fields": [
        "PrimaryObjectPk__c",
+       "KQ_PrimaryObjectPk__c",
        "PredictedCalled_Us_30d1__c",
        "PredictedCalled_Us_30d1Value__c",
        "PredictedCalled_Us_30d2__c",
@@ -338,6 +361,10 @@
       "dedupOrder": [],
       "fieldsMappings": [
        {
+        "sourceField": "KQ_Lead_Id__c",
+        "targetField": "KQ_Lead_Id__c"
+       },
+       {
         "sourceField": "Lead_Id__c",
         "targetField": "Lead_Id__c"
        },
@@ -372,7 +399,14 @@
      "type": "dataModelObject",
      "fields": [
       {
+       "isPrimaryKey": false,
+       "label": "Key Qualifier Lead Id",
+       "name": "KQ_Lead_Id__c",
+       "type": "Text"
+      },
+      {
        "isPrimaryKey": true,
+       "keyQualifierField": "KQ_Lead_Id__c",
        "label": "Lead Id",
        "name": "Lead_Id__c",
        "type": "Text"
@@ -469,6 +503,12 @@
         "top": 0,
         "left": 0
        },
+       "F_SMS_KQ": {
+        "label": "kq",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
        "F_SMS": {
         "label": "score",
         "type": "FORMULA",
@@ -483,6 +523,10 @@
        },
        {
         "source": "F_SMS_KEY",
+        "target": "F_SMS_KQ"
+       },
+       {
+        "source": "F_SMS_KQ",
         "target": "F_SMS"
        }
       ]

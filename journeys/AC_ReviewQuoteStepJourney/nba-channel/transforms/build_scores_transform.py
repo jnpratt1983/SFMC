@@ -14,7 +14,7 @@ NAME, LBL, OUT = "ChannelScores", "Channel Scores", "Channel_Scores__dlm"
 nodes, ui_nodes, ui_conn = {}, {}, []
 def load(nid, dmo, prefix, label, top):
     nodes[nid] = {"action":"load","sources":[],"parameters":{"dataset":{"name":dmo,"type":"dataModelObject"},
-                  "fields":["PrimaryObjectPk__c", f"{prefix}1__c", f"{prefix}1Value__c", f"{prefix}2__c", f"{prefix}2Value__c"],
+                  "fields":["PrimaryObjectPk__c", "KQ_PrimaryObjectPk__c", f"{prefix}1__c", f"{prefix}1Value__c", f"{prefix}2__c", f"{prefix}2Value__c"],
                   "sampleDetails":{"type":"TopN","sortBy":[]}}}
     ui_nodes[nid] = {"label":label,"type":"LOAD_DATASET","top":top,"left":112,"parameters":{"sampleSize":500,"sampleDetails":{"type":"TopN"},"dataspace":"default"}}
 def formula(nid, src, name, expr, label, btype="Number", scale=2):
@@ -29,7 +29,8 @@ def score_expr(prefix):
 # three loads, each reduced to (key, score)
 load("LOAD_SMS", SMS[0], SMS[1], "SMS click prediction", 60)
 formula("F_SMS_KEY", "LOAD_SMS", "SMS_Lead_Id__c", "PrimaryObjectPk__c", "Lead Id (sms)", "Text")
-formula("F_SMS", "F_SMS_KEY", "SMS_Score__c", score_expr(SMS[1]), "SMS Score")
+formula("F_SMS_KQ", "F_SMS_KEY", "KQ_Lead_Id__c", "KQ_PrimaryObjectPk__c", "Key Qualifier Lead Id", "Text")
+formula("F_SMS", "F_SMS_KQ", "SMS_Score__c", score_expr(SMS[1]), "SMS Score")
 load("LOAD_EMAIL", EMAIL[0], EMAIL[1], "Email open prediction", 250)
 formula("F_EMAIL_KEY", "LOAD_EMAIL", "Email_Lead_Id__c", "PrimaryObjectPk__c", "Lead Id (email)", "Text")
 formula("F_EMAIL", "F_EMAIL_KEY", "Email_Score__c", score_expr(EMAIL[1]), "Email Score")
@@ -44,16 +45,17 @@ formula("F_OUT_EMAIL", "F_OUT_KEY", "Email_Score_Out__c", '"E.Email_Score__c"', 
 formula("F_OUT_PHONE", "F_OUT_EMAIL", "Call_Score_Out__c", '"P.Call_Score__c"', "Call Score")
 formula("F_OUT_TS", "F_OUT_PHONE", "Scored_At__c", "now()", "Scored At", "DateTime")
 for n in ("JOIN_E","JOIN_P"): ui_nodes[n] = {"label":n,"type":"JOIN","top":60,"left":600}
-ui_nodes["T_SMS"] = {"label":"SMS score","type":"TRANSFORM","top":60,"left":392,"graph":{"F_SMS_KEY":{"label":"key","type":"FORMULA","top":0,"left":0},"F_SMS":{"label":"score","type":"FORMULA","top":0,"left":0}},"connectors":[{"source":"LOAD_SMS","target":"F_SMS_KEY"},{"source":"F_SMS_KEY","target":"F_SMS"}]}
+ui_nodes["T_SMS"] = {"label":"SMS score","type":"TRANSFORM","top":60,"left":392,"graph":{"F_SMS_KEY":{"label":"key","type":"FORMULA","top":0,"left":0},"F_SMS_KQ":{"label":"kq","type":"FORMULA","top":0,"left":0},"F_SMS":{"label":"score","type":"FORMULA","top":0,"left":0}},"connectors":[{"source":"LOAD_SMS","target":"F_SMS_KEY"},{"source":"F_SMS_KEY","target":"F_SMS_KQ"},{"source":"F_SMS_KQ","target":"F_SMS"}]}
 ui_nodes["T_EMAIL"] = {"label":"Email score","type":"TRANSFORM","top":250,"left":392,"graph":{"F_EMAIL_KEY":{"label":"key","type":"FORMULA","top":0,"left":0},"F_EMAIL":{"label":"score","type":"FORMULA","top":0,"left":0}},"connectors":[{"source":"LOAD_EMAIL","target":"F_EMAIL_KEY"},{"source":"F_EMAIL_KEY","target":"F_EMAIL"}]}
 ui_nodes["T_PHONE"] = {"label":"Phone score","type":"TRANSFORM","top":440,"left":392,"graph":{"F_PHONE_KEY":{"label":"key","type":"FORMULA","top":0,"left":0},"F_PHONE":{"label":"score","type":"FORMULA","top":0,"left":0}},"connectors":[{"source":"LOAD_PHONE","target":"F_PHONE_KEY"},{"source":"F_PHONE_KEY","target":"F_PHONE"}]}
 ui_nodes["T_OUT"] = {"label":"Output columns","type":"TRANSFORM","top":60,"left":880,"graph":{k:{"label":k,"type":"FORMULA","top":0,"left":0} for k in ("F_OUT_KEY","F_OUT_EMAIL","F_OUT_PHONE","F_OUT_TS")},"connectors":[{"source":"JOIN_P","target":"F_OUT_KEY"},{"source":"F_OUT_KEY","target":"F_OUT_EMAIL"},{"source":"F_OUT_EMAIL","target":"F_OUT_PHONE"},{"source":"F_OUT_PHONE","target":"F_OUT_TS"}]}
-out_fields = [{"isPrimaryKey":True,"label":"Lead Id","name":"Lead_Id__c","type":"Text"},
+out_fields = [{"isPrimaryKey":False,"label":"Key Qualifier Lead Id","name":"KQ_Lead_Id__c","type":"Text"},
+              {"isPrimaryKey":True,"keyQualifierField":"KQ_Lead_Id__c","label":"Lead Id","name":"Lead_Id__c","type":"Text"},
               {"isPrimaryKey":False,"label":"Email Score","name":"Email_Score__c","type":"Number"},
               {"isPrimaryKey":False,"label":"SMS Score","name":"SMS_Score__c","type":"Number"},
               {"isPrimaryKey":False,"label":"Call Score","name":"Call_Score__c","type":"Number"},
               {"isPrimaryKey":False,"label":"Scored At","name":"Scored_At__c","type":"DateTime"}]
-maps = [{"sourceField":"Lead_Id__c","targetField":"Lead_Id__c"},{"sourceField":"Email_Score_Out__c","targetField":"Email_Score__c"},
+maps = [{"sourceField":"KQ_Lead_Id__c","targetField":"KQ_Lead_Id__c"},{"sourceField":"Lead_Id__c","targetField":"Lead_Id__c"},{"sourceField":"Email_Score_Out__c","targetField":"Email_Score__c"},
         {"sourceField":"SMS_Score__c","targetField":"SMS_Score__c"},{"sourceField":"Call_Score_Out__c","targetField":"Call_Score__c"},{"sourceField":"Scored_At__c","targetField":"Scored_At__c"}]
 nodes["OUTPUT0"] = {"action":"outputD360","sources":["F_OUT_TS"],"parameters":{"dedupOrder":[],"fieldsMappings":maps,"name":OUT,"type":"dataModelObject","writeMode":"OVERWRITE"}}
 ui_nodes["OUTPUT0"] = {"label":LBL,"type":"OUTPUT","top":60,"left":1160}
