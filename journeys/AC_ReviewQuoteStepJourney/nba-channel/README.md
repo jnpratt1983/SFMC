@@ -266,7 +266,7 @@ Steps:
    |---|---|---|---|
    | Email open | 0.662 | Email_Domain 32%, Max_Quote_Step 15%, Credit_Score 10%, UTM_Medium 9%, Mobile_Opt_Out 8%, Lead_Created_Month 8% | active |
    | Phone preference | 0.792 | Max_Quote_Step 25%, UTM_Source 22%, State 11%, UTM_Medium 11%, Credit_Score 9% | active |
-   | SMS click | 0.722 with Lead_Created_Month 42% and SMS_Status_Code 18% still in; v2 without them pending | | retraining |
+   | SMS click | 0.650 (v2; v1 at 0.722 had Lead_Created_Month 42% and SMS_Status_Code 18% in) | Max_Quote_Step 24%, UTM_Medium 21%, Credit_Score 15%, UTM_Source 12%, Lead_Source 12% | active |
 2. Activate each model and create one prediction job per model on `Email_Response_Scoring_Set__cio` (every model's
    features are lead attributes, so one scoring set serves all three), output DMOs `Email_Open_Prediction`,
    `SMS_Click_Prediction`, `Phone_Preference_Prediction`, daily after the scoring insight refreshes.
