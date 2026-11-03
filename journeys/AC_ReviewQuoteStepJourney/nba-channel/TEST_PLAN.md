@@ -111,7 +111,7 @@ arm and assignment with sends, deliveries, calls, tickets and opt-outs joined on
 
 ## 7. Readiness checklist before publishing v17
 
-- Six Lead fields deployed and added to the CRM connector; visible in Data Cloud.
+- Seven Lead fields deployed 2026-11-03 (`NBA_Test_Arm__c`, `NBA_Assignment__c`, `NBA_Entry_At__c`, `NBA_Entry_Email_Model_Score__c`, `NBA_Entry_Call/Email/SMS_Score__c`; permission set `NBA_Test_Access` on jennifer.pratt and the API SFMC User); connector read granted; fields added to the `Lead` data stream and visible in Data Cloud.
 - Email response model scoring into `Email_Open_Likelihood__c`, and the value present in the entry DE.
   If not ready, publish with the model path routing everyone to SMS.
 - `SMS__c` feed on the new path (done 2026-11-03; stop the old journey after a few clean days).
