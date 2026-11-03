@@ -98,6 +98,7 @@ Learned from the editor's own error list on 2026-11-03 and from the org's workin
 - `DATEDIFF(end, start)`, `NOW()`, `HOUR()`, `DAYOFWEEK()`, `MONTH()`, window functions (`LEAD`,
   `ROW_NUMBER() OVER`) and `LIKE` all pass. Booleans compare with `= TRUE` / `= FALSE`.
 - Attribute names must be unique across the insight.
+- `BETWEEN` is not supported; write `x >= a AND x <= b`.
 - String functions are thin: `LOCATE` is not supported and `SUBSTRING` needs (text, start, length) literals. Derive text
   attributes from a column that already holds them (the email domain comes from `ssot__EmailDomainName__c` on the
   engagement rows in both email sets) rather than parsing.
