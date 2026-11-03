@@ -83,6 +83,9 @@ unbiased data and the routing keeps getting audited.
 
 Steps, in order:
 
+0. **Entry wait 3 hours, not 5 minutes** (audit 2026-11-03): leads enter within minutes of creation and the
+   scoring chain runs hourly, so the decision must wait for the scores to land; the legacy hourly chain reached only
+   65% of entrants in time.
 1. **Eligibility at entry, not at the split.** In `AC_ReviewNBA_v8` (or in MCD-1) require Email not
    null, mobile present, `Mobile_Opt_Out_Date__c` null, `DoNotCall` false for the test population, so
    all three arms are possible for every entrant. Leads failing that go down the existing Email Only
