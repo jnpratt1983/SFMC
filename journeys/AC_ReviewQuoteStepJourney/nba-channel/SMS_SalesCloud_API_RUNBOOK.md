@@ -12,22 +12,28 @@ Setting `SFMC_REST`, the same pattern as `Customer360FeedController`. No secrets
 Volume after dedupe: about 480 texts a day, ~175k rows a year, ~350 MB of CRM storage a year
 (2 KB per record). The raw tracking rows would be 2.2x that; the query below collapses them.
 
-## 1. Marketing Cloud (once)
+## 1. Marketing Cloud
 
-1. Data extension `smsmessagetracking`: it needs a primary key of `SubscriberKey` + `SMSJobID` so
-   Overwrite cannot hold duplicates. Existing DEs cannot gain a key, so create `smsmessagetracking_v2`
-   with the same columns plus the key, note its customer key, and repoint the query to it.
-2. Query activity `SMSData`: replace the text with the GROUP BY version in `SMS_Data_feed.md`
-   (one row per subscriber per SMS job; this is what removes the segment and status duplicates).
-   Target `smsmessagetracking_v2`, Overwrite.
-3. Automation `SMS Data`: keep step 1 (the query). Remove step 2 (the `SMS Creation` journey entry).
-   Stop journey `SMS Creation` v1.
-4. The Marketing Cloud installed package behind `SFMC_Auth` needs the scope
-   Data Extensions > Read. Check in Setup > Installed Packages > (package) > API Integration.
+Done 2026-11-02 over the API:
+- Data extension `smsmessagetracking_v2` (customer key `smsmessagetracking_v2`, folder of the old one,
+  primary key `SubscriberKey` + `SMSJobID`, same columns minus MessageText, not sendable).
+- Query activity `SMSData_v2` (folder of `SMSData`, target `smsmessagetracking_v2`, Overwrite, the GROUP BY
+  text from `SMS_Data_feed.md`). Run once by hand: 471 rows / 462 subscribers for 2026-11-01, against
+  1,041 raw rows.
 
-## 2. Sales Cloud (once)
+- `SMSData_v2` added as the second activity of step 1 in automation `SMS Data` (done in the UI
+  2026-11-02, confirmed over the API; next run 2026-11-03 10:00 server time = 16:00 UTC).
 
-Metadata in c360-sfdx `force-app/main/default`:
+Still to do in the UI:
+1. After the Apex has run clean for a few days: remove step 2 (the `SMS Creation` journey entry) and
+   stop journey `SMS Creation` v1. Optionally remove the old `SMSData` query and `smsmessagetracking`.
+2. The Marketing Cloud installed package behind `SFMC_Auth` needs the scope Data Extensions > Read.
+   Check in Setup > Installed Packages > (package) > API Integration.
+
+## 2. Sales Cloud
+
+Deployed to blueowl-prod 2026-11-03 00:4x UTC (deploy 0AfVt000002KRJ3KAO, 13 components, 5 tests, 0
+failures) and scheduled (CronTrigger 08eVt00001yXjhj, job name `SMS Tracking Sync`).
 
 | Component | Purpose |
 |---|---|
@@ -35,27 +41,28 @@ Metadata in c360-sfdx `force-app/main/default`:
 | `objects/SMS_Sync_Setting__c` (hierarchy custom setting) | run log (`Last_Run_At__c`, `Last_Rows_Read__c`, `Last_Upserted__c`, `Last_Errors__c`, `Last_Error__c`) and overrides (`DE_Key__c`, `Chunk_Size__c`, `Batch_Pages__c`). |
 | `classes/SMSTrackingSync` + `SMSTrackingSyncSchedule` | Queueable job plus its daily scheduler. Token, rowset pages of 2,500, map, upsert on `SMS_Key__c`, retry without lookups on a bad lead/contact id, chain to the next page, write the summary. |
 | `classes/SMSTrackingSyncTest` | callout mocks: three texts, idempotent rerun, rowset failure, schedule, time parsing. |
+| `permissionsets/SMS_Sync_Access` | read/edit on `SMS_Key__c`. Deployed fields carry no field-level security, so without this nobody but Apex can see the key. Assigned to jennifer.pratt; assign to the Data Cloud integration user too if the field should flow into the CRM data stream. |
 
-1. Deploy with the specified-tests level (the org has nine pre-existing failing tests unrelated to this):
-   ```
-   sf project deploy start -o blueowl-prod --test-level RunSpecifiedTests --tests SMSTrackingSyncTest \
-     --source-dir force-app/main/default/objects/SMS__c/fields/SMS_Key__c.field-meta.xml \
-     --source-dir force-app/main/default/objects/SMS_Sync_Setting__c \
-     --source-dir force-app/main/default/classes/SMSTrackingSync.cls \
-     --source-dir force-app/main/default/classes/SMSTrackingSyncSchedule.cls \
-     --source-dir force-app/main/default/classes/SMSTrackingSyncTest.cls
-   ```
-2. If the staging DE was recreated as `smsmessagetracking_v2`, put its customer key in
-   Setup > Custom Settings > SMS Sync Setting > Manage > org default > Data Extension Key.
-3. Schedule, anonymous Apex, 16:30 UTC (the Marketing Cloud query runs 10:00 server = 16:00 UTC):
-   ```
-   System.schedule('SMS Tracking Sync', '0 30 16 * * ?', new SMSTrackingSyncSchedule());
-   ```
+Schedule: `System.schedule('SMS Tracking Sync', '0 30 16 * * ?', new SMSTrackingSyncSchedule());`
+Apex cron runs in the scheduling user's timezone (Central), so 16:30 Central = 22:30 UTC in winter,
+21:30 UTC in summer. Both are after the 16:00 UTC Marketing Cloud query, which is all that matters.
+Do not move it earlier than 11:00 Central or the summer run would precede the query.
+
+Re-deploy command if anything changes:
+```
+sf project deploy start -o blueowl-prod --test-level RunSpecifiedTests --tests SMSTrackingSyncTest \
+  --source-dir force-app/main/default/objects/SMS__c/fields/SMS_Key__c.field-meta.xml \
+  --source-dir force-app/main/default/objects/SMS_Sync_Setting__c \
+  --source-dir force-app/main/default/classes/SMSTrackingSync.cls \
+  --source-dir force-app/main/default/classes/SMSTrackingSyncSchedule.cls \
+  --source-dir force-app/main/default/classes/SMSTrackingSyncTest.cls \
+  --source-dir force-app/main/default/permissionsets/SMS_Sync_Access.permissionset-meta.xml
+```
 
 ## 3. First run and checks
 
-1. Run once by hand: `System.enqueueJob(new SMSTrackingSync());` then read the custom setting.
-   Expect Last Rows Read ~480, Last Upserted ~480, Last Errors 0. Yesterday's texts that already have an
+1. First run done 2026-11-03 00:45 UTC on the 2026-11-01 rows: Last Rows Read 471, Last Upserted 471, Last Errors 0,
+   job 707Vt000040OR9c completed in 7 seconds. To rerun by hand: `System.enqueueJob(new SMSTrackingSync());` Yesterday's texts that already have an
    `SMS__c` row (the person's first text) get a second row with the new key; the legacy rows have no
    `SMS_Key__c` and are not touched.
 2. In Sales Cloud:
