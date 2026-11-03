@@ -27,7 +27,7 @@ fields = [
   F("Publisher__c", "Publisher_c__c", "Text", "Publisher"),
   F("Declined__c", "case when Declined_c__c = true then 1 else 0 end", "Number", "Declined"),
   F("Mobile_Opt_Out__c", "case when et4ae5_HasOptedOutOfMobile_c__c = true then 1 else 0 end", "Number", "Mobile Opt Out"),
-  F("Has_Mobile__c", "case when MobilePhone__c is not null and MobilePhone__c <> '' then 1 else 0 end", "Number", "Has Mobile"),
+  F("Has_Mobile__c", "case when MobilePhone__c is null or trim(MobilePhone__c) = '' then 0 else 1 end", "Number", "Has Mobile"),
   F("Lead_Hour__c", "hour(CreatedDate__c)", "Number", "Lead Hour"),
   F("Lead_Day_Of_Week__c", "dayofweek(CreatedDate__c)", "Number", "Lead Day Of Week"),
   F("Lead_Created_Month__c", "month(CreatedDate__c)", "Number", "Lead Created Month"),

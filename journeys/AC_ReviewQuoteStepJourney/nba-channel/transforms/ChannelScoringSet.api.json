@@ -276,7 +276,7 @@
        {
         "businessType": "Number",
         "defaultValue": "",
-        "formulaExpression": "case when MobilePhone__c is not null and MobilePhone__c <> '' then 1 else 0 end",
+        "formulaExpression": "case when MobilePhone__c is null or trim(MobilePhone__c) = '' then 0 else 1 end",
         "label": "Has Mobile",
         "name": "Has_Mobile__c",
         "precision": 18,
