@@ -312,8 +312,12 @@ Steps:
    | Score | p10 | p25 | median | p75 | p90 | range | threshold |
    |---|---|---|---|---|---|---|---|
    | SMS click (0-100) | 32.5 | 36.3 | 39.8 | 45.4 | 49.4 | 21-66 | text if >= 39.8 (top half) |
-   | Phone (0-100) | | | | | | | call if >= p80, pending the phone job |
-   | Email open (0-100) | | | | | | | logged only |
+   | Phone (0-100) | 3.9 | 10.7 | 23.1 | 37.6 | 54.8 | 0-87 | call if >= 42.3 (p80) |
+   | Email open (0-100) | 37.5 | 44.0 | 50.9 | 58.2 | 65.8 | 15-91 | logged only |
+   Mix those thresholds produce on the 4,073 scored leads: SMS + Email 80.0%, Call + SMS + Email 14.5%, Call + Email 5.5%,
+   i.e. 815 call tasks per 4,073 scored leads (the journey only calls the ones that enter it). Sanity: phone score is
+   highest for lead_gen and sms-arrival leads in AZ (0.51 / 0.48) and lowest for RI (0.13); email score tracks the domain
+   open rates (apple 0.85, gmail 0.53, yahoo 0.37). `Predicted_Channel__c` formula metadata carries 42.3 / 39.8.
    The probabilities sit near 0.4 because CatBoost balances the classes; they rank, they are not click rates.
    Quote step drives the SMS score (step 1: 0.53, step 3: 0.35, step 4+: 0.40); domain barely moves it.
 6. Write-back without hand-wiring three enrichments: `transforms/ChannelScores.api.json` (generator

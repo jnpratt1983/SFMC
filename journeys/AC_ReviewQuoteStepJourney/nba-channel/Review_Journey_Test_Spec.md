@@ -37,8 +37,8 @@ next model needs, so it runs as a small slice alongside the model-routed majorit
 
 Revised 2026-11-03: three response models train on 2024-2026 history now and write into the existing
 `Email_Score__c` / `SMS_Score__c` / `Call_Score__c`; `Predicted_Channel__c` stays the routing field with a new
-formula (README "After training"): phone score above threshold -> `Call + Email`, SMS score above threshold ->
-`SMS + Email`, both -> `Call + SMS + Email`, neither -> `SMS + Email`. So the model path of v17 IS the existing
+formula (README "After training"): phone score >= 42.3 -> `Call + Email`, SMS score >= 39.8 -> `SMS + Email`, both -> `Call + SMS + Email`,
+neither -> `SMS + Email` (thresholds from the 2026-11-03 scoring run: phone top 20%, SMS top half; expected mix 80 / 14.5 / 5.5). So the model path of v17 IS the existing
 `predicted_channel__c` decision (MCD-4) with one outcome added; the random split sits in front of it and the
 Update Lead steps after it. The email-open rule below is the fallback if the phone and SMS models fail their
 lift charts. The random slice remains for the purchase question and to audit the routing.
