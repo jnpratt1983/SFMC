@@ -123,6 +123,8 @@ Learned from the editor's own error list on 2026-11-03 and from the org's workin
 - `DATEDIFF(end, start)`, `NOW()`, `HOUR()`, `DAYOFWEEK()`, `MONTH()`, window functions (`LEAD`,
   `ROW_NUMBER() OVER`) and `LIKE` all pass. Booleans compare with `= TRUE` / `= FALSE`.
 - Attribute names must be unique across the insight.
+- An existing insight cannot gain a new dimension ("not an eligible KQ dimension"); add measures freely, or delete and
+  recreate the insight to change its dimensions. Filters that only matter for training go in Model Builder instead.
 - `BETWEEN` is not supported; write `x >= a AND x <= b`.
 - `ssot__EmailEngagement__dlm.ssot__EmailDomainName__c` is blank on every row; the recipient address is in
   `To_Email_Address__c`. With no string functions, the domain feature is a `CASE ... LIKE '%@gmail.com'` bucket
@@ -216,7 +218,7 @@ sms-UTM leads inside 14 days; filter `<= 1` or treat `> 0` as the positive), `Pu
 | `Call_Response_Training_Set__cio` | ACTIVE, created 2026-11-03 | 941 ticket rows, 696 leads, 867 called, 116 reached (13% of called), 79 purchased. Reached leads bought 8.5%, called-not-reached 6.3%, not-dialed (ex-customers, already customers) 27%. |
 | `Email_Response_Training_Set__cio` | ACTIVE, ran after the IsTestSend fix | 219,698 leads, 31.6% opened the first email, 2.7% clicked; by lead year 2024 31.7%, 2025 30.6%, 2026 33.5%. Domain column was blank on the first run; replaced by the LIKE bucket, re-paste |
 | `Email_Response_Scoring_Set__cio` | ACTIVE, ran | 4,140 leads from the last 14 days, 2,921 with an email |
-| `SMS_Response_Training_Set__cio` | ACTIVE, ran | 169,156 texted leads; 6,917 (4.1%) with a click lead inside 14 days. Monthly click rate: 0.4-0.9% Mar-Jul 2024, 5-9% Aug 2024-Jul 2025, 0.4-1.5% Aug 2025 onward. That is the quote app's new-lead-on-click behaviour, not people. `Label_Window__c` = 1 marks the Aug 2024-Jul 2025 texts (~85k rows, ~6k positives); train on that filter only and exclude `Lead_Created_Month__c` so the model cannot learn the calendar |
+| `SMS_Response_Training_Set__cio` | ACTIVE, ran | 169,156 texted leads; 6,917 (4.1%) with a click lead inside 14 days. Monthly click rate: 0.4-0.9% Mar-Jul 2024, 5-9% Aug 2024-Jul 2025, 0.4-1.5% Aug 2025 onward. That is the quote app's new-lead-on-click behaviour, not people. Train on texts sent 2024-08-01 to 2025-07-31 only (~85k rows, ~6k positives) by filtering `SMS_Sent_At__c` in Model Builder, and exclude `Lead_Created_Month__c` so the model cannot learn the calendar. The insight itself is unchanged |
 | `Phone_Response_Training_Set__cio` | not yet visible in the org as of 2026-11-03 04:10 UTC | |
 | `Channel_Uplift_Training_Set__cio` | waiting on the Lead DMO field mapping | |
 
