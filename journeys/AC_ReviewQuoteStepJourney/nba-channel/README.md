@@ -383,3 +383,6 @@ that `Clicked_7d__c` should be a second model, not a second target.
 - Purchase within 30 days of journey entry: 11.9% in the untreated control arm.
 - Any new router must beat the email-only control cell on 30-day purchase with a confidence interval
   that excludes zero. The old router did not.
+
+
+Journey Builder build, tile by tile with exact fields and value sources: `JOURNEY_BUILDER_BUILD.md` (canvas mock-up: https://claude.ai/artifact/GHnYvrR8rBQpRRHFdD8Ueu).

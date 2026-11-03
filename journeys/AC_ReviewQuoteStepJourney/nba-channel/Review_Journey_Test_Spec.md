@@ -83,13 +83,19 @@ unbiased data and the routing keeps getting audited.
 
 Steps, in order:
 
+0. **Entry gate instead of a wait** (2026-11-03): `AC_ReviewNBA_v9` only selects leads whose `Last_Channel_Scoring_Date__c`
+   is set. Decision splits read Journey Data (the entry snapshot), so a wait inside the journey would not refresh the scores;
+   gating at the query means every entrant already carries them. Scores land hourly, the automation runs every 15 min.
+   Tile-by-tile build with exact fields: `JOURNEY_BUILDER_BUILD.md`.
 1. **Eligibility at entry, not at the split.** In `AC_ReviewNBA_v8` (or in MCD-1) require Email not
    null, mobile present, `Mobile_Opt_Out_Date__c` null, `DoNotCall` false for the test population, so
    all three arms are possible for every entrant. Leads failing that go down the existing Email Only
    path with arm `INELIGIBLE` written (step 4).
-2. **Entry snapshot carries the scores.** Add `Email_Open_Likelihood__c` (the new model's output),
-   `Call_Score__c`, `Email_Score__c`, `SMS_Score__c` to the `AC_ReviewNBA_v8` select, so the decision
-   reads the value the lead had at entry and the Lead keeps a record of it.
+2. **Entry snapshot carries the scores.** `sfmc/AC_ReviewNBA_v9.sql` replaces v8 in automation `AC_NBATEST` step 2:
+   it adds `Call_Score__c`, `Email_Score__c`, `SMS_Score__c`, `Last_Channel_Scoring_Date__c`, `DoNotCall` and
+   `MobilePhone` to the select. Add the same six columns to the entry DE `AC_ReviewNBATest_AF_01272026` first, and
+   confirm they are in the Marketing Cloud Connect Lead sync. The automation itself does not change (every 15 min;
+   step 1 `NBA_Lead_Channel_Current`, step 3 the journey entry). Filters are unchanged; widening is optional.
 3. **Replace MCD-4** (the `predicted_channel__c` decision) with: RANDOMSPLIT 80/20; on the 80% path a
    MULTICRITERIADECISION on `Email_Open_Likelihood__c` with two outcomes (low -> CALL_SMS, high ->
    SMS; threshold = the score at the bottom third of the training set, written in the activity name so
@@ -102,8 +108,8 @@ Steps, in order:
    `AC_ReviewNBA_TestLog` (Update Contact) for SFMC-side counts.
 5. **Build the three paths** by copying the existing Call + Email path (ES1 -> 2h -> SALESCLOUDACTIVITY
    -> 2d -> STO -> ES2 -> 4d -> STO -> ES3 -> 3d) and adding or removing SE1/SE2/SE3 and the call step
-   per the table. Model-routed and random leads share the same three paths; only the Update Lead step
-   before the path differs. Keep the 2-hour wait and the Zendesk email on the task.
+   per the table. Model-routed and random leads share the same three paths through a Join tile at the head of each arm
+   (Update Lead MODEL/RANDOM sits before the Join, Update Lead arm + entry scores after it). Keep the 2-hour wait and the Zendesk email on the task.
 6. **Exit on purchase.** Exit criterion = `purchased__c` true or `Max_Quote_Step__c` = 7.0, evaluated
    at every wait. Add a Goal on the same condition.
 7. **Entry mode stays SingleEntryAcrossAllVersions.** One assignment per lead.
