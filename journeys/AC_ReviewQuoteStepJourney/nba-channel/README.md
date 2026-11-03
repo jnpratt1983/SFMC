@@ -320,7 +320,8 @@ Steps:
    open rates (apple 0.85, gmail 0.53, yahoo 0.37). `Predicted_Channel__c` formula metadata carries 42.3 / 39.8.
    The probabilities sit near 0.4 because CatBoost balances the classes; they rank, they are not click rates.
    Quote step drives the SMS score (step 1: 0.53, step 3: 0.35, step 4+: 0.40); domain barely moves it.
-6. Write-back without hand-wiring three enrichments: `transforms/ChannelScores.api.json` (generator
+6. Write-back without hand-wiring three enrichments (live 2026-11-03 19:54 UTC: `Channel_Scores__dlm`, 4,073 leads, no
+   nulls, email 15-91 / sms 21-66 / call 0-87, mix 3,258 / 590 / 225 as expected): `transforms/ChannelScores.api.json` (generator
    `build_scores_transform.py`) reads the three prediction DMOs, takes the positive-class probability from whichever
    slot it landed in, scales it to 0-100 and writes the DMO `Channel_Scores__dlm` directly (Lead_Id, Email_Score, SMS_Score,
    Call_Score, Scored_At); a transform with DMO inputs must write a DMO, so no lake-object mapping is needed. Add a
