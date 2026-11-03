@@ -103,8 +103,11 @@ Learned from the editor's own error list on 2026-11-03 and from the org's workin
   dimensions instead, which is why the files below carry 0/1 dimension flags.
 
 Data Cloud facts that shaped the rewrite: `ssot__Lead__dlm.Max_Quote_Step__c` is a number, `Email_Opt_Out__c`
-is text, `Email_Open_Likelihood__c` is text, and `Purchased_Date__c` is NOT in the Lead DMO (add it to the
-`Lead` data stream together with the seven NBA fields; until then the uplift set uses `Purchased__c`).
+is text, `Email_Open_Likelihood__c` is text, and `Purchased_Date__c` and the seven NBA fields were added to the
+`Lead` data stream on 2026-11-03 but a stream column is not a DMO field until it is mapped: Data Cloud > Data Model >
+Lead > Field Mappings, map the eight lake columns (`NBA_Test_Arm_c` ... `Purchased_Date_c`) to new Lead DMO fields with
+the same API names plus `__c`. The uplift insight reads `ssot__Lead__dlm.NBA_*__c` and `Purchased_Date__c` and
+validates only after that mapping; its label is `Purchased_30d__c` (purchase within 30 days of entry).
 `SMS__c` arrives in Data Cloud as `ssot__MessageEngagement__dlm` (`Subscriber_Key__c`, `ssot__Name__c`,
 `Create_Date_Custom__c`, `SMS_Status_Code_Id__c`), so no extra SMS object mapping is needed.
 
@@ -169,6 +172,14 @@ sms-UTM leads inside 14 days; filter `<= 1` or treat `> 0` as the positive), `Pu
 8. Retire: the three legacy models, `Lead_Multi_Channel_Scoring`, `Lead_SMS_Channel_Scoring`
    (stale, newest lead 2025-12-15), the `Predicted_Channel__c` rule, `Recommended_Channel__c`,
    and `Prediction_NextBestAction__dlm` (leads only through 2025-12-10).
+
+## Live in the org
+
+| Insight | Status | First run |
+|---|---|---|
+| `Call_Response_Training_Set__cio` | ACTIVE, created 2026-11-03 | 941 ticket rows, 696 leads, 867 called, 116 reached (13% of called), 79 purchased. Reached leads bought 8.5%, called-not-reached 6.3%, not-dialed (ex-customers, already customers) 27%. |
+| `Email_Response_Training_Set__cio`, `Email_Response_Scoring_Set__cio`, `SMS_Response_Training_Set__cio` | pasted 2026-11-03, confirm status | |
+| `Channel_Uplift_Training_Set__cio` | waiting on the Lead DMO field mapping | |
 
 ## Validated 2026-11-02 (Trino translation of the training-set logic, via queryv2)
 

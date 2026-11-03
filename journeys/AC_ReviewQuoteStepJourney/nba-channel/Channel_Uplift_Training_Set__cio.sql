@@ -16,6 +16,7 @@ SELECT
   CASE WHEN ssot__Lead__dlm.Currently_Insured_Status__c = TRUE THEN 1 ELSE 0 END AS Currently_Insured__c,
   CASE WHEN ssot__Lead__dlm.App_Downloaded__c = TRUE THEN 1 ELSE 0 END AS App_Downloaded__c,
   CASE WHEN ssot__Lead__dlm.Purchased__c = TRUE THEN 1 ELSE 0 END AS Purchased__c,
+  CASE WHEN ssot__Lead__dlm.Purchased_Date__c IS NOT NULL AND DATEDIFF(ssot__Lead__dlm.Purchased_Date__c, ssot__Lead__dlm.NBA_Entry_At__c) BETWEEN 0 AND 30 THEN 1 ELSE 0 END AS Purchased_30d__c,
   MAX(ssot__Lead__dlm.NBA_Entry_At__c) AS Entry_At__c,
   MAX(ssot__Lead__dlm.ssot__CreatedDate__c) AS Lead_Created__c,
   MAX(DATEDIFF(ssot__Lead__dlm.NBA_Entry_At__c, ssot__Lead__dlm.ssot__CreatedDate__c)) AS Days_Create_To_Entry__c,
@@ -23,6 +24,7 @@ SELECT
   MAX(ssot__Lead__dlm.NBA_Entry_Call_Score__c) AS Entry_Call_Score__c,
   MAX(ssot__Lead__dlm.NBA_Entry_Email_Score__c) AS Entry_Email_Score__c,
   MAX(ssot__Lead__dlm.NBA_Entry_SMS_Score__c) AS Entry_SMS_Score__c,
+  MAX(ssot__Lead__dlm.Purchased_Date__c) AS Purchased_Date__c,
   MAX(ssot__Lead__dlm.Max_Quote_Step__c) AS Max_Quote_Step__c,
   MAX(ssot__Lead__dlm.Credit_Score__c) AS Credit_Score__c,
   SUM(CASE WHEN ssot__EmailEngagement__dlm.ssot__EmailName__c LIKE 'AC_Review%' AND ssot__EmailEngagement__dlm.Opened__c = TRUE THEN 1 ELSE 0 END) AS Review_Emails_Opened__c,
@@ -33,4 +35,4 @@ LEFT JOIN ssot__EmailEngagement__dlm ON (ssot__EmailEngagement__dlm.ssot__LeadlI
 WHERE ssot__Lead__dlm.NBA_Test_Arm__c IN ('CALL_SMS', 'CALL', 'SMS')
   AND ssot__Lead__dlm.NBA_Assignment__c = 'RANDOM'
   AND DATEDIFF(NOW(), ssot__Lead__dlm.NBA_Entry_At__c) >= 30
-GROUP BY Lead_Id__c, Test_Arm__c, Assignment__c, Call_Arm__c, SMS_Arm__c, State__c, Previous_Insurance__c, Vehicle_Make__c, UTM_Source__c, UTM_Medium__c, Lead_Source__c, Publisher__c, Declined__c, Saved_Quote__c, Currently_Insured__c, App_Downloaded__c, Purchased__c
+GROUP BY Lead_Id__c, Test_Arm__c, Assignment__c, Call_Arm__c, SMS_Arm__c, State__c, Previous_Insurance__c, Vehicle_Make__c, UTM_Source__c, UTM_Medium__c, Lead_Source__c, Publisher__c, Declined__c, Saved_Quote__c, Currently_Insured__c, App_Downloaded__c, Purchased__c, Purchased_30d__c
