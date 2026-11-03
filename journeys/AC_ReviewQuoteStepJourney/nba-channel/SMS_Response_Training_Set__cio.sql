@@ -16,9 +16,11 @@
    identity-linked; 504 (1.0%) have a click lead within 14 days, 562 within 30. By family: SavedQuote
    3.0%, QuoteDiscovery 1.6%, PurchaseQuote 1.2%, VehiclesQuoteStep 1.0%, Review 0.8%, CoveragesQuote
    0.7%, DriversQuoteStep 0.5%. Undercounts: a click that resumes an existing quote session creates no
-   new lead, and SMS__c keeps one row per subscriber key (the latest text), so earlier texts to the
-   same lead are invisible. Treat the rate as a floor; it is consistent across months, so it ranks.
- Unit      : one row per lead whose latest AC_ text is at least 15 days old.
+   new lead, and SMS__c holds each subscriber's FIRST text only (the "SMS Creation" journey that writes
+   it is set to Once and done; see SMS_Data_feed.md), so later texts to the same lead are invisible and
+   ~63% of a day's texted people are not recorded at all. Treat the rate as a floor; it is consistent
+   across months, so it ranks. Once the feed records every text, this query needs no change.
+ Unit      : one row per SMS__c row (today: one per subscriber, their first AC_ text) at least 15 days old.
  Size      : ~500 positives a year. Enough to read the SMS arm of the factorial test and to accrue;
    not enough to ship a score. Revisit at ~1,000 positives, or sooner if the texts switch to
    MobileConnect tracked links (per-subscriber click events, no identity hop needed).
