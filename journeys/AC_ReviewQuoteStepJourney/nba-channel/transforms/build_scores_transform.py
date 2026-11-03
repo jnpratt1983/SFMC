@@ -25,7 +25,7 @@ def formula(nid, src, name, expr, label, btype="Number", scale=2):
     nodes[nid] = {"action":"formula","sources":[src],"parameters":{"expressionType":"SQL","fields":[f]}}
 def score_expr(prefix):
     # probability of the positive class (1), whichever slot it landed in; scaled 0-100
-    return f"round(100 * case when cast({prefix}1__c as double) = 1 then {prefix}1Value__c else {prefix}2Value__c end, 2)"
+    return f"round(100 * case when {prefix}1__c like '1%' then {prefix}1Value__c else {prefix}2Value__c end, 2)"
 # three loads, each reduced to (key, score)
 load("LOAD_SMS", SMS[0], SMS[1], "SMS click prediction", 60)
 formula("F_SMS_KEY", "LOAD_SMS", "SMS_Lead_Id__c", "PrimaryObjectPk__c", "Lead Id (sms)", "Text")
@@ -37,11 +37,11 @@ load("LOAD_PHONE", PHONE[0], PHONE[1], "Phone preference prediction", 440)
 formula("F_PHONE_KEY", "LOAD_PHONE", "Phone_Lead_Id__c", "PrimaryObjectPk__c", "Lead Id (phone)", "Text")
 formula("F_PHONE", "F_PHONE_KEY", "Call_Score__c", score_expr(PHONE[1]), "Call Score")
 # joins: sms is the spine (every scored lead is in all three; left joins keep partial runs)
-nodes["JOIN_E"] = {"action":"join","sources":["F_SMS","F_EMAIL"],"parameters":{"joinType":"LEFT_OUTER","leftKeys":["SMS_Lead_Id__c"],"rightKeys":["Email_Lead_Id__c"],"rightQualifier":"E"}}
-nodes["JOIN_P"] = {"action":"join","sources":["JOIN_E","F_PHONE"],"parameters":{"joinType":"LEFT_OUTER","leftKeys":["SMS_Lead_Id__c"],"rightKeys":["Phone_Lead_Id__c"],"rightQualifier":"P"}}
+nodes["JOIN_E"] = {"action":"join","sources":["F_SMS","F_EMAIL"],"parameters":{"joinType":"LEFT_OUTER","leftKeys":["SMS_Lead_Id__c"],"rightKeys":["Email_Lead_Id__c"],"rightQualifier":"E"},"schema":{"fields":[],"slice":{"fields":[],"ignoreMissingFields":True,"mode":"DROP"}}}
+nodes["JOIN_P"] = {"action":"join","sources":["JOIN_E","F_PHONE"],"parameters":{"joinType":"LEFT_OUTER","leftKeys":["SMS_Lead_Id__c"],"rightKeys":["Phone_Lead_Id__c"],"rightQualifier":"P"},"schema":{"fields":[],"slice":{"fields":[],"ignoreMissingFields":True,"mode":"DROP"}}}
 formula("F_OUT_KEY", "JOIN_P", "Lead_Id__c", "SMS_Lead_Id__c", "Lead Id", "Text")
-formula("F_OUT_EMAIL", "F_OUT_KEY", "Email_Score_Out__c", "`E.Email_Score__c`", "Email Score")
-formula("F_OUT_PHONE", "F_OUT_EMAIL", "Call_Score_Out__c", "`P.Call_Score__c`", "Call Score")
+formula("F_OUT_EMAIL", "F_OUT_KEY", "Email_Score_Out__c", '"E.Email_Score__c"', "Email Score")
+formula("F_OUT_PHONE", "F_OUT_EMAIL", "Call_Score_Out__c", '"P.Call_Score__c"', "Call Score")
 formula("F_OUT_TS", "F_OUT_PHONE", "Scored_At__c", "now()", "Scored At", "DateTime")
 for n in ("JOIN_E","JOIN_P"): ui_nodes[n] = {"label":n,"type":"JOIN","top":60,"left":600}
 ui_nodes["T_SMS"] = {"label":"SMS score","type":"TRANSFORM","top":60,"left":392,"graph":{"F_SMS_KEY":{"label":"key","type":"FORMULA","top":0,"left":0},"F_SMS":{"label":"score","type":"FORMULA","top":0,"left":0}},"connectors":[{"source":"LOAD_SMS","target":"F_SMS_KEY"},{"source":"F_SMS_KEY","target":"F_SMS"}]}

@@ -63,7 +63,7 @@
        {
         "businessType": "Number",
         "defaultValue": "",
-        "formulaExpression": "round(100 * case when cast(PredictedClicked_14d1__c as double) = 1 then PredictedClicked_14d1Value__c else PredictedClicked_14d2Value__c end, 2)",
+        "formulaExpression": "round(100 * case when PredictedClicked_14d1__c like '1%' then PredictedClicked_14d1Value__c else PredictedClicked_14d2Value__c end, 2)",
         "label": "SMS Score",
         "name": "SMS_Score__c",
         "precision": 18,
@@ -125,7 +125,7 @@
        {
         "businessType": "Number",
         "defaultValue": "",
-        "formulaExpression": "round(100 * case when cast(PredictedOpened_First_Email1__c as double) = 1 then PredictedOpened_First_Email1Value__c else PredictedOpened_First_Email2Value__c end, 2)",
+        "formulaExpression": "round(100 * case when PredictedOpened_First_Email1__c like '1%' then PredictedOpened_First_Email1Value__c else PredictedOpened_First_Email2Value__c end, 2)",
         "label": "Email Score",
         "name": "Email_Score__c",
         "precision": 18,
@@ -187,7 +187,7 @@
        {
         "businessType": "Number",
         "defaultValue": "",
-        "formulaExpression": "round(100 * case when cast(PredictedCalled_Us_30d1__c as double) = 1 then PredictedCalled_Us_30d1Value__c else PredictedCalled_Us_30d2Value__c end, 2)",
+        "formulaExpression": "round(100 * case when PredictedCalled_Us_30d1__c like '1%' then PredictedCalled_Us_30d1Value__c else PredictedCalled_Us_30d2Value__c end, 2)",
         "label": "Call Score",
         "name": "Call_Score__c",
         "precision": 18,
@@ -212,6 +212,14 @@
        "Email_Lead_Id__c"
       ],
       "rightQualifier": "E"
+     },
+     "schema": {
+      "fields": [],
+      "slice": {
+       "fields": [],
+       "ignoreMissingFields": true,
+       "mode": "DROP"
+      }
      }
     },
     "JOIN_P": {
@@ -229,6 +237,14 @@
        "Phone_Lead_Id__c"
       ],
       "rightQualifier": "P"
+     },
+     "schema": {
+      "fields": [],
+      "slice": {
+       "fields": [],
+       "ignoreMissingFields": true,
+       "mode": "DROP"
+      }
      }
     },
     "F_OUT_KEY": {
@@ -262,7 +278,7 @@
        {
         "businessType": "Number",
         "defaultValue": "",
-        "formulaExpression": "`E.Email_Score__c`",
+        "formulaExpression": "\"E.Email_Score__c\"",
         "label": "Email Score",
         "name": "Email_Score_Out__c",
         "precision": 18,
@@ -283,7 +299,7 @@
        {
         "businessType": "Number",
         "defaultValue": "",
-        "formulaExpression": "`P.Call_Score__c`",
+        "formulaExpression": "\"P.Call_Score__c\"",
         "label": "Call Score",
         "name": "Call_Score_Out__c",
         "precision": 18,
