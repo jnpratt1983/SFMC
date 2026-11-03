@@ -21,7 +21,7 @@
  */
 public with sharing class SMSTrackingSync implements Queueable, Database.AllowsCallouts {
 
-    public static final String DEFAULT_DE_KEY = '2D61983D-6F1E-447A-9E29-6629857DF2E8';
+    public static final String DEFAULT_DE_KEY = 'smsmessagetracking_v2';   // keyed DE created 2026-11-02, filled by query SMSData_v2
     public static final Integer DEFAULT_PAGE_SIZE = 2500;
     public static final Integer DEFAULT_MAX_PAGES = 40;
     public static final Integer SERVER_OFFSET_HOURS = 6;
