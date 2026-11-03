@@ -233,7 +233,7 @@ be the input. `transforms/ChannelScoringSet.api.json` is a batch data transform 
 from the lead's own address (string functions are allowed in transforms), 0/1 flags, hour / weekday / month,
 quote step and credit score. One scoring object serves all three models.
 
-Create it (one command, from the c360-sfdx folder; this session was not allowed to run it):
+Created 2026-11-03 18:49 UTC (transform id 1dtVt0000000X2PIAU); first clean run 19:0x UTC: 4,073 leads, domain mix gmail 3,098 / yahoo 394 / apple 239 / microsoft 162. Lake object added to the default data space and mapped to DMO `Channel_Scoring_Set__dlm` (25 fields incl. system columns) by the user. Two validator lessons on the way: formula columns cannot share a name with a loaded column (State), and formulas cannot use `<>`. To recreate from scratch:
 ```
 sf api request rest "/services/data/v64.0/ssot/data-transforms" -o blueowl-prod -X POST \
   --body @data-cloud/nba-channel/transforms/ChannelScoringSet.api.json
