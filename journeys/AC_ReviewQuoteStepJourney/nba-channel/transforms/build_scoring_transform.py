@@ -12,7 +12,7 @@ def F(name, expr, btype, label, precision=18, scale=0):
     f = {"businessType": btype, "defaultValue": "", "formulaExpression": expr, "label": label, "name": name}
     if btype == "Number": f.update({"precision": precision, "scale": scale, "type": "NUMBER"})
     elif btype == "Text": f.update({"precision": precision if precision != 18 else 255, "type": "TEXT"})
-    else: f.update({"type": "DATE_TIME"})
+    else: f.update({"type": "DATETIME", "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"})
     return f
 E = "lower(Email__c)"
 fields = [
@@ -36,6 +36,7 @@ fields = [
   F("Lead_Created__c", "CreatedDate__c", "DateTime", "Lead Created"),
   F("Days_Since_Create__c", "datediff(now(), CreatedDate__c)", "Number", "Days Since Create"),
   F("Internal__c", "case when Internal_Traffic_c__c = true then 1 else 0 end", "Number", "Internal traffic"),
+  F("Recent__c", "case when datediff(now(), CreatedDate__c) <= 14 then 1 else 0 end", "Number", "Created in the last 14 days"),
 ]
 prev = "LOAD0"; conns = []
 for i, f in enumerate(fields):
@@ -43,7 +44,7 @@ for i, f in enumerate(fields):
     nodes[nid] = {"action":"formula","sources":[prev],"parameters":{"expressionType":"SQL","fields":[f]}}
     conns.append({"source": prev, "target": nid}); prev = nid
 nodes["FILTER0"] = {"action":"filter","sources":[prev],"parameters":{"filterBooleanLogic":"1 AND 2 AND 3",
-    "filterExpressions":[{"field":"Days_Since_Create__c","operands":["14"],"operator":"LESS_OR_EQUAL","type":"NUMBER"},
+    "filterExpressions":[{"field":"Recent__c","operands":["1"],"operator":"EQUAL","type":"NUMBER"},
                          {"field":"Internal__c","operands":["0"],"operator":"EQUAL","type":"NUMBER"},
                          {"field":"Id__c","operands":["00Q"],"operator":"STARTS_WITH","type":"TEXT"}]}}
 ui_nodes["T0"] = {"label":"Scoring columns","type":"TRANSFORM","top":60,"left":392,"graph":{k:{"label":v["parameters"]["fields"][0]["label"],"type":"FORMULA","top":0,"left":0} for k,v in nodes.items() if v["action"]=="formula"},"connectors":conns}
@@ -51,7 +52,7 @@ ui_nodes["FILTER0"] = {"label":"Last 14 days, external, leads","type":"FILTER","
 out_fields = []; maps = []
 TYPE = {"Number":"Number","Text":"Text","DateTime":"DateTime"}
 for f in fields:
-    if f["name"] == "Internal__c": continue
+    if f["name"] in ("Internal__c", "Recent__c"): continue
     out_fields.append({"isPrimaryKey": f["name"]=="Lead_Id__c", "label": f["label"], "name": f["name"], "type": TYPE[f["businessType"]]})
     maps.append({"sourceField": f["name"], "targetField": f["name"]})
 nodes["OUTPUT0"] = {"action":"outputD360","sources":["FILTER0"],"parameters":{"dedupOrder":[],"fieldsMappings":maps,"name":OUT,"type":"dataLakeObject","writeMode":"OVERWRITE"}}

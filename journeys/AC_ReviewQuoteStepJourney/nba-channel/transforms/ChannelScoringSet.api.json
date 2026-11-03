@@ -405,7 +405,8 @@
         "formulaExpression": "CreatedDate__c",
         "label": "Lead Created",
         "name": "Lead_Created__c",
-        "type": "DATE_TIME"
+        "type": "DATETIME",
+        "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
        }
       ]
      }
@@ -452,20 +453,41 @@
       ]
      }
     },
+    "FORMULA20": {
+     "action": "formula",
+     "sources": [
+      "FORMULA19"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "case when datediff(now(), CreatedDate__c) <= 14 then 1 else 0 end",
+        "label": "Created in the last 14 days",
+        "name": "Recent__c",
+        "precision": 18,
+        "scale": 0,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
     "FILTER0": {
      "action": "filter",
      "sources": [
-      "FORMULA19"
+      "FORMULA20"
      ],
      "parameters": {
       "filterBooleanLogic": "1 AND 2 AND 3",
       "filterExpressions": [
        {
-        "field": "Days_Since_Create__c",
+        "field": "Recent__c",
         "operands": [
-         "14"
+         "1"
         ],
-        "operator": "LESS_OR_EQUAL",
+        "operator": "EQUAL",
         "type": "NUMBER"
        },
        {
@@ -842,6 +864,12 @@
         "type": "FORMULA",
         "top": 0,
         "left": 0
+       },
+       "FORMULA20": {
+        "label": "Created in the last 14 days",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
        }
       },
       "connectors": [
@@ -924,6 +952,10 @@
        {
         "source": "FORMULA18",
         "target": "FORMULA19"
+       },
+       {
+        "source": "FORMULA19",
+        "target": "FORMULA20"
        }
       ]
      },
