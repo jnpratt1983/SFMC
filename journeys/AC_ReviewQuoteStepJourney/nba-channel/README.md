@@ -224,32 +224,43 @@ sms-UTM leads inside 14 days; filter `<= 1` or treat `> 0` as the positive), `Pu
 | `Call_Response_Training_Set__cio` | 941 outbound call tickets | `Call_Reached__c` 13% of dialed; diagnostic only | not a routing model |
 | `Channel_Uplift_Training_Set__cio` | 0 until the journey writes arms | `Purchased_30d__c` | after the test |
 
-## After training: getting the three scores onto the Lead
+## After training: the scores go into the fields we already have
 
-1. Read each model's metrics in Einstein Studio: AUC, lift chart, top features. Ship gate: AUC >= ~0.58 and a
-   lift chart that rises. Note the three AUCs in this README.
-2. Activate each model. Create a prediction job per model: input `Email_Response_Scoring_Set__cio` (every
-   model's features are lead attributes, so one scoring set serves all three), output a prediction DMO
-   (`Email_Open_Prediction`, `SMS_Click_Prediction`, `Phone_Preference_Prediction`), schedule daily after the
-   scoring insight refreshes.
-3. Lead fields for the outputs (metadata in c360-sfdx force-app, permission set `NBA_Test_Access` extended):
-   `NBA_Email_Open_Score__c`, `NBA_SMS_Click_Score__c`, `NBA_Phone_Score__c` (Number 9,4). Deploy:
-   ```
-   sf project deploy start -o blueowl-prod --test-level RunSpecifiedTests --tests SMSTrackingSyncTest \
-     --source-dir force-app/main/default/objects/Lead/fields/NBA_Email_Open_Score__c.field-meta.xml \
-     --source-dir force-app/main/default/objects/Lead/fields/NBA_SMS_Click_Score__c.field-meta.xml \
-     --source-dir force-app/main/default/objects/Lead/fields/NBA_Phone_Score__c.field-meta.xml \
-     --source-dir force-app/main/default/permissionsets/NBA_Test_Access.permissionset-meta.xml
-   ```
-4. Write-back: in Data Cloud, relate each prediction DMO to `ssot__Lead__dlm` on `Lead_Id__c`, then a Copy Field
-   enrichment (Data Cloud > Enrichments > Copy Fields, target Lead) from the prediction DMO's score column to the
-   matching `NBA_*_Score__c`. Daily, after the prediction jobs.
-5. Marketing Cloud Connect: Synchronized Data Sources > Lead > add the three score fields, so `AC_ReviewNBA_v8` can
-   select them into the entry DE.
-6. Thresholds: take the score distribution from each prediction DMO; phone threshold = top 20% of phone scores,
-   SMS threshold = top 50% of SMS scores, to start. Write both into the journey decision names and into
-   `Review_Journey_Test_Spec.md`.
-7. Build journey v17 per the spec.
+Decision 2026-11-03: no new Lead fields. The three models write to the three score fields the legacy models
+fill today, `Email_Score__c`, `SMS_Score__c`, `Call_Score__c` (Number 5,2), and `Predicted_Channel__c` stays
+the routing field. It is a formula on those scores, so the journey's existing decision keeps working once
+the formula's thresholds match the new scale:
+
+```
+today:  IF(OR(ISBLANK(Phone), AND(SMS_Score__c < 14, Call_Score__c < 7)), 'Email Only',
+          IF(SMS_Score__c >= Call_Score__c, 'SMS + Email', 'Call + Email'))
+v17:    IF(ISBLANK(Phone), 'Email Only',
+          IF(Call_Score__c >= <call threshold>,
+             IF(SMS_Score__c >= <sms threshold>, 'Call + SMS + Email', 'Call + Email'),
+             'SMS + Email'))
+```
+(`force-app/main/default/objects/Lead/fields/Predicted_Channel__c.field-meta.xml`, thresholds 20 / 50 as placeholders.)
+`Email_Score__c` is logged, not routed on: every arm gets the emails. Blank phone still means Email Only, which is
+the INELIGIBLE path in the journey.
+
+Steps:
+1. Read each model's metrics in Einstein Studio (AUC, lift chart, top features). Ship gate: AUC >= ~0.58 and a lift
+   chart that rises. Record the three AUCs here.
+2. Activate each model and create one prediction job per model on `Email_Response_Scoring_Set__cio` (every model's
+   features are lead attributes, so one scoring set serves all three), output DMOs `Email_Open_Prediction`,
+   `SMS_Click_Prediction`, `Phone_Preference_Prediction`, daily after the scoring insight refreshes.
+3. Find what writes `Lead_Multi_Channel_Scoring__dlm` to the Lead today (Data Cloud > Enrichments, Copy Fields to
+   Lead, or a Data Action) and re-point each score to the new prediction DMO's score column. Model Builder scores are
+   probabilities 0-1; the fields and the formula expect 0-100, so multiply by 100 in the enrichment if it allows a
+   formula, otherwise write 0-1 and set the formula thresholds as 0.20 / 0.50.
+4. Deactivate the three legacy models' prediction jobs so they stop overwriting the fields.
+5. Thresholds from the first scoring run: call = top 20% of `Call_Score__c`, text = top 50% of `SMS_Score__c`. Put
+   the two numbers in the formula and deploy it.
+6. Marketing Cloud Connect already syncs `Email_Score__c`, `SMS_Score__c`, `Call_Score__c` and `Predicted_Channel__c`,
+   and `AC_ReviewNBA_v8` already selects `predicted_channel__c` into the entry DE. No sync change.
+7. Journey v17: keep the existing `predicted_channel__c` decision as the model path, add the outcome
+   `Call + SMS + Email`, put the model/learning random split in front of it, and the Update Lead steps after it.
+   The rest of the spec stands.
 
 ## Model Builder recipes
 
