@@ -124,6 +124,8 @@ Learned from the editor's own error list on 2026-11-03 and from the org's workin
   `ROW_NUMBER() OVER`) and `LIKE` all pass. Booleans compare with `= TRUE` / `= FALSE`.
 - Attribute names must be unique across the insight.
 - `BETWEEN` is not supported; write `x >= a AND x <= b`.
+- A `<>` test against a column that is NULL drops the row (`ssot__IsTestSend__c` is NULL on every email row, so
+  `<> 'true'` emptied the email training set on its first run). Filter only on columns you have checked are populated.
 - String functions are thin: `LOCATE` is not supported and `SUBSTRING` needs (text, start, length) literals. Derive text
   attributes from a column that already holds them (the email domain comes from `ssot__EmailDomainName__c` on the
   engagement rows in both email sets) rather than parsing.
@@ -209,7 +211,10 @@ sms-UTM leads inside 14 days; filter `<= 1` or treat `> 0` as the positive), `Pu
 | Insight | Status | First run |
 |---|---|---|
 | `Call_Response_Training_Set__cio` | ACTIVE, created 2026-11-03 | 941 ticket rows, 696 leads, 867 called, 116 reached (13% of called), 79 purchased. Reached leads bought 8.5%, called-not-reached 6.3%, not-dialed (ex-customers, already customers) 27%. |
-| `Email_Response_Training_Set__cio`, `Email_Response_Scoring_Set__cio`, `SMS_Response_Training_Set__cio` | pasted 2026-11-03, confirm status | |
+| `Email_Response_Training_Set__cio` | ACTIVE; first run returned 0 rows (IsTestSend filter), SQL fixed 2026-11-03, re-paste and re-run | expected ~224k rows, 36-40% opened |
+| `Email_Response_Scoring_Set__cio` | ACTIVE, ran | 4,140 leads from the last 14 days, 2,921 with an email |
+| `SMS_Response_Training_Set__cio` | ACTIVE, ran | 169,156 texted leads; 6,917 (4.1%) with a click lead inside 14 days, 7,380 inside 30. By text year: 2024 2.9%, 2025 6.2%, 2026 1.0%; the 2025 peak and 2026 drop track how often the quote app created a new lead on click, so check label stability before training |
+| `Phone_Response_Training_Set__cio` | not yet visible in the org as of 2026-11-03 04:10 UTC | |
 | `Channel_Uplift_Training_Set__cio` | waiting on the Lead DMO field mapping | |
 
 ## Validated 2026-11-02 (Trino translation of the training-set logic, via queryv2)

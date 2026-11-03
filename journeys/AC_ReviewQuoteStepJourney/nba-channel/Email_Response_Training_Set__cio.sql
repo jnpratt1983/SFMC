@@ -28,7 +28,7 @@ SELECT
   MAX(ssot__Lead__dlm.Max_Quote_Step__c) AS Max_Quote_Step__c,
   MAX(ssot__Lead__dlm.Credit_Score__c) AS Credit_Score__c,
   COUNT(ssot__EmailEngagement__dlm.ssot__Id__c) AS Send_Rows__c
-FROM (SELECT ssot__EmailEngagement__dlm.ssot__LeadlId__c AS Lead_Id__c, MIN(ssot__EmailEngagement__dlm.ssot__SentDateTm__c) AS First_Send_At__c FROM ssot__EmailEngagement__dlm WHERE ssot__EmailEngagement__dlm.ssot__EmailName__c LIKE 'AC_%' AND ssot__EmailEngagement__dlm.ssot__IsTestSend__c <> 'true' AND ssot__EmailEngagement__dlm.ssot__LeadlId__c LIKE '00Q%' GROUP BY ssot__EmailEngagement__dlm.ssot__LeadlId__c) AS first_send
+FROM (SELECT ssot__EmailEngagement__dlm.ssot__LeadlId__c AS Lead_Id__c, MIN(ssot__EmailEngagement__dlm.ssot__SentDateTm__c) AS First_Send_At__c FROM ssot__EmailEngagement__dlm WHERE ssot__EmailEngagement__dlm.ssot__EmailName__c LIKE 'AC_%' AND ssot__EmailEngagement__dlm.ssot__LeadlId__c LIKE '00Q%' GROUP BY ssot__EmailEngagement__dlm.ssot__LeadlId__c) AS first_send
 JOIN ssot__Lead__dlm ON (ssot__Lead__dlm.ssot__Id__c = first_send.Lead_Id__c)
 JOIN ssot__EmailEngagement__dlm ON (ssot__EmailEngagement__dlm.ssot__LeadlId__c = first_send.Lead_Id__c AND ssot__EmailEngagement__dlm.ssot__SentDateTm__c = first_send.First_Send_At__c)
 WHERE DATEDIFF(NOW(), ssot__Lead__dlm.ssot__CreatedDate__c) <= 700
