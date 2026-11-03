@@ -1,7 +1,8 @@
 /*
  Channel_Uplift_Training_Set__cio -- training rows from the 2x2 factorial channel test.
  Built 2026-11-02 as a spec; it depends on the new Lead fields written by the test journey:
-   NBA_Test_Arm__c          'CALL_SMS' | 'CALL' | 'SMS' | 'EMAIL'   (set by the routing log sync)
+   NBA_Test_Arm__c          'CALL_SMS' | 'CALL' | 'SMS' | 'EMAIL'   (written by the journey's Update Lead step)
+   NBA_Assignment__c        'RANDOM' | 'MODEL'  (learning slice vs model-routed; only RANDOM rows are unbiased)
    NBA_Entry_At__c          journey entry timestamp
    NBA_Entry_Call_Score__c, NBA_Entry_Email_Score__c, NBA_Entry_SMS_Score__c  (legacy scores at entry,
                             kept only to test the old model's interaction; drop once retired)
@@ -20,6 +21,7 @@
 SELECT
   l.ssot__Id__c                                  AS Lead_Id__c,
   l.NBA_Test_Arm__c                              AS Test_Arm__c,
+  l.NBA_Assignment__c                            AS Assignment__c,
   CASE WHEN l.NBA_Test_Arm__c IN ('CALL_SMS','CALL') THEN TRUE ELSE FALSE END AS Call_Arm__c,
   CASE WHEN l.NBA_Test_Arm__c IN ('CALL_SMS','SMS')  THEN TRUE ELSE FALSE END AS SMS_Arm__c,
   l.NBA_Entry_At__c                              AS Entry_At__c,
@@ -49,8 +51,9 @@ SELECT
 FROM ssot__Lead__dlm l
 LEFT JOIN ssot__EmailEngagement__dlm e ON e.ssot__LeadlId__c = l.ssot__Id__c AND e.ssot__EmailName__c LIKE 'AC_Review%'
 WHERE l.NBA_Test_Arm__c IS NOT NULL
+  AND l.NBA_Assignment__c = 'RANDOM'   -- model-routed leads are selected by score; they are not training data for uplift
   AND DATEDIFF(NOW(), l.NBA_Entry_At__c) >= 31
-GROUP BY l.ssot__Id__c, l.NBA_Test_Arm__c, l.NBA_Entry_At__c, l.ssot__CreatedDate__c, l.NBA_Entry_Call_Score__c,
+GROUP BY l.ssot__Id__c, l.NBA_Test_Arm__c, l.NBA_Assignment__c, l.NBA_Entry_At__c, l.ssot__CreatedDate__c, l.NBA_Entry_Call_Score__c,
          l.NBA_Entry_Email_Score__c, l.NBA_Entry_SMS_Score__c, l.Max_Quote_Step__c, l.Declined__c, l.Saved_Quote__c,
          l.ssot__StateProvinceId__c, l.Previous_Insurance__c, l.Currently_Insured_Status__c, l.Vehicle_Make__c,
          l.UTM_Source__c, l.UTM_Medium__c, l.ssot__LeadSourceId__c, l.Publisher__c, l.Credit_Score__c, l.App_Downloaded__c

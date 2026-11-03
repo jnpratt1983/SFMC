@@ -39,11 +39,12 @@ models looked:
 | Channel | Response we can see per lead | Source |
 |---|---|---|
 | Email | opened / clicked the first journey email | `ssot__EmailEngagement__dlm` |
-| Call | picked up and talked, per the rep's note on the Next Best Action ticket | `Zen_Desk_Ticket_Bronze__dlm`, subject `New Lead- Next Best Action +<LeadId>` |
+| Call | purchase within 30 days of the call attempt, against leads not called (a missed call can lift; reached or not is a diagnostic from the rep's note on the Next Best Action ticket) | Lead arm fields + `Purchased_Date__c`; diagnostic from `Zen_Desk_Ticket_Bronze__dlm` |
 | SMS | clicked the link in the text: the click opens a new quote session, the app creates a new Lead carrying utm_medium = sms, and the identity link ties it back to the texted lead | `SMS__c`, `ssot__Lead__dlm` (utm fields), `IndividualIdentityLink__dlm` |
 
-Put together, the preference is: score each lead with the three response models, weight each by
-the purchase rate of leads who responded on that channel, and route to the highest. The
+Put together, the preference is: for each channel, the purchase uplift of contacting a lead like this
+one that way, and route to the highest. Response models (open, reach, click) are features and
+diagnostics, not the target; a missed call that nudges a purchase counts as the call working. The
 factorial test matters for one reason: today a lead only has a call label if the old router chose to
 call them, so the call model would learn the old router's choices. Randomizing who gets called
 removes that.
@@ -102,9 +103,10 @@ it. Until then the per-channel response models carry the goal:
    `SMS_Key__c` (classes, field and custom setting in c360-sfdx force-app). `sfmc/SMS_To_SalesCloud.ssjs`
    is the push alternative, kept for reference.
 6. `Review_Journey_Test_Spec.md` - what AC_ReviewQuoteStepJourney v16 actually sends per arm (only the
-   first touch differs today) and the version-17 changes for the channel test: random three-way split (SMS / CALL / CALL_SMS, no
-   email-only holdout), arm written to the Lead at entry, identical paths except texts and the call task,
-   exit on purchase.
+   first touch differs today) and the version-17 changes: 80% routed by the email response model (low open likelihood -> call + text,
+   high -> text), 20% random learning slice across SMS / CALL / CALL_SMS, no email-only holdout, arm and
+   assignment written to the Lead at entry, identical paths except texts and the call task, exit on
+   purchase; version 18 end state routes on the new predicted channel.
 7. `Channel_Uplift_Training_Set__cio.sql` - rows from the factorial test. One row per test lead with
    arm flags, entry-time features and `Purchased_30d__c`. Train two Model Builder models on it
    (T-learner): `Purchase given call` on rows where Call_Arm__c = true, `Purchase given no call` on
