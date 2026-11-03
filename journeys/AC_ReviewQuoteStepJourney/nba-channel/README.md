@@ -101,7 +101,10 @@ it. Until then the per-channel response models carry the goal:
    rows through the existing Named Credential `SFMC_Auth` and upserts one row per text into `SMS__c` on
    `SMS_Key__c` (classes, field and custom setting in c360-sfdx force-app). `sfmc/SMS_To_SalesCloud.ssjs`
    is the push alternative, kept for reference.
-6. `Channel_Uplift_Training_Set__cio.sql` - rows from the factorial test. One row per test lead with
+6. `Review_Journey_Test_Spec.md` - what AC_ReviewQuoteStepJourney v16 actually sends per arm (only the
+   first touch differs today) and the version-17 changes for the 2x2 test: random four-way split, arm
+   written to the Lead at entry, identical paths except texts and the call task, exit on purchase.
+7. `Channel_Uplift_Training_Set__cio.sql` - rows from the factorial test. One row per test lead with
    arm flags, entry-time features and `Purchased_30d__c`. Train two Model Builder models on it
    (T-learner): `Purchase given call` on rows where Call_Arm__c = true, `Purchase given no call` on
    rows where it is false, score every lead with both, and the difference is the call uplift. Same for
