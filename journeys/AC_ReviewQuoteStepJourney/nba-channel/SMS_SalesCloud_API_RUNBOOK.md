@@ -12,18 +12,22 @@ Setting `SFMC_REST`, the same pattern as `Customer360FeedController`. No secrets
 Volume after dedupe: about 480 texts a day, ~175k rows a year, ~350 MB of CRM storage a year
 (2 KB per record). The raw tracking rows would be 2.2x that; the query below collapses them.
 
-## 1. Marketing Cloud (once)
+## 1. Marketing Cloud
 
-1. Data extension `smsmessagetracking`: it needs a primary key of `SubscriberKey` + `SMSJobID` so
-   Overwrite cannot hold duplicates. Existing DEs cannot gain a key, so create `smsmessagetracking_v2`
-   with the same columns plus the key, note its customer key, and repoint the query to it.
-2. Query activity `SMSData`: replace the text with the GROUP BY version in `SMS_Data_feed.md`
-   (one row per subscriber per SMS job; this is what removes the segment and status duplicates).
-   Target `smsmessagetracking_v2`, Overwrite.
-3. Automation `SMS Data`: keep step 1 (the query). Remove step 2 (the `SMS Creation` journey entry).
-   Stop journey `SMS Creation` v1.
-4. The Marketing Cloud installed package behind `SFMC_Auth` needs the scope
-   Data Extensions > Read. Check in Setup > Installed Packages > (package) > API Integration.
+Done 2026-11-02 over the API:
+- Data extension `smsmessagetracking_v2` (customer key `smsmessagetracking_v2`, folder of the old one,
+  primary key `SubscriberKey` + `SMSJobID`, same columns minus MessageText, not sendable).
+- Query activity `SMSData_v2` (folder of `SMSData`, target `smsmessagetracking_v2`, Overwrite, the GROUP BY
+  text from `SMS_Data_feed.md`). Run once by hand: 471 rows / 462 subscribers for 2026-11-01, against
+  1,041 raw rows.
+
+Still to do in the UI (one click each):
+1. Automation `SMS Data` > step 1: add activity `SMSData_v2` next to `SMSData`. Save. It then runs daily
+   at 10:00 server time with the rest of the automation.
+2. After the Apex has run clean for a few days: remove step 2 (the `SMS Creation` journey entry) and
+   stop journey `SMS Creation` v1. Optionally remove the old `SMSData` query and `smsmessagetracking`.
+3. The Marketing Cloud installed package behind `SFMC_Auth` needs the scope Data Extensions > Read.
+   Check in Setup > Installed Packages > (package) > API Integration.
 
 ## 2. Sales Cloud (once)
 
@@ -45,8 +49,8 @@ Metadata in c360-sfdx `force-app/main/default`:
      --source-dir force-app/main/default/classes/SMSTrackingSyncSchedule.cls \
      --source-dir force-app/main/default/classes/SMSTrackingSyncTest.cls
    ```
-2. If the staging DE was recreated as `smsmessagetracking_v2`, put its customer key in
-   Setup > Custom Settings > SMS Sync Setting > Manage > org default > Data Extension Key.
+2. The class defaults to data extension key `smsmessagetracking_v2`; override in Setup > Custom Settings >
+   SMS Sync Setting > Manage > org default > Data Extension Key only if that changes.
 3. Schedule, anonymous Apex, 16:30 UTC (the Marketing Cloud query runs 10:00 server = 16:00 UTC):
    ```
    System.schedule('SMS Tracking Sync', '0 30 16 * * ?', new SMSTrackingSyncSchedule());
