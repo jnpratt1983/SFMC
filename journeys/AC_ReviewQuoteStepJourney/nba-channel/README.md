@@ -249,7 +249,7 @@ Steps:
    |---|---|---|---|
    | SMS click (`Clicked_14d__c`, window filter) | 0.732 | 8,945 of 90,009 (9.9%) | precision 0.90 at the tool's 0.93 cutoff; the cutoff is irrelevant for routing, we use the probability |
    | Email open (`Opened_First_Email__c`) | 0.665 | 69,422 of 219,698 (31.6%) | typical for an open model on lead attributes |
-   | Phone preference (`Called_Us_30d__c`) | pending | | |
+   | Phone preference (`Called_Us_30d__c`) | 0.805 (provisional) | 10,562 of 488,512 (2.2%) | inflated: `Lead_Created_Month` at 15% importance is coverage, not behaviour, because the call label is 0.0% for leads created before 2024-07 (ticket identity linkage starts then) and 2.4-3.6% after. Filter `Lead_Created__c` >= 2024-07-01 and exclude `Lead_Created_Month__c`; the point-in-time set starts 2025-05-02 and fixes it by construction |
    Both above the 0.58 gate, but the top-features check (2026-11-03) found two leaks, so both retrain:
    - SMS: `UTM_Medium` at 44% importance. Texted leads whose own `UTM_Medium__c` = 'sms' (3,022 in the window) had
      an 80% "click" rate because the lead was created by a text click and its first text went out the same day, and
@@ -296,7 +296,7 @@ Steps:
 |---|---|---|---|---|
 | Email open | `Email_Response_Training_Set` | none | `Opened_First_Email__c` | Lead_Id, Clicked_First_Email, First_Email_Name, First_Send_At, Days_Create_To_Send, Send_Hour, Send_Rows, Lead_Created, Email_Opt_Out, Mobile_Opt_Out, Declined |
 | SMS click | `SMS_Response_Training_Set` (recreated 2026-11-03 with 0/1 labels; leak fix same day) | `Label_Window__c` = 1 | `Clicked_14d__c` | Lead_Id, SMS_Name, SMS_Sent_At, First_Click_Lead_At, SMS_Hour, Days_Create_To_SMS, Clicked_30d, Label_Window, Row_Count, Lead_Created, Lead_Created_Month, SMS_Status_Code, Purchased, Email_Opt_Out, Declined |
-| Phone preference | `Phone_Response_Training_Set` | none (or `Lead_Created__c` >= 2024-01-01) | `Called_Us_30d__c` | Lead_Id, Called_Us_90d, First_Call_At, Days_Create_To_Call, Lead_Created, Row_Count, Purchased, Email_Opt_Out, Mobile_Opt_Out, Declined |
+| Phone preference | `Phone_Response_Training_Set` | `Lead_Created__c` >= 2024-07-01 (label coverage starts there) | `Called_Us_30d__c` | Lead_Id, Called_Us_90d, First_Call_At, Days_Create_To_Call, Lead_Created, Lead_Created_Month, Row_Count, Purchased, Email_Opt_Out, Mobile_Opt_Out, Declined, Saved_Quote |
 
 Binary classification, default split. Exclude `Purchased__c` everywhere: it is an outcome. Ship gate per model: a
 lift chart that rises and AUC above about 0.58. Scoring: the email model scores `Email_Response_Scoring_Set`;
