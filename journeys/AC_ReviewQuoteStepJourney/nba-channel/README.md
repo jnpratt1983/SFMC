@@ -338,6 +338,23 @@ Steps:
    `Call + SMS + Email`, put the model/learning random split in front of it, and the Update Lead steps after it.
    The rest of the spec stands.
 
+## Write-back live (2026-11-03 20:31 UTC)
+
+Copy-field enrichment `Channel_Scores_Lead_default` (data action `Channel_Scores_Lead_default_2a7wqn`), source
+`Channel_Scores__dlm` on Lead_Id -> Lead Id, primary-key matching, no key qualifier (same as the legacy one). First
+sync: 4,073 processed, 3,784 updated, 289 failed with CANNOT_UPDATE_CONVERTED_LEAD (leads that bought since being
+scored; expected and harmless). Legacy enrichment `Lead_Multi_Channel_Scoring` deactivated 20:23 UTC. The
+`Predicted_Channel__c` formula with 42.3 / 39.8 was saved in the org the same hour. Spot check: lead
+00QVt00001ZoTYQMA3 carries 42.56 / 48.91 / 48.03 exactly as in `Channel_Scores__dlm`.
+Job summaries are queryable: `SELECT JobStatus, ProcessedRecordCount, UpdatedRecordCount, FailedRecordCount,
+FailedRecords FROM DataActionJobSummary WHERE Name LIKE 'Channel_Scores%'`.
+
+## Audit
+
+`AUDIT_2026-11-03.md`: end-to-end check of Sales Cloud, Data Cloud and Marketing Cloud after the build, with seven
+gaps in priority order. The first one matters most: the scoring chain must run hourly (and v17 should wait ~3 hours
+before the channel decision) or leads will be routed on blank scores.
+
 ## Model Builder recipes
 
 | Model | Training data | Filter | Target | Exclude from features |
