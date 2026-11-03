@@ -244,8 +244,14 @@ v17:    IF(ISBLANK(Phone), 'Email Only',
 the INELIGIBLE path in the journey.
 
 Steps:
-1. Read each model's metrics in Einstein Studio (AUC, lift chart, top features). Ship gate: AUC >= ~0.58 and a lift
-   chart that rises. Record the three AUCs here.
+1. Model metrics (Einstein Studio, CatBoost, trained 2026-11-03):
+   | Model | AUC | Positives in the metrics view | Note |
+   |---|---|---|---|
+   | SMS click (`Clicked_14d__c`, window filter) | 0.732 | 8,945 of 90,009 (9.9%) | precision 0.90 at the tool's 0.93 cutoff; the cutoff is irrelevant for routing, we use the probability |
+   | Email open (`Opened_First_Email__c`) | 0.665 | 69,422 of 219,698 (31.6%) | typical for an open model on lead attributes |
+   | Phone preference (`Called_Us_30d__c`) | pending | | |
+   Both above the 0.58 gate. Check each model's top-features list once for anything that could only be known after
+   the outcome; nothing in the feature sets should be, but it is a two-minute look.
 2. Activate each model and create one prediction job per model on `Email_Response_Scoring_Set__cio` (every model's
    features are lead attributes, so one scoring set serves all three), output DMOs `Email_Open_Prediction`,
    `SMS_Click_Prediction`, `Phone_Preference_Prediction`, daily after the scoring insight refreshes.
