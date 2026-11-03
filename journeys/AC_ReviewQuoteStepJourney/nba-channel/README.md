@@ -249,13 +249,25 @@ Steps:
 2. Activate each model and create one prediction job per model on `Email_Response_Scoring_Set__cio` (every model's
    features are lead attributes, so one scoring set serves all three), output DMOs `Email_Open_Prediction`,
    `SMS_Click_Prediction`, `Phone_Preference_Prediction`, daily after the scoring insight refreshes.
-3. Find what writes `Lead_Multi_Channel_Scoring__dlm` to the Lead today (Data Cloud > Enrichments, Copy Fields to
-   Lead, or a Data Action) and re-point each score to the new prediction DMO's score column. Model Builder scores are
-   probabilities 0-1; the fields and the formula expect 0-100, so multiply by 100 in the enrichment if it allows a
-   formula, otherwise write 0-1 and set the formula thresholds as 0.20 / 0.50.
-4. Deactivate the three legacy models' prediction jobs so they stop overwriting the fields.
-5. Thresholds from the first scoring run: call = top 20% of `Call_Score__c`, text = top 50% of `SMS_Score__c`. Put
-   the two numbers in the formula and deploy it.
+3. The write-back, found 2026-11-03: a Data Cloud **copy-field enrichment on the Lead object**, sourced from
+   `Lead_Multi_Channel_Scoring__dlm`, which is also the legacy models' output DMO. It appears in Salesforce as data
+   action `Lead_Multi_Channel_Scoring_o29us3` with a data-action target of the same name, runs about hourly and
+   stamps `Last_Channel_Scoring_Date__c`. To re-point it:
+   - Data Cloud > Data Model: open each new prediction DMO and add a relationship `Lead_Id__c` ->
+     `ssot__Lead__dlm.ssot__Id__c` (a copy-field enrichment needs the source related to the Lead).
+   - Setup > Object Manager > Lead > Data Cloud Enrichments > New > Copy Fields: source = `Email_Open_Prediction`,
+     map its score column to `Email_Score__c`; repeat for `SMS_Click_Prediction` -> `SMS_Score__c` and
+     `Phone_Preference_Prediction` -> `Call_Score__c`. Schedule hourly like the old one. (Three enrichments, or one if
+     the three jobs write into one prediction DMO.)
+   - Delete or deactivate the old enrichment (the `Lead_Multi_Channel_Scoring` one) so it stops overwriting, and
+     deactivate the three legacy models' prediction jobs.
+   - Scale: an enrichment copies values as they are and Model Builder scores are probabilities 0-1, so the fields
+     will hold 0.00-1.00 (Number 5,2 is fine) and the `Predicted_Channel__c` formula thresholds are written on that
+     scale (placeholders 0.20 / 0.50).
+4. Deactivate the three legacy models (Predicted Is Email V2 / Is Phone / Is SMS) once the new enrichments have
+   run and the scores on a few leads look right.
+5. Thresholds from the first scoring run: the `Call_Score__c` value at the top 20% and the `SMS_Score__c` value at the
+   top 50%. Put the two numbers in the formula and deploy it.
 6. Marketing Cloud Connect already syncs `Email_Score__c`, `SMS_Score__c`, `Call_Score__c` and `Predicted_Channel__c`,
    and `AC_ReviewNBA_v8` already selects `predicted_channel__c` into the entry DE. No sync change.
 7. Journey v17: keep the existing `predicted_channel__c` decision as the model path, add the outcome
