@@ -1,0 +1,693 @@
+{
+ "label": "Channel Scores",
+ "name": "ChannelScores",
+ "dataSpaceName": "default",
+ "type": "BATCH",
+ "description": "Three channel model probabilities (positive class, 0-100) per scored lead, for the copy-field enrichment to Lead. Built 2026-11-03.",
+ "definitions": [
+  {
+   "label": "Channel Scores",
+   "name": "ChannelScoresDefinition",
+   "version": "56.0",
+   "type": "STL",
+   "nodes": {
+    "LOAD_SMS": {
+     "action": "load",
+     "sources": [],
+     "parameters": {
+      "dataset": {
+       "name": "SMS_Click_Prediction__dlm",
+       "type": "dataModelObject"
+      },
+      "fields": [
+       "PrimaryObjectPk__c",
+       "KQ_PrimaryObjectPk__c",
+       "PredictedClicked_14d1__c",
+       "PredictedClicked_14d1Value__c",
+       "PredictedClicked_14d2__c",
+       "PredictedClicked_14d2Value__c"
+      ],
+      "sampleDetails": {
+       "type": "TopN",
+       "sortBy": []
+      }
+     }
+    },
+    "F_SMS_KEY": {
+     "action": "formula",
+     "sources": [
+      "LOAD_SMS"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Text",
+        "defaultValue": "",
+        "formulaExpression": "PrimaryObjectPk__c",
+        "label": "Lead Id (sms)",
+        "name": "SMS_Lead_Id__c",
+        "precision": 255,
+        "type": "TEXT"
+       }
+      ]
+     }
+    },
+    "F_SMS_KQ": {
+     "action": "formula",
+     "sources": [
+      "F_SMS_KEY"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Text",
+        "defaultValue": "",
+        "formulaExpression": "KQ_PrimaryObjectPk__c",
+        "label": "Key Qualifier Lead Id",
+        "name": "KQ_Lead_Id__c",
+        "precision": 255,
+        "type": "TEXT"
+       }
+      ]
+     }
+    },
+    "F_SMS": {
+     "action": "formula",
+     "sources": [
+      "F_SMS_KQ"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "round(100 * case when PredictedClicked_14d1__c like '1%' then PredictedClicked_14d1Value__c else PredictedClicked_14d2Value__c end, 2)",
+        "label": "SMS Score",
+        "name": "SMS_Score__c",
+        "precision": 18,
+        "scale": 2,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "LOAD_EMAIL": {
+     "action": "load",
+     "sources": [],
+     "parameters": {
+      "dataset": {
+       "name": "Email_Prediction__dlm",
+       "type": "dataModelObject"
+      },
+      "fields": [
+       "PrimaryObjectPk__c",
+       "KQ_PrimaryObjectPk__c",
+       "PredictedOpened_First_Email1__c",
+       "PredictedOpened_First_Email1Value__c",
+       "PredictedOpened_First_Email2__c",
+       "PredictedOpened_First_Email2Value__c"
+      ],
+      "sampleDetails": {
+       "type": "TopN",
+       "sortBy": []
+      }
+     }
+    },
+    "F_EMAIL_KEY": {
+     "action": "formula",
+     "sources": [
+      "LOAD_EMAIL"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Text",
+        "defaultValue": "",
+        "formulaExpression": "PrimaryObjectPk__c",
+        "label": "Lead Id (email)",
+        "name": "Email_Lead_Id__c",
+        "precision": 255,
+        "type": "TEXT"
+       }
+      ]
+     }
+    },
+    "F_EMAIL": {
+     "action": "formula",
+     "sources": [
+      "F_EMAIL_KEY"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "round(100 * case when PredictedOpened_First_Email1__c like '1%' then PredictedOpened_First_Email1Value__c else PredictedOpened_First_Email2Value__c end, 2)",
+        "label": "Email Score",
+        "name": "Email_Score__c",
+        "precision": 18,
+        "scale": 2,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "LOAD_PHONE": {
+     "action": "load",
+     "sources": [],
+     "parameters": {
+      "dataset": {
+       "name": "Phone_Prediction__dlm",
+       "type": "dataModelObject"
+      },
+      "fields": [
+       "PrimaryObjectPk__c",
+       "KQ_PrimaryObjectPk__c",
+       "PredictedCalled_Us_30d1__c",
+       "PredictedCalled_Us_30d1Value__c",
+       "PredictedCalled_Us_30d2__c",
+       "PredictedCalled_Us_30d2Value__c"
+      ],
+      "sampleDetails": {
+       "type": "TopN",
+       "sortBy": []
+      }
+     }
+    },
+    "F_PHONE_KEY": {
+     "action": "formula",
+     "sources": [
+      "LOAD_PHONE"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Text",
+        "defaultValue": "",
+        "formulaExpression": "PrimaryObjectPk__c",
+        "label": "Lead Id (phone)",
+        "name": "Phone_Lead_Id__c",
+        "precision": 255,
+        "type": "TEXT"
+       }
+      ]
+     }
+    },
+    "F_PHONE": {
+     "action": "formula",
+     "sources": [
+      "F_PHONE_KEY"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "round(100 * case when PredictedCalled_Us_30d1__c like '1%' then PredictedCalled_Us_30d1Value__c else PredictedCalled_Us_30d2Value__c end, 2)",
+        "label": "Call Score",
+        "name": "Call_Score__c",
+        "precision": 18,
+        "scale": 2,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "JOIN_E": {
+     "action": "join",
+     "sources": [
+      "F_SMS",
+      "F_EMAIL"
+     ],
+     "parameters": {
+      "joinType": "LEFT_OUTER",
+      "leftKeys": [
+       "SMS_Lead_Id__c"
+      ],
+      "rightKeys": [
+       "Email_Lead_Id__c"
+      ],
+      "rightQualifier": "E"
+     },
+     "schema": {
+      "fields": [],
+      "slice": {
+       "fields": [],
+       "ignoreMissingFields": true,
+       "mode": "DROP"
+      }
+     }
+    },
+    "JOIN_P": {
+     "action": "join",
+     "sources": [
+      "JOIN_E",
+      "F_PHONE"
+     ],
+     "parameters": {
+      "joinType": "LEFT_OUTER",
+      "leftKeys": [
+       "SMS_Lead_Id__c"
+      ],
+      "rightKeys": [
+       "Phone_Lead_Id__c"
+      ],
+      "rightQualifier": "P"
+     },
+     "schema": {
+      "fields": [],
+      "slice": {
+       "fields": [],
+       "ignoreMissingFields": true,
+       "mode": "DROP"
+      }
+     }
+    },
+    "F_OUT_KEY": {
+     "action": "formula",
+     "sources": [
+      "JOIN_P"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Text",
+        "defaultValue": "",
+        "formulaExpression": "SMS_Lead_Id__c",
+        "label": "Lead Id",
+        "name": "Lead_Id__c",
+        "precision": 255,
+        "type": "TEXT"
+       }
+      ]
+     }
+    },
+    "F_OUT_EMAIL": {
+     "action": "formula",
+     "sources": [
+      "F_OUT_KEY"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "\"E.Email_Score__c\"",
+        "label": "Email Score",
+        "name": "Email_Score_Out__c",
+        "precision": 18,
+        "scale": 2,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "F_OUT_PHONE": {
+     "action": "formula",
+     "sources": [
+      "F_OUT_EMAIL"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "\"P.Call_Score__c\"",
+        "label": "Call Score",
+        "name": "Call_Score_Out__c",
+        "precision": 18,
+        "scale": 2,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "F_OUT_TS": {
+     "action": "formula",
+     "sources": [
+      "F_OUT_PHONE"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "DateTime",
+        "defaultValue": "",
+        "formulaExpression": "now()",
+        "label": "Scored At",
+        "name": "Scored_At__c",
+        "type": "DATETIME",
+        "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+       }
+      ]
+     }
+    },
+    "OUTPUT0": {
+     "action": "outputD360",
+     "sources": [
+      "F_OUT_TS"
+     ],
+     "parameters": {
+      "dedupOrder": [],
+      "fieldsMappings": [
+       {
+        "sourceField": "KQ_Lead_Id__c",
+        "targetField": "KQ_Lead_Id__c"
+       },
+       {
+        "sourceField": "Lead_Id__c",
+        "targetField": "Lead_Id__c"
+       },
+       {
+        "sourceField": "Email_Score_Out__c",
+        "targetField": "Email_Score__c"
+       },
+       {
+        "sourceField": "SMS_Score__c",
+        "targetField": "SMS_Score__c"
+       },
+       {
+        "sourceField": "Call_Score_Out__c",
+        "targetField": "Call_Score__c"
+       },
+       {
+        "sourceField": "Scored_At__c",
+        "targetField": "Scored_At__c"
+       }
+      ],
+      "name": "Channel_Scores__dlm",
+      "type": "dataModelObject",
+      "writeMode": "OVERWRITE"
+     }
+    }
+   },
+   "outputDataObjects": [
+    {
+     "category": "Other",
+     "label": "Channel Scores",
+     "name": "Channel_Scores__dlm",
+     "type": "dataModelObject",
+     "fields": [
+      {
+       "isPrimaryKey": false,
+       "label": "Key Qualifier Lead Id",
+       "name": "KQ_Lead_Id__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": true,
+       "keyQualifierField": "KQ_Lead_Id__c",
+       "label": "Lead Id",
+       "name": "Lead_Id__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Email Score",
+       "name": "Email_Score__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "SMS Score",
+       "name": "SMS_Score__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Call Score",
+       "name": "Call_Score__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Scored At",
+       "name": "Scored_At__c",
+       "type": "DateTime"
+      }
+     ]
+    }
+   ],
+   "ui": {
+    "nodes": {
+     "LOAD_SMS": {
+      "label": "SMS click prediction",
+      "type": "LOAD_DATASET",
+      "top": 60,
+      "left": 112,
+      "parameters": {
+       "sampleSize": 500,
+       "sampleDetails": {
+        "type": "TopN"
+       },
+       "dataspace": "default"
+      }
+     },
+     "LOAD_EMAIL": {
+      "label": "Email open prediction",
+      "type": "LOAD_DATASET",
+      "top": 250,
+      "left": 112,
+      "parameters": {
+       "sampleSize": 500,
+       "sampleDetails": {
+        "type": "TopN"
+       },
+       "dataspace": "default"
+      }
+     },
+     "LOAD_PHONE": {
+      "label": "Phone preference prediction",
+      "type": "LOAD_DATASET",
+      "top": 440,
+      "left": 112,
+      "parameters": {
+       "sampleSize": 500,
+       "sampleDetails": {
+        "type": "TopN"
+       },
+       "dataspace": "default"
+      }
+     },
+     "JOIN_E": {
+      "label": "JOIN_E",
+      "type": "JOIN",
+      "top": 60,
+      "left": 600
+     },
+     "JOIN_P": {
+      "label": "JOIN_P",
+      "type": "JOIN",
+      "top": 60,
+      "left": 600
+     },
+     "T_SMS": {
+      "label": "SMS score",
+      "type": "TRANSFORM",
+      "top": 60,
+      "left": 392,
+      "graph": {
+       "F_SMS_KEY": {
+        "label": "key",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_SMS_KQ": {
+        "label": "kq",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_SMS": {
+        "label": "score",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       }
+      },
+      "connectors": [
+       {
+        "source": "LOAD_SMS",
+        "target": "F_SMS_KEY"
+       },
+       {
+        "source": "F_SMS_KEY",
+        "target": "F_SMS_KQ"
+       },
+       {
+        "source": "F_SMS_KQ",
+        "target": "F_SMS"
+       }
+      ]
+     },
+     "T_EMAIL": {
+      "label": "Email score",
+      "type": "TRANSFORM",
+      "top": 250,
+      "left": 392,
+      "graph": {
+       "F_EMAIL_KEY": {
+        "label": "key",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_EMAIL": {
+        "label": "score",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       }
+      },
+      "connectors": [
+       {
+        "source": "LOAD_EMAIL",
+        "target": "F_EMAIL_KEY"
+       },
+       {
+        "source": "F_EMAIL_KEY",
+        "target": "F_EMAIL"
+       }
+      ]
+     },
+     "T_PHONE": {
+      "label": "Phone score",
+      "type": "TRANSFORM",
+      "top": 440,
+      "left": 392,
+      "graph": {
+       "F_PHONE_KEY": {
+        "label": "key",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_PHONE": {
+        "label": "score",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       }
+      },
+      "connectors": [
+       {
+        "source": "LOAD_PHONE",
+        "target": "F_PHONE_KEY"
+       },
+       {
+        "source": "F_PHONE_KEY",
+        "target": "F_PHONE"
+       }
+      ]
+     },
+     "T_OUT": {
+      "label": "Output columns",
+      "type": "TRANSFORM",
+      "top": 60,
+      "left": 880,
+      "graph": {
+       "F_OUT_KEY": {
+        "label": "F_OUT_KEY",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_OUT_EMAIL": {
+        "label": "F_OUT_EMAIL",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_OUT_PHONE": {
+        "label": "F_OUT_PHONE",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_OUT_TS": {
+        "label": "F_OUT_TS",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       }
+      },
+      "connectors": [
+       {
+        "source": "JOIN_P",
+        "target": "F_OUT_KEY"
+       },
+       {
+        "source": "F_OUT_KEY",
+        "target": "F_OUT_EMAIL"
+       },
+       {
+        "source": "F_OUT_EMAIL",
+        "target": "F_OUT_PHONE"
+       },
+       {
+        "source": "F_OUT_PHONE",
+        "target": "F_OUT_TS"
+       }
+      ]
+     },
+     "OUTPUT0": {
+      "label": "Channel Scores",
+      "type": "OUTPUT",
+      "top": 60,
+      "left": 1160
+     }
+    },
+    "connectors": [
+     {
+      "source": "LOAD_SMS",
+      "target": "T_SMS"
+     },
+     {
+      "source": "LOAD_EMAIL",
+      "target": "T_EMAIL"
+     },
+     {
+      "source": "LOAD_PHONE",
+      "target": "T_PHONE"
+     },
+     {
+      "source": "T_SMS",
+      "target": "JOIN_E"
+     },
+     {
+      "source": "T_EMAIL",
+      "target": "JOIN_E"
+     },
+     {
+      "source": "JOIN_E",
+      "target": "JOIN_P"
+     },
+     {
+      "source": "T_PHONE",
+      "target": "JOIN_P"
+     },
+     {
+      "source": "JOIN_P",
+      "target": "T_OUT"
+     },
+     {
+      "source": "T_OUT",
+      "target": "OUTPUT0"
+     }
+    ],
+    "hiddenColumns": []
+   }
+  }
+ ]
+}
