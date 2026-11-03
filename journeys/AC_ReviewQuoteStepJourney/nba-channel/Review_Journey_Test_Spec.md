@@ -35,10 +35,12 @@ Decisions 2026-11-02: no email-only arm, and the journey keeps choosing the chan
 the way the predicted channel field did. A pure random split is not the design; it is the data the
 next model needs, so it runs as a small slice alongside the model-routed majority.
 
-Revised 2026-11-03: three response models train on 2024-2026 history now (email open ~157k positives,
-SMS click ~6,000, phoned-us ~4,300; see README "fast path"), so the model path routes on all three from
-launch: phone probability above its threshold -> call, SMS probability above its threshold -> text, both ->
-both, neither -> text. The email-open rule below is the fallback if the phone and SMS models fail their
+Revised 2026-11-03: three response models train on 2024-2026 history now and write into the existing
+`Email_Score__c` / `SMS_Score__c` / `Call_Score__c`; `Predicted_Channel__c` stays the routing field with a new
+formula (README "After training"): phone score above threshold -> `Call + Email`, SMS score above threshold ->
+`SMS + Email`, both -> `Call + SMS + Email`, neither -> `SMS + Email`. So the model path of v17 IS the existing
+`predicted_channel__c` decision (MCD-4) with one outcome added; the random split sits in front of it and the
+Update Lead steps after it. The email-open rule below is the fallback if the phone and SMS models fail their
 lift charts. The random slice remains for the purchase question and to audit the routing.
 
 ```
