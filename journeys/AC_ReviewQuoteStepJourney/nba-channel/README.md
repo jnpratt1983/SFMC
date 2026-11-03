@@ -123,6 +123,8 @@ Learned from the editor's own error list on 2026-11-03 and from the org's workin
 - `DATEDIFF(end, start)`, `NOW()`, `HOUR()`, `DAYOFWEEK()`, `MONTH()`, window functions (`LEAD`,
   `ROW_NUMBER() OVER`) and `LIKE` all pass. Booleans compare with `= TRUE` / `= FALSE`.
 - Attribute names must be unique across the insight.
+- Model Builder offers a binary target only for a field with exactly two values. A count measure such as the old
+  `Click_Leads_14d__c` (0, 1, 2...) is not offered; labels must be 0/1 dimensions. The SMS set was recreated for this.
 - An existing insight cannot gain a new dimension ("not an eligible KQ dimension"); add measures freely, or delete and
   recreate the insight to change its dimensions. Filters that only matter for training go in Model Builder instead.
 - `BETWEEN` is not supported; write `x >= a AND x <= b`.
@@ -211,16 +213,28 @@ sms-UTM leads inside 14 days; filter `<= 1` or treat `> 0` as the positive), `Pu
    (stale, newest lead 2025-12-15), the `Predicted_Channel__c` rule, `Recommended_Channel__c`,
    and `Prediction_NextBestAction__dlm` (leads only through 2025-12-10).
 
-## Live in the org
+## Live in the org (all six ran clean, 2026-11-03 05:00 UTC)
 
-| Insight | Status | First run |
-|---|---|---|
-| `Call_Response_Training_Set__cio` | ACTIVE, created 2026-11-03 | 941 ticket rows, 696 leads, 867 called, 116 reached (13% of called), 79 purchased. Reached leads bought 8.5%, called-not-reached 6.3%, not-dialed (ex-customers, already customers) 27%. |
-| `Email_Response_Training_Set__cio` | ACTIVE, ran after the IsTestSend fix | 219,698 leads, 31.6% opened the first email, 2.7% clicked; by lead year 2024 31.7%, 2025 30.6%, 2026 33.5%. Domain column was blank on the first run; replaced by the LIKE bucket, re-paste |
-| `Email_Response_Scoring_Set__cio` | ACTIVE, ran | 4,140 leads from the last 14 days, 2,921 with an email |
-| `SMS_Response_Training_Set__cio` | ACTIVE, ran | 169,156 texted leads; 6,917 (4.1%) with a click lead inside 14 days. Monthly click rate: 0.4-0.9% Mar-Jul 2024, 5-9% Aug 2024-Jul 2025, 0.4-1.5% Aug 2025 onward. That is the quote app's new-lead-on-click behaviour, not people. Train on texts sent 2024-08-01 to 2025-07-31 only (~85k rows, ~6k positives) by filtering `SMS_Sent_At__c` in Model Builder, and exclude `Lead_Created_Month__c` so the model cannot learn the calendar. The insight itself is unchanged |
-| `Phone_Response_Training_Set__cio` | ACTIVE, first run 04:31 UTC with the Lead-lookup label: 488,512 leads, 3,083 callers (0.6%) who bought at 2% vs 7.9%, i.e. backwards, because a caller who buys is linked to the new Contact, not the Lead. Rewritten to link tickets through `Zen_Desk_Ticket_Gold__dlm.Unified_Individual_ID__c` and the identity link; the Trino check of that join gives 11,022 callers 2024-26 (1.4% / 3.2% / 2.8% by year) who bought at 32% / 44% / 53% vs 6-9%. Edit the insight in place (dimension names unchanged) and rerun | |
-| `Channel_Uplift_Training_Set__cio` | waiting on the Lead DMO field mapping | |
+| Insight | Rows | Label | Ready for Model Builder |
+|---|---|---|---|
+| `Email_Response_Training_Set__cio` | 219,698 leads | `Opened_First_Email__c` 31.6% (gmail 33%, yahoo 19%, apple 58%, microsoft 14%, privacy 8%, edu 46%) | yes |
+| `Email_Response_Scoring_Set__cio` | 4,140 leads from the last 14 days, 30% with no email yet (domain `none`) | scores daily | yes |
+| `SMS_Response_Training_Set__cio` | 169,156 texted leads; 89,915 in the Aug 2024-Jul 2025 window with 6,061 clicks (6.7%) | `Click_Leads_14d__c` > 0 | yes, with the date filter in Model Builder |
+| `Phone_Response_Training_Set__cio` | 488,512 leads 2024-26 | `Called_Us_30d__c` 10,562 (2.2%); callers bought 41.4% vs 7.1% | yes |
+| `Call_Response_Training_Set__cio` | 941 outbound call tickets | `Call_Reached__c` 13% of dialed; diagnostic only | not a routing model |
+| `Channel_Uplift_Training_Set__cio` | 0 until the journey writes arms | `Purchased_30d__c` | after the test |
+
+## Model Builder recipes
+
+| Model | Training data | Filter | Target | Exclude from features |
+|---|---|---|---|---|
+| Email open | `Email_Response_Training_Set` | none | `Opened_First_Email__c` | Lead_Id, Clicked_First_Email, First_Email_Name, First_Send_At, Days_Create_To_Send, Send_Hour, Send_Rows, Lead_Created |
+| SMS click | `SMS_Response_Training_Set` (recreated 2026-11-03 with 0/1 labels) | `Label_Window__c` = 1 | `Clicked_14d__c` | Lead_Id, SMS_Name, SMS_Sent_At, First_Click_Lead_At, SMS_Hour, Days_Create_To_SMS, Clicked_30d, Label_Window, Row_Count, Lead_Created, Lead_Created_Month, SMS_Status_Code, Purchased |
+| Phone preference | `Phone_Response_Training_Set` | none (or `Lead_Created__c` >= 2024-01-01) | `Called_Us_30d__c` | Lead_Id, Called_Us_90d, First_Call_At, Days_Create_To_Call, Lead_Created, Row_Count, Purchased |
+
+Binary classification, default split. Exclude `Purchased__c` everywhere: it is an outcome. Ship gate per model: a
+lift chart that rises and AUC above about 0.58. Scoring: the email model scores `Email_Response_Scoring_Set`;
+the SMS and phone models score the same set (same feature names), since every feature is a lead attribute.
 
 ## Validated 2026-11-02 (Trino translation of the training-set logic, via queryv2)
 

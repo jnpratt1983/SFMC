@@ -14,7 +14,11 @@ SELECT
   CASE WHEN ssot__Lead__dlm.Currently_Insured_Status__c = TRUE THEN 1 ELSE 0 END AS Currently_Insured__c,
   CASE WHEN ssot__Lead__dlm.App_Downloaded__c = TRUE THEN 1 ELSE 0 END AS App_Downloaded__c,
   CASE WHEN ssot__Lead__dlm.Purchased__c = TRUE THEN 1 ELSE 0 END AS Purchased__c,
+  CASE WHEN clicks.First_Click_Lead_At__c IS NOT NULL AND DATEDIFF(clicks.First_Click_Lead_At__c, ssot__MessageEngagement__dlm.Create_Date_Custom__c) >= 0 AND DATEDIFF(clicks.First_Click_Lead_At__c, ssot__MessageEngagement__dlm.Create_Date_Custom__c) <= 14 THEN 1 ELSE 0 END AS Clicked_14d__c,
+  CASE WHEN clicks.First_Click_Lead_At__c IS NOT NULL AND DATEDIFF(clicks.First_Click_Lead_At__c, ssot__MessageEngagement__dlm.Create_Date_Custom__c) >= 0 AND DATEDIFF(clicks.First_Click_Lead_At__c, ssot__MessageEngagement__dlm.Create_Date_Custom__c) <= 30 THEN 1 ELSE 0 END AS Clicked_30d__c,
+  CASE WHEN DATEDIFF(NOW(), ssot__MessageEngagement__dlm.Create_Date_Custom__c) >= 460 AND DATEDIFF(NOW(), ssot__MessageEngagement__dlm.Create_Date_Custom__c) <= 825 THEN 1 ELSE 0 END AS Label_Window__c,
   MAX(ssot__MessageEngagement__dlm.Create_Date_Custom__c) AS SMS_Sent_At__c,
+  MAX(clicks.First_Click_Lead_At__c) AS First_Click_Lead_At__c,
   MAX(ssot__MessageEngagement__dlm.SMS_Status_Code_Id__c) AS SMS_Status_Code__c,
   MAX(ssot__Lead__dlm.ssot__CreatedDate__c) AS Lead_Created__c,
   MAX(DATEDIFF(ssot__MessageEngagement__dlm.Create_Date_Custom__c, ssot__Lead__dlm.ssot__CreatedDate__c)) AS Days_Create_To_SMS__c,
@@ -24,15 +28,12 @@ SELECT
   MAX(MONTH(ssot__Lead__dlm.ssot__CreatedDate__c)) AS Lead_Created_Month__c,
   MAX(ssot__Lead__dlm.Max_Quote_Step__c) AS Max_Quote_Step__c,
   MAX(ssot__Lead__dlm.Credit_Score__c) AS Credit_Score__c,
-  SUM(CASE WHEN click_leads.Created__c > ssot__MessageEngagement__dlm.Create_Date_Custom__c AND DATEDIFF(click_leads.Created__c, ssot__MessageEngagement__dlm.Create_Date_Custom__c) <= 14 THEN 1 ELSE 0 END) AS Click_Leads_14d__c,
-  SUM(CASE WHEN click_leads.Created__c > ssot__MessageEngagement__dlm.Create_Date_Custom__c AND DATEDIFF(click_leads.Created__c, ssot__MessageEngagement__dlm.Create_Date_Custom__c) <= 30 THEN 1 ELSE 0 END) AS Click_Leads_30d__c,
   COUNT(ssot__MessageEngagement__dlm.ssot__Id__c) AS Row_Count__c
 FROM ssot__MessageEngagement__dlm
 JOIN ssot__Lead__dlm ON (ssot__Lead__dlm.ssot__Id__c = ssot__MessageEngagement__dlm.Subscriber_Key__c)
 LEFT JOIN IndividualIdentityLink__dlm ON (IndividualIdentityLink__dlm.SourceRecordId__c = ssot__Lead__dlm.ssot__Id__c)
-LEFT JOIN (SELECT IndividualIdentityLink__dlm.UnifiedRecordId__c AS Unified_Id__c, IndividualIdentityLink__dlm.SourceRecordId__c AS Other_Lead_Id__c FROM IndividualIdentityLink__dlm) AS siblings ON (siblings.Unified_Id__c = IndividualIdentityLink__dlm.UnifiedRecordId__c)
-LEFT JOIN (SELECT ssot__Lead__dlm.ssot__Id__c AS Id__c, ssot__Lead__dlm.ssot__CreatedDate__c AS Created__c FROM ssot__Lead__dlm WHERE ssot__Lead__dlm.UTM_Medium__c = 'sms') AS click_leads ON (click_leads.Id__c = siblings.Other_Lead_Id__c AND click_leads.Id__c <> ssot__Lead__dlm.ssot__Id__c)
+LEFT JOIN (SELECT IndividualIdentityLink__dlm.UnifiedRecordId__c AS Unified_Id__c, MIN(ssot__Lead__dlm.ssot__CreatedDate__c) AS First_Click_Lead_At__c FROM ssot__Lead__dlm JOIN IndividualIdentityLink__dlm ON (IndividualIdentityLink__dlm.SourceRecordId__c = ssot__Lead__dlm.ssot__Id__c) WHERE ssot__Lead__dlm.UTM_Medium__c = 'sms' GROUP BY IndividualIdentityLink__dlm.UnifiedRecordId__c) AS clicks ON (clicks.Unified_Id__c = IndividualIdentityLink__dlm.UnifiedRecordId__c)
 WHERE ssot__MessageEngagement__dlm.ssot__Name__c LIKE 'AC_%'
   AND ssot__MessageEngagement__dlm.Subscriber_Key__c LIKE '00Q%'
   AND DATEDIFF(NOW(), ssot__MessageEngagement__dlm.Create_Date_Custom__c) >= 15
-GROUP BY Lead_Id__c, SMS_Name__c, State__c, Previous_Insurance__c, Vehicle_Make__c, UTM_Source__c, UTM_Medium__c, Lead_Source__c, Publisher__c, Email_Opt_Out__c, Declined__c, Saved_Quote__c, Currently_Insured__c, App_Downloaded__c, Purchased__c
+GROUP BY Lead_Id__c, SMS_Name__c, State__c, Previous_Insurance__c, Vehicle_Make__c, UTM_Source__c, UTM_Medium__c, Lead_Source__c, Publisher__c, Email_Opt_Out__c, Declined__c, Saved_Quote__c, Currently_Insured__c, App_Downloaded__c, Purchased__c, Clicked_14d__c, Clicked_30d__c, Label_Window__c
