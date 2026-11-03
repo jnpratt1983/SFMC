@@ -250,8 +250,18 @@ Steps:
    | SMS click (`Clicked_14d__c`, window filter) | 0.732 | 8,945 of 90,009 (9.9%) | precision 0.90 at the tool's 0.93 cutoff; the cutoff is irrelevant for routing, we use the probability |
    | Email open (`Opened_First_Email__c`) | 0.665 | 69,422 of 219,698 (31.6%) | typical for an open model on lead attributes |
    | Phone preference (`Called_Us_30d__c`) | pending | | |
-   Both above the 0.58 gate. Check each model's top-features list once for anything that could only be known after
-   the outcome; nothing in the feature sets should be, but it is a two-minute look.
+   Both above the 0.58 gate, but the top-features check (2026-11-03) found two leaks, so both retrain:
+   - SMS: `UTM_Medium` at 44% importance. Texted leads whose own `UTM_Medium__c` = 'sms' (3,022 in the window) had
+     an 80% "click" rate because the lead was created by a text click and its first text went out the same day, and
+     the day-level `DATEDIFF` counted the lead's own creation as the click. Fix in the insight: the click lead must be
+     created strictly after the text (timestamp compare) and texted leads with `UTM_Medium__c` = 'sms' are excluded
+     from the set. Edit in place (no dimension change) and rerun; expect ~6,000 positives, not 8,945.
+   - Email: `Email_Opt_Out` at 13%. It is today's value, not the value at send time; leads who opened and later
+     unsubscribed open at 55% vs 30%. Same for `Mobile_Opt_Out__c` and `Declined__c`. Exclude all three from every
+     model. `Max_Quote_Step__c`, `Saved_Quote__c`, `App_Downloaded__c` are also current-state and partly downstream of
+     the first email; they stay in for now because the scoring set carries the same current-state values for new
+     leads, but they are the reason a point-in-time transform is the next improvement.
+   Retrain both with the exclusions below, then re-read the AUCs; a drop is expected and honest.
 2. Activate each model and create one prediction job per model on `Email_Response_Scoring_Set__cio` (every model's
    features are lead attributes, so one scoring set serves all three), output DMOs `Email_Open_Prediction`,
    `SMS_Click_Prediction`, `Phone_Preference_Prediction`, daily after the scoring insight refreshes.
@@ -284,9 +294,9 @@ Steps:
 
 | Model | Training data | Filter | Target | Exclude from features |
 |---|---|---|---|---|
-| Email open | `Email_Response_Training_Set` | none | `Opened_First_Email__c` | Lead_Id, Clicked_First_Email, First_Email_Name, First_Send_At, Days_Create_To_Send, Send_Hour, Send_Rows, Lead_Created |
-| SMS click | `SMS_Response_Training_Set` (recreated 2026-11-03 with 0/1 labels) | `Label_Window__c` = 1 | `Clicked_14d__c` | Lead_Id, SMS_Name, SMS_Sent_At, First_Click_Lead_At, SMS_Hour, Days_Create_To_SMS, Clicked_30d, Label_Window, Row_Count, Lead_Created, Lead_Created_Month, SMS_Status_Code, Purchased |
-| Phone preference | `Phone_Response_Training_Set` | none (or `Lead_Created__c` >= 2024-01-01) | `Called_Us_30d__c` | Lead_Id, Called_Us_90d, First_Call_At, Days_Create_To_Call, Lead_Created, Row_Count, Purchased |
+| Email open | `Email_Response_Training_Set` | none | `Opened_First_Email__c` | Lead_Id, Clicked_First_Email, First_Email_Name, First_Send_At, Days_Create_To_Send, Send_Hour, Send_Rows, Lead_Created, Email_Opt_Out, Mobile_Opt_Out, Declined |
+| SMS click | `SMS_Response_Training_Set` (recreated 2026-11-03 with 0/1 labels; leak fix same day) | `Label_Window__c` = 1 | `Clicked_14d__c` | Lead_Id, SMS_Name, SMS_Sent_At, First_Click_Lead_At, SMS_Hour, Days_Create_To_SMS, Clicked_30d, Label_Window, Row_Count, Lead_Created, Lead_Created_Month, SMS_Status_Code, Purchased, Email_Opt_Out, Declined |
+| Phone preference | `Phone_Response_Training_Set` | none (or `Lead_Created__c` >= 2024-01-01) | `Called_Us_30d__c` | Lead_Id, Called_Us_90d, First_Call_At, Days_Create_To_Call, Lead_Created, Row_Count, Purchased, Email_Opt_Out, Mobile_Opt_Out, Declined |
 
 Binary classification, default split. Exclude `Purchased__c` everywhere: it is an outcome. Ship gate per model: a
 lift chart that rises and AUC above about 0.58. Scoring: the email model scores `Email_Response_Scoring_Set`;
