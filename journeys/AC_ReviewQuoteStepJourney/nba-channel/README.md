@@ -308,8 +308,24 @@ Steps:
      scale (placeholders 0.20 / 0.50).
 4. Deactivate the three legacy models (Predicted Is Email V2 / Is Phone / Is SMS) once the new enrichments have
    run and the scores on a few leads look right.
-5. Thresholds from the first scoring run: the `Call_Score__c` value at the top 20% and the `SMS_Score__c` value at the
-   top 50%. Put the two numbers in the formula and deploy it.
+5. Thresholds from the first scoring run (2026-11-03, 4,073 leads):
+   | Score | p10 | p25 | median | p75 | p90 | range | threshold |
+   |---|---|---|---|---|---|---|---|
+   | SMS click (0-100) | 32.5 | 36.3 | 39.8 | 45.4 | 49.4 | 21-66 | text if >= 39.8 (top half) |
+   | Phone (0-100) | | | | | | | call if >= p80, pending the phone job |
+   | Email open (0-100) | | | | | | | logged only |
+   The probabilities sit near 0.4 because CatBoost balances the classes; they rank, they are not click rates.
+   Quote step drives the SMS score (step 1: 0.53, step 3: 0.35, step 4+: 0.40); domain barely moves it.
+6. Write-back without hand-wiring three enrichments: `transforms/ChannelScores.api.json` (generator
+   `build_scores_transform.py`) reads the three prediction DMOs, takes the positive-class probability from whichever
+   slot it landed in, scales it to 0-100 and writes `Channel_Scores__dll` (Lead_Id, Email_Score, SMS_Score,
+   Call_Score, Scored_At). Map it to a DMO related to Lead on Lead_Id, then ONE copy-field enrichment maps
+   Email_Score -> `Email_Score__c`, SMS_Score -> `SMS_Score__c`, Call_Score -> `Call_Score__c`,
+   Scored_At -> `Last_Channel_Scoring_Date__c`. The prediction DMO and column names in the generator assume the jobs
+   were named Email_Open_Prediction / SMS_Click_Prediction / Phone_Preference_Prediction with targets
+   Opened_First_Email / Clicked_14d / Called_Us_30d; pass overrides as `dmo:columnprefix` arguments if not.
+   Prediction output columns look like `PredictedClicked_14d1__c` (class in slot 1), `PredictedClicked_14d1Value__c`
+   (its probability), `...2__c`, `...2Value__c`; `PrimaryObjectPk__c` is the lead id.
 6. Marketing Cloud Connect already syncs `Email_Score__c`, `SMS_Score__c`, `Call_Score__c` and `Predicted_Channel__c`,
    and `AC_ReviewNBA_v8` already selects `predicted_channel__c` into the entry DE. No sync change.
 7. Journey v17: keep the existing `predicted_channel__c` decision as the model path, add the outcome
