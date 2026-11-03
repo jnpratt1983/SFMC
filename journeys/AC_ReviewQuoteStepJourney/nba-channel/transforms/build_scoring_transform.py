@@ -18,7 +18,7 @@ E = "lower(Email__c)"
 fields = [
   F("Lead_Id__c", "Id__c", "Text", "Lead Id", 18),
   F("Email_Domain__c", f"case when Email__c is null or Email__c = '' then 'none' when {E} like '%@gmail.com' then 'gmail' when {E} like '%@yahoo.com' or {E} like '%@ymail.com' or {E} like '%@myyahoo.com' or {E} like '%@rocketmail.com' then 'yahoo' when {E} like '%@icloud.com' or {E} like '%@me.com' or {E} like '%@mac.com' then 'apple' when {E} like '%@hotmail.com' or {E} like '%@outlook.com' or {E} like '%@live.com' or {E} like '%@msn.com' then 'microsoft' when {E} like '%@aol.com' then 'aol' when {E} like '%@cox.net' or {E} like '%@comcast.net' or {E} like '%@att.net' or {E} like '%@sbcglobal.net' or {E} like '%@verizon.net' or {E} like '%@charter.net' then 'isp' when {E} like '%.edu' then 'edu' when {E} like '%@proton.me' or {E} like '%@protonmail.com' or {E} like '%@mail.com' then 'privacy' else 'other' end", "Text", "Email Domain", 20),
-  F("State__c", "State__c", "Text", "State", 80),
+  F("Lead_State__c", "State__c", "Text", "State", 80),
   F("Previous_Insurance__c", "Previous_Insurance_c__c", "Text", "Previous Insurance"),
   F("Vehicle_Make__c", "Vehicle_Make_c__c", "Text", "Vehicle Make"),
   F("UTM_Source__c", "utm_source_c__c", "Text", "UTM Source"),
@@ -53,8 +53,9 @@ out_fields = []; maps = []
 TYPE = {"Number":"Number","Text":"Text","DateTime":"DateTime"}
 for f in fields:
     if f["name"] in ("Internal__c", "Recent__c"): continue
-    out_fields.append({"isPrimaryKey": f["name"]=="Lead_Id__c", "label": f["label"], "name": f["name"], "type": TYPE[f["businessType"]]})
-    maps.append({"sourceField": f["name"], "targetField": f["name"]})
+    tgt = "State__c" if f["name"] == "Lead_State__c" else f["name"]
+    out_fields.append({"isPrimaryKey": f["name"]=="Lead_Id__c", "label": f["label"], "name": tgt, "type": TYPE[f["businessType"]]})
+    maps.append({"sourceField": f["name"], "targetField": tgt})
 nodes["OUTPUT0"] = {"action":"outputD360","sources":["FILTER0"],"parameters":{"dedupOrder":[],"fieldsMappings":maps,"name":OUT,"type":"dataLakeObject","writeMode":"OVERWRITE"}}
 ui_nodes["OUTPUT0"] = {"label":LBL,"type":"OUTPUT","top":60,"left":952}
 ui_conn.extend([{"source":"LOAD0","target":"T0"},{"source":"T0","target":"FILTER0"},{"source":"FILTER0","target":"OUTPUT0"}])

@@ -96,7 +96,7 @@
         "defaultValue": "",
         "formulaExpression": "State__c",
         "label": "State",
-        "name": "State__c",
+        "name": "Lead_State__c",
         "precision": 80,
         "type": "TEXT"
        }
@@ -526,7 +526,7 @@
         "targetField": "Email_Domain__c"
        },
        {
-        "sourceField": "State__c",
+        "sourceField": "Lead_State__c",
         "targetField": "State__c"
        },
        {
