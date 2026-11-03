@@ -349,6 +349,12 @@ scored; expected and harmless). Legacy enrichment `Lead_Multi_Channel_Scoring` d
 Job summaries are queryable: `SELECT JobStatus, ProcessedRecordCount, UpdatedRecordCount, FailedRecordCount,
 FailedRecords FROM DataActionJobSummary WHERE Name LIKE 'Channel_Scores%'`.
 
+## Audit
+
+`AUDIT_2026-11-03.md`: end-to-end check of Sales Cloud, Data Cloud and Marketing Cloud after the build, with seven
+gaps in priority order. The first one matters most: the scoring chain must run hourly (and v17 should wait ~3 hours
+before the channel decision) or leads will be routed on blank scores.
+
 ## Model Builder recipes
 
 | Model | Training data | Filter | Target | Exclude from features |
