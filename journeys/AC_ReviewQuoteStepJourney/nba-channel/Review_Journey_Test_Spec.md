@@ -87,10 +87,8 @@ Steps, in order:
    is set. Decision splits read Journey Data (the entry snapshot), so a wait inside the journey would not refresh the scores;
    gating at the query means every entrant already carries them. Scores land hourly, the automation runs every 15 min.
    Tile-by-tile build with exact fields: `JOURNEY_BUILDER_BUILD.md`.
-1. **Eligibility at entry, not at the split.** In `AC_ReviewNBA_v8` (or in MCD-1) require Email not
-   null, mobile present, `Mobile_Opt_Out_Date__c` null, `DoNotCall` false for the test population, so
-   all three arms are possible for every entrant. Leads failing that go down the existing Email Only
-   path with arm `INELIGIBLE` written (step 4).
+1. **Eligibility in MCD-1.** `Mobile_Country_Code__c` is not equal to `1` (formula "1" + Phone; blank Phone gives "1"),
+   `Mobile_Opt_Out_Date__c` is null, `HasOptedOutOfEmail` is False. `MobilePhone` is never populated on Lead; `DoNotCall` is not used.
 2. **Entry snapshot carries the scores.** `sfmc/AC_ReviewNBA_v9.sql` replaces v8 in automation `AC_NBATEST` step 2:
    it adds `Call_Score__c`, `Email_Score__c`, `SMS_Score__c`, `Last_Channel_Scoring_Date__c`, `DoNotCall` and
    `MobilePhone` to the select. Add the same six columns to the entry DE `AC_ReviewNBATest_AF_01272026` first, and
