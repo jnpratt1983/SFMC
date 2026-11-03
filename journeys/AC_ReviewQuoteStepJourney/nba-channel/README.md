@@ -123,6 +123,8 @@ Learned from the editor's own error list on 2026-11-03 and from the org's workin
 - `DATEDIFF(end, start)`, `NOW()`, `HOUR()`, `DAYOFWEEK()`, `MONTH()`, window functions (`LEAD`,
   `ROW_NUMBER() OVER`) and `LIKE` all pass. Booleans compare with `= TRUE` / `= FALSE`.
 - Attribute names must be unique across the insight.
+- Model Builder offers a binary target only for a field with exactly two values. A count measure such as the old
+  `Click_Leads_14d__c` (0, 1, 2...) is not offered; labels must be 0/1 dimensions. The SMS set was recreated for this.
 - An existing insight cannot gain a new dimension ("not an eligible KQ dimension"); add measures freely, or delete and
   recreate the insight to change its dimensions. Filters that only matter for training go in Model Builder instead.
 - `BETWEEN` is not supported; write `x >= a AND x <= b`.
@@ -227,7 +229,7 @@ sms-UTM leads inside 14 days; filter `<= 1` or treat `> 0` as the positive), `Pu
 | Model | Training data | Filter | Target | Exclude from features |
 |---|---|---|---|---|
 | Email open | `Email_Response_Training_Set` | none | `Opened_First_Email__c` | Lead_Id, Clicked_First_Email, First_Email_Name, First_Send_At, Days_Create_To_Send, Send_Hour, Send_Rows, Lead_Created |
-| SMS click | `SMS_Response_Training_Set` | `SMS_Sent_At__c` 2024-08-01 to 2025-07-31 | `Click_Leads_14d__c` (treat > 0 as positive; filter `<= 1` if the UI insists on two values) | Lead_Id, SMS_Name, SMS_Sent_At, SMS_Hour, Days_Create_To_SMS, Click_Leads_30d, Row_Count, Lead_Created, Lead_Created_Month, SMS_Status_Code, Purchased |
+| SMS click | `SMS_Response_Training_Set` (recreated 2026-11-03 with 0/1 labels) | `Label_Window__c` = 1 | `Clicked_14d__c` | Lead_Id, SMS_Name, SMS_Sent_At, First_Click_Lead_At, SMS_Hour, Days_Create_To_SMS, Clicked_30d, Label_Window, Row_Count, Lead_Created, Lead_Created_Month, SMS_Status_Code, Purchased |
 | Phone preference | `Phone_Response_Training_Set` | none (or `Lead_Created__c` >= 2024-01-01) | `Called_Us_30d__c` | Lead_Id, Called_Us_90d, First_Call_At, Days_Create_To_Call, Lead_Created, Row_Count, Purchased |
 
 Binary classification, default split. Exclude `Purchased__c` everywhere: it is an outcome. Ship gate per model: a
