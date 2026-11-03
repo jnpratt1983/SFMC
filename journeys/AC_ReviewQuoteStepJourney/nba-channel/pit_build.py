@@ -24,6 +24,9 @@ def to_bool01(s): return s.astype(str).str.lower().map({"true":1,"false":0,"1":1
 
 def rebuild(name, event_col, label_cols, keep_before_coverage):
     df = pd.read_pickle(f"pit/{name}.pkl")
+    if name.startswith("SMS"):
+        # a lead created by a text click is labelled by its own creation (same-day); drop texted leads that are themselves sms-UTM leads
+        before = len(df); df = df[df["UTM_Medium__c"] != "sms"]; print(f"  {name}: dropped {before-len(df)} texted leads with UTM_Medium = sms (self-click artifact)", flush=True)
     df["Event_At__c"] = pd.to_datetime(df[event_col].astype(str).str.replace(" UTC", "", regex=False), utc=True, errors="coerce")
     df = df.sort_values("Event_At__c")
     covered = df["Event_At__c"] >= COVER
