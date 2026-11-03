@@ -18,7 +18,16 @@ A side effect worth knowing: the Review journey texts (`AC_Review_SE1/SE2/SE3`) 
 usually been texted earlier in the quote funnel, so most Review texts are missing from `SMS__c`, and
 the SE1/SE2 counts there do not reflect what was sent.
 
-## The fix (two changes, both in Marketing Cloud)
+## The fix
+
+Recommended: replace the journey with a Script Activity that upserts one row per text into `SMS__c`
+over the Sales Cloud REST API on an external id (`SMS_Key__c` = SubscriberKey|SMSJobID). Idempotent,
+visible errors, backfill by widening a date window, no journey entry settings involved, and Sales
+Cloud stays the landing place so the CRM connector carries it to Data Cloud without Marketing Cloud
+connector credits. Script: `sfmc/SMS_To_SalesCloud.ssjs`; setup: `SMS_SalesCloud_API_RUNBOOK.md`.
+The deduplicated query below is required for either path.
+
+Fallback if the API path cannot be built soon (two changes, both in Marketing Cloud):
 
 1. **Journey `SMS Creation`**: new version, Entry Settings -> "Re-entry anytime", publish, and stop
    v1. Nothing else in the journey changes. With re-entry on, every row in the staging data extension
@@ -59,6 +68,14 @@ populated again, or drop `Status__c` and read `SMSStandardStatusCodeId__c`.
 window (and the journey on re-entry) recovers the texts since roughly May 2026 that the Once-and-done
 setting dropped. Anything earlier is gone from Marketing Cloud and would have to come from Bitly link
 counts or not at all.
+
+## Why the tracking view has several rows per text
+
+Checked on 2026-11-01's 1,041 rows = 483 texts. 252 texts have one row (all 151 characters or
+shorter). 73 have two rows and are all exactly 153 characters, so those are concatenated messages
+with one row per segment. 136 have three or four rows and 22 have nine, with short message bodies,
+so those are repeated status rows, not segments. `GROUP BY SubscriberKey, SMSJobID` collapses both
+kinds; the object should never hold segment rows.
 
 ## What this changes in the model package
 

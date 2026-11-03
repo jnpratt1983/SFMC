@@ -96,7 +96,9 @@ it. Until then the per-channel response models carry the goal:
    creation plus email behaviour before the text, label `Clicked_SMS_14d__c` from a same-person lead
    created with utm_medium = sms within 14 days. Create now so the label accrues.
 5. `SMS_Data_feed.md` - how `SMS__c` is fed from Marketing Cloud, why it records only the first text per
-   person, and the two changes that make it record every text.
+   person, why the tracking view has several rows per text, and the fix.
+   `SMS_SalesCloud_API_RUNBOOK.md` + `sfmc/SMS_To_SalesCloud.ssjs` - the replacement: a Script Activity
+   that upserts one row per text into `SMS__c` on `SMS_Key__c` (field metadata in c360-sfdx force-app).
 6. `Channel_Uplift_Training_Set__cio.sql` - rows from the factorial test. One row per test lead with
    arm flags, entry-time features and `Purchased_30d__c`. Train two Model Builder models on it
    (T-learner): `Purchase given call` on rows where Call_Arm__c = true, `Purchase given no call` on

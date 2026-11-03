@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SMS_Key__c</fullName>
+    <caseSensitive>false</caseSensitive>
+    <description>SubscriberKey|SMSJobID from Marketing Cloud _smsmessagetracking. One row per text; upsert key for the SMS Data script activity.</description>
+    <externalId>true</externalId>
+    <inlineHelpText>SubscriberKey|SMSJobID. Set by the Marketing Cloud SMS Data automation.</inlineHelpText>
+    <label>SMS Key</label>
+    <length>80</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>
