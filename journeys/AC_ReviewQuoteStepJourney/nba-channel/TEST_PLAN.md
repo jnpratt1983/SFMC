@@ -1,5 +1,10 @@
 # NBA channel test: analysis plan and read schedule
 
+**Revised 2026-11-03.** The preference model does not wait for the test. Three response models (email open,
+SMS click, phoned us) train on 2024-2026 history this month and route the model path of version 17 from
+launch. The reads below are for what the test adds: response rates by arm in month 1, the purchase
+question over time. Nothing in the launch is gated on a year of data.
+
 Written 2026-11-02 for the AC_ReviewQuoteStepJourney version 17 launch. Companion to
 `Review_Journey_Test_Spec.md` (what the journey does) and the SQL in this folder (how it is measured).
 

@@ -25,6 +25,31 @@ Three Einstein Studio binary classifiers (Custom, Legacy), all retrained 2026-08
 Verdict: retire all three models, the `Predicted_Channel__c` rule, and `Recommended_Channel__c`.
 Do not retrain them on the same labels; the label is the problem, not the algorithm.
 
+## The fast path: train the preference model on history now (2026-11-03)
+
+Two questions were tangled in this folder. "Which channel does a lead respond to" can be learned from
+the leads we already have. "Does routing on it sell more policies" needs randomized data and time. Only
+the second takes a year, and leadership does not have to wait for it to get a working model.
+
+Historical response labels, counted 2026-11-03:
+
+| Channel | Leads contacted | Responded | Label | Insight |
+|---|---|---|---|---|
+| Email | ~320,000 emailed 2024-2026 | ~157,000 opened | opened the first quote email | `Email_Response_Training_Set__cio` |
+| SMS | ~172,000 texted 2024-2026 | ~6,000 clicked (sms-UTM sibling lead within 30 days) | clicked within 14 days | `SMS_Response_Training_Set__cio` |
+| Phone | all leads 2024-2026 | ~4,300 phoned us during the quote | inbound call ticket within 30 days of creation | `Phone_Response_Training_Set__cio` (new) |
+
+Three Model Builder binary models, one per channel, trained on every contacted lead (not on purchasers
+only, which was the legacy flaw), scored on every new lead. The recommended channel for a new lead is the
+channel with the highest response probability, email always included: Phone probability above its
+threshold -> call; SMS probability above its threshold -> text; both -> both; neither -> text. This is
+the `Predicted_Channel__c` replacement, built from data on hand, in weeks.
+
+Caveats stated once: "phoned us" is a preference signal, not "answers our call"; the SMS click is a floor;
+and a response model says who responds, not who buys because of it. The learning slice in the journey
+stays at 20% so the response rates by arm can be read in the first month and the purchase question
+accumulates in the background instead of blocking the launch.
+
 ## The goal, and why the label is the whole problem
 
 The goal is unchanged: predict how a lead wants to be communicated with (some people pick up the
@@ -128,7 +153,9 @@ sms-UTM leads inside 14 days; filter `<= 1` or treat `> 0` as the positive), `Pu
    channel scores are deliberately excluded (current-state values, they leak).
 2. `Email_Response_Scoring_Set__cio.sql` - same columns for leads created in the last 14 days with no
    journey email yet. Refresh hourly after the lead sync.
-3. `Call_Response_Training_Set__cio.sql` - one row per Next Best Action call ticket, lead attributes at
+3. `Phone_Response_Training_Set__cio.sql` - one row per lead created 2024 onward, label `Called_Us_30d__c` (an
+   inbound call ticket linked to the lead within 30 days of creation), ~4,300 positives. The phone preference model.
+   `Call_Response_Training_Set__cio.sql` - one row per Next Best Action call ticket, lead attributes at
    creation plus email behaviour before the call, labels `Called__c` and `Call_Reached__c` from the tag or
    the comment text. Create it now so the label accrues; train when positives pass ~1,000.
 4. `SMS_Response_Training_Set__cio.sql` - one row per lead texted an AC_ message, lead attributes at

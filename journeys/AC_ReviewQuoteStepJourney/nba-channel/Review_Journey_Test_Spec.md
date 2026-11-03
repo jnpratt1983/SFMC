@@ -35,10 +35,11 @@ Decisions 2026-11-02: no email-only arm, and the journey keeps choosing the chan
 the way the predicted channel field did. A pure random split is not the design; it is the data the
 next model needs, so it runs as a small slice alongside the model-routed majority.
 
-The model that can route today is the email response model (`Email_Response_*`): it scores every
-entrant on the likelihood of opening the first email, trained on real opens. Call and text response
-models cannot be trained yet (about 40 call positives a month and a handful of text clicks), and
-the only call labels that exist were chosen by the old router. The random slice fixes both.
+Revised 2026-11-03: three response models train on 2024-2026 history now (email open ~157k positives,
+SMS click ~6,000, phoned-us ~4,300; see README "fast path"), so the model path routes on all three from
+launch: phone probability above its threshold -> call, SMS probability above its threshold -> text, both ->
+both, neither -> text. The email-open rule below is the fallback if the phone and SMS models fail their
+lift charts. The random slice remains for the purchase question and to audit the routing.
 
 ```
 entry -> wait 5 min -> MCD-1 "channel availability" (unchanged)
