@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DE_Key__c</fullName>
+    <externalId>false</externalId>
+    <label>Data Extension Key</label>
+    <length>100</length>
+    <inlineHelpText>Customer key of the Marketing Cloud data extension holding yesterday's deduplicated SMS rows. Blank = default smsmessagetracking.</inlineHelpText>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+</CustomField>

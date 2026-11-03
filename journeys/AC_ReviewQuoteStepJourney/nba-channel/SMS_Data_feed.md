@@ -20,12 +20,13 @@ the SE1/SE2 counts there do not reflect what was sent.
 
 ## The fix
 
-Recommended: replace the journey with a Script Activity that upserts one row per text into `SMS__c`
-over the Sales Cloud REST API on an external id (`SMS_Key__c` = SubscriberKey|SMSJobID). Idempotent,
-visible errors, backfill by widening a date window, no journey entry settings involved, and Sales
-Cloud stays the landing place so the CRM connector carries it to Data Cloud without Marketing Cloud
-connector credits. Script: `sfmc/SMS_To_SalesCloud.ssjs`; setup: `SMS_SalesCloud_API_RUNBOOK.md`.
-The deduplicated query below is required for either path.
+Recommended: replace the journey with a scheduled Apex job in Sales Cloud (`SMSTrackingSync`) that
+pulls the deduplicated staging rows over the Marketing Cloud REST API through the existing Named
+Credential `SFMC_Auth` and upserts one row per text into `SMS__c` on an external id (`SMS_Key__c` =
+SubscriberKey|SMSJobID). Idempotent, errors in a custom setting, backfill by widening a date window,
+no journey entry settings involved, and Sales Cloud stays the landing place so the CRM connector carries
+it to Data Cloud without Marketing Cloud connector credits. Setup: `SMS_SalesCloud_API_RUNBOOK.md`;
+code in c360-sfdx force-app. The deduplicated query below is required for either path.
 
 Fallback if the API path cannot be built soon (two changes, both in Marketing Cloud):
 
