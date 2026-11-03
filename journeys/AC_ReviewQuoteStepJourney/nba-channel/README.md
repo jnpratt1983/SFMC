@@ -124,6 +124,9 @@ Learned from the editor's own error list on 2026-11-03 and from the org's workin
   `ROW_NUMBER() OVER`) and `LIKE` all pass. Booleans compare with `= TRUE` / `= FALSE`.
 - Attribute names must be unique across the insight.
 - `BETWEEN` is not supported; write `x >= a AND x <= b`.
+- `ssot__EmailEngagement__dlm.ssot__EmailDomainName__c` is blank on every row; the recipient address is in
+  `To_Email_Address__c`. With no string functions, the domain feature is a `CASE ... LIKE '%@gmail.com'` bucket
+  (gmail 74% of sends, open 33%; yahoo 16%; apple 52%; microsoft 15%; privacy domains 2 to 8%).
 - A `<>` test against a column that is NULL drops the row (`ssot__IsTestSend__c` is NULL on every email row, so
   `<> 'true'` emptied the email training set on its first run). Filter only on columns you have checked are populated.
 - String functions are thin: `LOCATE` is not supported and `SUBSTRING` needs (text, start, length) literals. Derive text
@@ -211,9 +214,9 @@ sms-UTM leads inside 14 days; filter `<= 1` or treat `> 0` as the positive), `Pu
 | Insight | Status | First run |
 |---|---|---|
 | `Call_Response_Training_Set__cio` | ACTIVE, created 2026-11-03 | 941 ticket rows, 696 leads, 867 called, 116 reached (13% of called), 79 purchased. Reached leads bought 8.5%, called-not-reached 6.3%, not-dialed (ex-customers, already customers) 27%. |
-| `Email_Response_Training_Set__cio` | ACTIVE; first run returned 0 rows (IsTestSend filter), SQL fixed 2026-11-03, re-paste and re-run | expected ~224k rows, 36-40% opened |
+| `Email_Response_Training_Set__cio` | ACTIVE, ran after the IsTestSend fix | 219,698 leads, 31.6% opened the first email, 2.7% clicked; by lead year 2024 31.7%, 2025 30.6%, 2026 33.5%. Domain column was blank on the first run; replaced by the LIKE bucket, re-paste |
 | `Email_Response_Scoring_Set__cio` | ACTIVE, ran | 4,140 leads from the last 14 days, 2,921 with an email |
-| `SMS_Response_Training_Set__cio` | ACTIVE, ran | 169,156 texted leads; 6,917 (4.1%) with a click lead inside 14 days, 7,380 inside 30. By text year: 2024 2.9%, 2025 6.2%, 2026 1.0%; the 2025 peak and 2026 drop track how often the quote app created a new lead on click, so check label stability before training |
+| `SMS_Response_Training_Set__cio` | ACTIVE, ran | 169,156 texted leads; 6,917 (4.1%) with a click lead inside 14 days. Monthly click rate: 0.4-0.9% Mar-Jul 2024, 5-9% Aug 2024-Jul 2025, 0.4-1.5% Aug 2025 onward. That is the quote app's new-lead-on-click behaviour, not people. `Label_Window__c` = 1 marks the Aug 2024-Jul 2025 texts (~85k rows, ~6k positives); train on that filter only and exclude `Lead_Created_Month__c` so the model cannot learn the calendar |
 | `Phone_Response_Training_Set__cio` | not yet visible in the org as of 2026-11-03 04:10 UTC | |
 | `Channel_Uplift_Training_Set__cio` | waiting on the Lead DMO field mapping | |
 
