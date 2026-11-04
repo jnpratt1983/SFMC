@@ -1,0 +1,475 @@
+{
+ "label": "Channel Scores",
+ "name": "ChannelScores",
+ "dataSpaceName": "default",
+ "type": "BATCH",
+ "description": "Scores the three channel models inside the transform (model nodes, like the legacy LeadMultiChannelScoring) and writes Channel_Scores__dlm. Replaces the three Predict Jobs. 2026-11-04.",
+ "definitions": [
+  {
+   "label": "Channel Scores",
+   "name": "ChannelScoresDefinition",
+   "version": "56.0",
+   "type": "STL",
+   "outputDataObjects": [
+    {
+     "category": "Other",
+     "label": "Channel Scores",
+     "name": "Channel_Scores__dlm",
+     "type": "dataModelObject",
+     "fields": [
+      {
+       "isPrimaryKey": false,
+       "label": "Key Qualifier Lead Id",
+       "name": "KQ_Lead_Id__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": true,
+       "keyQualifierField": "KQ_Lead_Id__c",
+       "label": "Lead Id",
+       "name": "Lead_Id__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Email Score",
+       "name": "Email_Score__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "SMS Score",
+       "name": "SMS_Score__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Call Score",
+       "name": "Call_Score__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Scored At",
+       "name": "Scored_At__c",
+       "type": "DateTime"
+      }
+     ]
+    }
+   ],
+   "nodes": {
+    "LOAD0": {
+     "action": "load",
+     "sources": [],
+     "parameters": {
+      "dataset": {
+       "name": "Channel_Scoring_Set__dlm",
+       "type": "dataModelObject"
+      },
+      "fields": [
+       "Lead_Id__c",
+       "KQ_Lead_Id__c",
+       "Email_Domain__c",
+       "State__c",
+       "Vehicle_Make__c",
+       "Credit_Score__c",
+       "Lead_Source__c",
+       "Publisher__c",
+       "UTM_Source__c",
+       "UTM_Medium__c",
+       "Previous_Insurance__c",
+       "Lead_Hour__c",
+       "Lead_Day_Of_Week__c",
+       "Days_Since_Create__c",
+       "Max_Quote_Step__c",
+       "Declined__c",
+       "Has_Mobile__c",
+       "Mobile_Opt_Out__c",
+       "Lead_Created__c"
+      ],
+      "sampleDetails": {
+       "sortBy": [],
+       "type": "TopN"
+      }
+     }
+    },
+    "PREDICT_SMS": {
+     "action": "cdpPredict",
+     "sources": [
+      "LOAD0"
+     ],
+     "parameters": {
+      "columnMapping": {
+       "Email_Domain__c": "Email_Domain__c",
+       "State__c": "State__c",
+       "Vehicle_Make__c": "Vehicle_Make__c",
+       "Credit_Score__c": "Credit_Score__c",
+       "Lead_Source__c": "Lead_Source__c",
+       "Publisher__c": "Publisher__c",
+       "UTM_Source__c": "UTM_Source__c",
+       "UTM_Medium__c": "UTM_Medium__c",
+       "Previous_Insurance__c": "Previous_Insurance__c",
+       "Lead_Hour__c": "Lead_Hour__c",
+       "Lead_Day_Of_Week__c": "Lead_Day_Of_Week__c",
+       "Days_Since_Create__c": "Days_Since_Create__c",
+       "Max_Quote_Step__c": "Max_Quote_Step__c",
+       "Declined__c": "Declined__c",
+       "Has_Mobile__c": "Has_Mobile__c",
+       "Mobile_Opt_Out__c": "Mobile_Opt_Out__c"
+      },
+      "multiClassFields": [],
+      "predictSource": {
+       "name": "__CONFIGURED_MODEL_NAME_PREDICTED_SMS__",
+       "type": "ConfiguredModel"
+      },
+      "predictionFactorFields": [],
+      "prescriptionFields": [],
+      "predictionFields": [
+       {
+        "label": "SMS class",
+        "modelOutputFieldName": "Clicked_14d__c",
+        "name": "SMS_Class__c",
+        "type": "TEXT"
+       },
+       {
+        "label": "SMS probability",
+        "modelOutputFieldName": "__PROB_OUTPUT_FOR_Clicked_14d__c__",
+        "name": "SMS_Prob__c",
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "PREDICT_EMAIL": {
+     "action": "cdpPredict",
+     "sources": [
+      "PREDICT_SMS"
+     ],
+     "parameters": {
+      "columnMapping": {
+       "Email_Domain__c": "Email_Domain__c",
+       "State__c": "State__c",
+       "Vehicle_Make__c": "Vehicle_Make__c",
+       "Credit_Score__c": "Credit_Score__c",
+       "Lead_Source__c": "Lead_Source__c",
+       "Publisher__c": "Publisher__c",
+       "UTM_Source__c": "UTM_Source__c",
+       "UTM_Medium__c": "UTM_Medium__c",
+       "Previous_Insurance__c": "Previous_Insurance__c",
+       "Lead_Hour__c": "Lead_Hour__c",
+       "Lead_Day_Of_Week__c": "Lead_Day_Of_Week__c",
+       "Days_Since_Create__c": "Days_Since_Create__c",
+       "Max_Quote_Step__c": "Max_Quote_Step__c",
+       "Declined__c": "Declined__c",
+       "Has_Mobile__c": "Has_Mobile__c",
+       "Mobile_Opt_Out__c": "Mobile_Opt_Out__c"
+      },
+      "multiClassFields": [],
+      "predictSource": {
+       "name": "__CONFIGURED_MODEL_NAME_PREDICTED_EMAIL__",
+       "type": "ConfiguredModel"
+      },
+      "predictionFactorFields": [],
+      "prescriptionFields": [],
+      "predictionFields": [
+       {
+        "label": "Email class",
+        "modelOutputFieldName": "Opened_First_Email__c",
+        "name": "Email_Class__c",
+        "type": "TEXT"
+       },
+       {
+        "label": "Email probability",
+        "modelOutputFieldName": "__PROB_OUTPUT_FOR_Opened_First_Email__c__",
+        "name": "Email_Prob__c",
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "PREDICT_PHONE": {
+     "action": "cdpPredict",
+     "sources": [
+      "PREDICT_EMAIL"
+     ],
+     "parameters": {
+      "columnMapping": {
+       "Email_Domain__c": "Email_Domain__c",
+       "State__c": "State__c",
+       "Vehicle_Make__c": "Vehicle_Make__c",
+       "Credit_Score__c": "Credit_Score__c",
+       "Lead_Source__c": "Lead_Source__c",
+       "Publisher__c": "Publisher__c",
+       "UTM_Source__c": "UTM_Source__c",
+       "UTM_Medium__c": "UTM_Medium__c",
+       "Previous_Insurance__c": "Previous_Insurance__c",
+       "Lead_Hour__c": "Lead_Hour__c",
+       "Lead_Day_Of_Week__c": "Lead_Day_Of_Week__c",
+       "Days_Since_Create__c": "Days_Since_Create__c",
+       "Max_Quote_Step__c": "Max_Quote_Step__c",
+       "Declined__c": "Declined__c",
+       "Has_Mobile__c": "Has_Mobile__c",
+       "Mobile_Opt_Out__c": "Mobile_Opt_Out__c"
+      },
+      "multiClassFields": [],
+      "predictSource": {
+       "name": "__CONFIGURED_MODEL_NAME_PREDICTED_PHONE__",
+       "type": "ConfiguredModel"
+      },
+      "predictionFactorFields": [],
+      "prescriptionFields": [],
+      "predictionFields": [
+       {
+        "label": "Phone class",
+        "modelOutputFieldName": "Called_Us_30d__c",
+        "name": "Phone_Class__c",
+        "type": "TEXT"
+       },
+       {
+        "label": "Phone probability",
+        "modelOutputFieldName": "__PROB_OUTPUT_FOR_Called_Us_30d__c__",
+        "name": "Phone_Prob__c",
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "F_SMS": {
+     "action": "formula",
+     "sources": [
+      "PREDICT_PHONE"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "round(100 * case when SMS_Class__c like '1%' then SMS_Prob__c else 1 - SMS_Prob__c end, 2)",
+        "label": "SMS Score",
+        "name": "SMS_Score__c",
+        "type": "NUMBER",
+        "precision": 18,
+        "scale": 2
+       }
+      ]
+     }
+    },
+    "F_EMAIL": {
+     "action": "formula",
+     "sources": [
+      "F_SMS"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "round(100 * case when Email_Class__c like '1%' then Email_Prob__c else 1 - Email_Prob__c end, 2)",
+        "label": "Email Score",
+        "name": "Email_Score__c",
+        "type": "NUMBER",
+        "precision": 18,
+        "scale": 2
+       }
+      ]
+     }
+    },
+    "F_PHONE": {
+     "action": "formula",
+     "sources": [
+      "F_EMAIL"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "round(100 * case when Phone_Class__c like '1%' then Phone_Prob__c else 1 - Phone_Prob__c end, 2)",
+        "label": "Call Score",
+        "name": "Call_Score__c",
+        "type": "NUMBER",
+        "precision": 18,
+        "scale": 2
+       }
+      ]
+     }
+    },
+    "F_TS": {
+     "action": "formula",
+     "sources": [
+      "F_PHONE"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "DateTime",
+        "defaultValue": "",
+        "formulaExpression": "now()",
+        "label": "Scored At",
+        "name": "Scored_At__c",
+        "type": "DATETIME",
+        "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+       }
+      ]
+     }
+    },
+    "OUTPUT0": {
+     "action": "outputD360",
+     "sources": [
+      "F_TS"
+     ],
+     "parameters": {
+      "dedupOrder": [],
+      "writeMode": "OVERWRITE",
+      "name": "Channel_Scores__dlm",
+      "type": "dataModelObject",
+      "fieldsMappings": [
+       {
+        "sourceField": "KQ_Lead_Id__c",
+        "targetField": "KQ_Lead_Id__c"
+       },
+       {
+        "sourceField": "Lead_Id__c",
+        "targetField": "Lead_Id__c"
+       },
+       {
+        "sourceField": "Email_Score__c",
+        "targetField": "Email_Score__c"
+       },
+       {
+        "sourceField": "SMS_Score__c",
+        "targetField": "SMS_Score__c"
+       },
+       {
+        "sourceField": "Call_Score__c",
+        "targetField": "Call_Score__c"
+       },
+       {
+        "sourceField": "Scored_At__c",
+        "targetField": "Scored_At__c"
+       }
+      ]
+     }
+    }
+   },
+   "ui": {
+    "nodes": {
+     "LOAD0": {
+      "label": "Channel Scoring Set",
+      "type": "LOAD_DATASET",
+      "top": 60,
+      "left": 112,
+      "parameters": {
+       "sampleSize": 500,
+       "sampleDetails": {
+        "type": "TopN"
+       },
+       "dataspace": "default"
+      }
+     },
+     "PREDICT_SMS": {
+      "label": "Predicted SMS",
+      "type": "CDP_PREDICT",
+      "top": 60,
+      "left": 392
+     },
+     "PREDICT_EMAIL": {
+      "label": "Predicted Email",
+      "type": "CDP_PREDICT",
+      "top": 60,
+      "left": 600
+     },
+     "PREDICT_PHONE": {
+      "label": "Predicted Phone",
+      "type": "CDP_PREDICT",
+      "top": 60,
+      "left": 808
+     },
+     "T_SCORES": {
+      "label": "Scores",
+      "type": "TRANSFORM",
+      "top": 60,
+      "left": 1016,
+      "graph": {
+       "F_SMS": {
+        "label": "SMS",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_EMAIL": {
+        "label": "Email",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_PHONE": {
+        "label": "Phone",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_TS": {
+        "label": "Scored at",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       }
+      },
+      "connectors": [
+       {
+        "source": "PREDICT_PHONE",
+        "target": "F_SMS"
+       },
+       {
+        "source": "F_SMS",
+        "target": "F_EMAIL"
+       },
+       {
+        "source": "F_EMAIL",
+        "target": "F_PHONE"
+       },
+       {
+        "source": "F_PHONE",
+        "target": "F_TS"
+       }
+      ]
+     },
+     "OUTPUT0": {
+      "label": "Channel Scores",
+      "type": "OUTPUT",
+      "top": 60,
+      "left": 1300
+     }
+    },
+    "connectors": [
+     {
+      "source": "LOAD0",
+      "target": "PREDICT_SMS"
+     },
+     {
+      "source": "PREDICT_SMS",
+      "target": "PREDICT_EMAIL"
+     },
+     {
+      "source": "PREDICT_EMAIL",
+      "target": "PREDICT_PHONE"
+     },
+     {
+      "source": "PREDICT_PHONE",
+      "target": "T_SCORES"
+     },
+     {
+      "source": "T_SCORES",
+      "target": "OUTPUT0"
+     }
+    ],
+    "hiddenColumns": []
+   }
+  }
+ ]
+}
