@@ -386,3 +386,5 @@ that `Clicked_7d__c` should be a second model, not a second target.
 
 
 Journey Builder build, tile by tile with exact fields and value sources: `JOURNEY_BUILDER_BUILD.md` (canvas mock-up: https://claude.ai/artifact/GHnYvrR8rBQpRRHFdD8Ueu).
+
+Scoring chain schedule state and how to finish it (model-in-transform, hourly): `SCORING_SCHEDULE_2026-11-04.md`.
