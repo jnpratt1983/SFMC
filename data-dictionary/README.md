@@ -34,7 +34,7 @@ This site lives in the `data-dictionary/` folder of the SFMC repo.
 
 The action pulls, rebuilds `data/`, verifies `npm run build`, and commits. The **Changes** page shows what was added or removed against the previous snapshot.
 
-To refresh by hand: `npm run refresh`, then commit `data/`.
+To refresh by hand: `npm run refresh`, then commit `data/`. The refresh log lists any field that has no entry in `definitions/`; add one there and rebuild.
 
 ## Layout
 
@@ -46,6 +46,7 @@ data/dictionary.json      the dictionary (generated)
 data/search-index.json    compact index for the search box (generated)
 data/snapshots/, changelog.json   monthly diffs (generated)
 pipeline/                 pull + build scripts (see pipeline/README.md)
+definitions/              hand-maintained field definitions, one JSON per object (see definitions/README.md)
 public/brand/             Quanata logo SVGs
 ```
 

@@ -1,0 +1,898 @@
+{
+ "AccountId": {
+  "confidence": "high",
+  "definition": "Lookup to the Account the Contact belongs to. In HiRoad the Account represents the policy/household, so this links the person to their policy."
+ },
+ "Account_Id2__c": {
+  "confidence": "medium",
+  "definition": "Copy of the platform account ID maintained by Marketing Cloud journeys (Update Account_Id on Contact, SMS opt-out, push enabled updates). Populated where the primary account ID exists and this is blank."
+ },
+ "Acknowledgment__c": {
+  "confidence": "low",
+  "definition": "Checkbox noting the Contact was acknowledged in a finessing email."
+ },
+ "Added_Driver__c": {
+  "confidence": "medium",
+  "definition": "True when the customer has added a driver to the policy. Synced to Marketing Cloud for engagement journeys."
+ },
+ "App_Opened__c": {
+  "confidence": "high",
+  "definition": "True when the customer has opened the HiRoad app. The No App No Trips journey targets customers who have not."
+ },
+ "App_Setup_Discount_Eligible__c": {
+  "confidence": "medium",
+  "definition": "Numeric flag for whether the customer is eligible for the app setup discount. Used by the Success Kit and Welcome journeys."
+ },
+ "App_Version__c": {
+  "confidence": "medium",
+  "definition": "Version of the HiRoad app installed on the customer's phone, from the app feed."
+ },
+ "BU__c": {
+  "confidence": "medium",
+  "definition": "Business unit (state market) for the Contact: RI, AZ, NV, UT or Other."
+ },
+ "Battery_Permission_Enabled__c": {
+  "confidence": "high",
+  "definition": "True when the app's battery permission is enabled on the customer's phone. Updated by the Permission Settings journey and used by the Success Kit journey."
+ },
+ "Birthdate": {
+  "confidence": "high",
+  "definition": "The person's date of birth. Used to derive the next birthday and birthday month for the Birthday journey."
+ },
+ "Birthday_Month__c": {
+  "confidence": "high",
+  "definition": "Two-digit birth month. Marketing Cloud compares it to the current month to select contacts for the Birthday and Anniversary journeys."
+ },
+ "BuyerAttributes": {
+  "confidence": "high",
+  "definition": "Standard multi-select of buying roles (Decision Maker, Champion, Evaluator, etc.) for B2B selling. Not relevant for policyholders."
+ },
+ "Campaign_Id__c": {
+  "confidence": "low",
+  "definition": "Marketing campaign identifier captured from the web acquisition flow."
+ },
+ "Cancel_Date_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the cancel date from the related Account (policy)."
+ },
+ "Cancel_Date__c": {
+  "confidence": "high",
+  "definition": "Date and time the customer's policy was canceled. Engagement journeys exclude contacts with a cancel date; feeds the Contact Cancellation insight in Data Cloud."
+ },
+ "Cancellation_Reason_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the cancellation reason from the related Account (policy)."
+ },
+ "Cancellation_Reason__c": {
+  "confidence": "medium",
+  "definition": "Reason the customer's policy was canceled. Written by the daily Customer Cancellations journey and used to find cancelled AZ customers without a reason."
+ },
+ "Churn_Risk_Score__c": {
+  "confidence": "medium",
+  "definition": "Raw churn risk score written back from the Data Cloud churn model."
+ },
+ "Claim_Close_Date_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the claim close date from the related Account (policy)."
+ },
+ "Claim_Close_Date__c": {
+  "confidence": "medium",
+  "definition": "Date the customer's claim was closed. The app-store review query only targets customers with no open (unclosed) claim."
+ },
+ "Claim_Flag_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the claim flag from the related Account (policy)."
+ },
+ "Claim_Flag__c": {
+  "confidence": "high",
+  "definition": "True when the customer has an open claim. The Accident Detection journey branches on it and the app-store review query excludes claimants."
+ },
+ "Claim_Number_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the claim number from the related Account (policy)."
+ },
+ "Claim_Number__c": {
+  "confidence": "medium",
+  "definition": "Claim number of the customer's claim."
+ },
+ "Comments__c": {
+  "confidence": "low",
+  "definition": "Free-text comments; help text says it captures email feedback for finessing."
+ },
+ "ContactSource": {
+  "confidence": "high",
+  "definition": "How the Contact was created (Auto Create, Email Message, Meeting Digest, Seller Home) when created by Einstein Activity Capture features."
+ },
+ "Contact_Status__c": {
+  "confidence": "medium",
+  "definition": "Lifecycle stage of the customer (Purchased, Onboarding, Engagement, Service Policy, Churn, Lost, Cancelled), defaulting to Purchased. Updated by the daily Customer Cancellations journey."
+ },
+ "CookieID__c": {
+  "confidence": "high",
+  "definition": "Web cookie identifier captured during the quote flow. Synced to Marketing Cloud and mapped to the Individual and email contact point in Data Cloud for identity matching."
+ },
+ "CreatedById": {
+  "confidence": "high",
+  "definition": "User or integration that created the Contact record."
+ },
+ "CreatedDate": {
+  "confidence": "high",
+  "definition": "Date and time the Contact record was created. Marketing Cloud onboarding, TDLI and No-App-No-Trip queries use it to find recently created customers."
+ },
+ "CreatedDate__c": {
+  "confidence": "low",
+  "definition": "Custom created-date stamp, likely from the source system rather than Salesforce; purpose not documented."
+ },
+ "Created_Account__c": {
+  "confidence": "medium",
+  "definition": "True when the customer has created their HiRoad app account. Synced to Marketing Cloud for onboarding journeys."
+ },
+ "Current_Journey__c": {
+  "confidence": "medium",
+  "definition": "Marketing journey the customer is currently in (Anniversary, Birthday, No App No Trip, Monthly Driving Stats, Success Kit, Renewal Survey, etc.)."
+ },
+ "Current_Term_Effective_Date__c": {
+  "confidence": "high",
+  "definition": "Effective date of the customer's current policy term. Digital wallet journeys compare it with the original effective date to tell new terms from renewals."
+ },
+ "Current_Term_Expiration_Date__c": {
+  "confidence": "high",
+  "definition": "Expiration date of the customer's current policy term. Merged into TDLI renewal emails."
+ },
+ "Customer_Number__c": {
+  "confidence": "high",
+  "definition": "The customer number from the policy system. Marketing Cloud dedupes Contacts on it and it is mapped to the Individual in Data Cloud."
+ },
+ "Customer_Persona__c": {
+  "confidence": "high",
+  "definition": "Persona layer v1 assignment, stamped nightly by the Customer360PersonaBatch Apex job using the same rules as the Customer 360 profile."
+ },
+ "DNR_Flag_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the do-not-renew flag from the related Account (policy)."
+ },
+ "DNR_Flag__c": {
+  "confidence": "high",
+  "definition": "Do-not-renew flag from the policy system. Journey queries exclude contacts flagged DNR from engagement sends."
+ },
+ "Department": {
+  "confidence": "high",
+  "definition": "Standard department field; not used for HiRoad policyholders."
+ },
+ "DepartmentGroup": {
+  "confidence": "high",
+  "definition": "Department group inferred by Salesforce (sales, finance, tech, support, etc.). Not relevant for policyholders."
+ },
+ "Distracted_Driving__c": {
+  "confidence": "medium",
+  "definition": "Latest distracted-driving telematics subscore for the driver, synced to Marketing Cloud for driving-feedback journeys."
+ },
+ "Driver_Role__c": {
+  "confidence": "high",
+  "definition": "Role of the person on the policy, such as PNI for the primary named insured. Journey queries restrict most sends to PNI contacts."
+ },
+ "Effective_Date_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the policy effective date from the related Account (policy)."
+ },
+ "Email": {
+  "confidence": "high",
+  "definition": "The Contact's email address. Primary send address for Marketing Cloud journeys (queries exclude records with no email) and the key for the Data Cloud email contact point and email engagement insight."
+ },
+ "EmailBouncedDate": {
+  "confidence": "high",
+  "definition": "Date and time of the most recent email bounce recorded by Salesforce."
+ },
+ "EmailBouncedReason": {
+  "confidence": "high",
+  "definition": "Reason text from the most recent email bounce recorded by Salesforce email bounce management."
+ },
+ "EmailClickLikelihood__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring likelihood that the customer clicks emails (Least to Most Likely). Written by the Update Contact Engagement Score journey."
+ },
+ "EmailClickScore__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring numeric click score, written by the Update Contact Engagement Score journey."
+ },
+ "EmailEngagementPersona__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement persona (loyalist, selective subscriber, window shopper, winback/dormant), written by the Update Contact Engagement Score journey."
+ },
+ "EmailOpenLikelihood__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring likelihood that the customer opens emails (Least to Most Likely). Written by the Update Contact Engagement Score journey."
+ },
+ "EmailOpenScore__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring numeric open score, written by the Update Contact Engagement Score journey."
+ },
+ "EmailSubscribeLikelihood__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring likelihood that the customer stays subscribed (Least to Most Likely). Written by the Update Contact Engagement Score journey."
+ },
+ "EmailSubscribeScore__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring numeric subscribe score, written by the Update Contact Engagement Score journey."
+ },
+ "Email_Verified__c": {
+  "confidence": "medium",
+  "definition": "True when the customer's email address has been verified. Included in renewal email journey queries."
+ },
+ "Entry_Date__c": {
+  "confidence": "low",
+  "definition": "Date the Contact entered a journey or program; purpose not documented."
+ },
+ "Fax": {
+  "confidence": "high",
+  "definition": "Standard fax number field; not used in the HiRoad data flows."
+ },
+ "FirstName": {
+  "confidence": "high",
+  "definition": "The person's first name. Synced to Marketing Cloud and used for personalization in onboarding, challenge, digital wallet and other journey emails and pushes."
+ },
+ "Future_Flag_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the future flag from the related Account (policy)."
+ },
+ "Future_Flag__c": {
+  "confidence": "medium",
+  "definition": "Flag from the policy system marking a policy with a future effective date. Synced to Marketing Cloud for journey eligibility."
+ },
+ "Gas_Buddy__c": {
+  "confidence": "low",
+  "definition": "Flag for participation in a GasBuddy partner promotion."
+ },
+ "Geolocation__Latitude__s": {
+  "confidence": "medium",
+  "definition": "Latitude component of the custom geolocation field."
+ },
+ "Geolocation__Longitude__s": {
+  "confidence": "medium",
+  "definition": "Longitude component of the custom geolocation field."
+ },
+ "Geolocation__c": {
+  "confidence": "medium",
+  "definition": "Custom geolocation (latitude/longitude) for the Contact."
+ },
+ "Group__c": {
+  "confidence": "low",
+  "definition": "Grouping label for the Contact, purpose not documented."
+ },
+ "HIGoal_DFDR_Completed__c": {
+  "confidence": "high",
+  "definition": "True when the customer has completed their current HiGoal."
+ },
+ "HIGoal_DFDR_Completion_Percentage__c": {
+  "confidence": "high",
+  "definition": "Formula: focus score divided by goal, times 100. The HiGoals journey splits on it (completed, halfway, etc.)."
+ },
+ "HIGoal_DFDR_Final_Focus_Score__c": {
+  "confidence": "high",
+  "definition": "Final focus score at the end of the HiGoal period. Merged into HiGoals completion emails and pushes."
+ },
+ "HIGoal_DFDR_Focus_Score__c": {
+  "confidence": "high",
+  "definition": "Current Distracted Free Driving focus score for the customer's active HiGoal, synced to Marketing Cloud for HiGoals progress emails."
+ },
+ "HIGoal_DFDR_Goal__c": {
+  "confidence": "high",
+  "definition": "Target focus score the customer committed to for the HiGoal. Compared with the final focus score to decide completion."
+ },
+ "HIGoal_DFDR_Start_Date__c": {
+  "confidence": "high",
+  "definition": "Date the customer's current HiGoal started. The HiGoals journey sends progress and completion messages on day offsets from it."
+ },
+ "HasOptedOutOfEmail": {
+  "confidence": "high",
+  "definition": "Standard email opt-out flag; when checked the person should not receive marketing email."
+ },
+ "Has_App__c": {
+  "confidence": "medium",
+  "definition": "Flag indicating the customer has installed the HiRoad app."
+ },
+ "Has_Auto__c": {
+  "confidence": "high",
+  "definition": "True when the customer holds a HiRoad auto policy. Used by the renters purchase confirmation query to identify auto customers who added renters."
+ },
+ "Has_Renters__c": {
+  "confidence": "high",
+  "definition": "True when the customer holds a HiRoad renters policy. Synced to Marketing Cloud for renters cross-sell targeting."
+ },
+ "Id": {
+  "confidence": "high",
+  "definition": "Salesforce record ID of the Contact. It is the join key used by Marketing Cloud queries (synced as Contact_Salesforce) and by Data Cloud contact-point and identity-resolution insights."
+ },
+ "In_Force_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the in-force flag from the related Account (policy)."
+ },
+ "Inception_Date__c": {
+  "confidence": "medium",
+  "definition": "Original inception date of the customer's policy. Used by formulas for the next anniversary date and number of years in force."
+ },
+ "Inception_transaction_date__c": {
+  "confidence": "high",
+  "definition": "Date and time of the policy inception transaction. Marketing Cloud uses it for tenure cutoffs (e.g. customers 30 or 180 days in) and it is mapped to the Individual in Data Cloud."
+ },
+ "Increase_Amount_Dollars_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the renewal increase dollar amount from the related Account (policy)."
+ },
+ "Increase_Amount_Dollars__c": {
+  "confidence": "high",
+  "definition": "Dollar amount of the renewal premium increase, stored as text and converted to a decimal in the renewal email queries."
+ },
+ "IndividualId": {
+  "confidence": "high",
+  "definition": "Lookup to the Individual record used for consent and data-privacy preferences."
+ },
+ "Inforce__c": {
+  "confidence": "medium",
+  "definition": "True when the customer's policy is currently in force."
+ },
+ "Internal_Traffic__c": {
+  "confidence": "low",
+  "definition": "Flag marking the Contact as internal (employee/test) traffic so it can be excluded from reporting."
+ },
+ "IsDeleted": {
+  "confidence": "high",
+  "definition": "Standard flag set by Salesforce when the Contact is moved to the Recycle Bin."
+ },
+ "IsEmailBounced": {
+  "confidence": "high",
+  "definition": "True when the Contact's email address has bounced and bounce management has flagged it."
+ },
+ "IsPriorityRecord": {
+  "confidence": "high",
+  "definition": "Standard 'Important' flag used by Sales Cloud Einstein / Sales Engagement features."
+ },
+ "Jigsaw": {
+  "confidence": "high",
+  "definition": "Legacy Data.com key for the Contact; Data.com is retired."
+ },
+ "JigsawContactId": {
+  "confidence": "high",
+  "definition": "Legacy Data.com contact ID; Data.com is retired."
+ },
+ "Jurisdiction__c": {
+  "confidence": "medium",
+  "definition": "Rating jurisdiction (state) of the policy, synced to Marketing Cloud for journey targeting."
+ },
+ "LID__LinkedIn_Company_Id__c": {
+  "confidence": "high",
+  "definition": "LinkedIn Sales Navigator package field: LinkedIn ID of the company. Not used for HiRoad customers."
+ },
+ "LID__LinkedIn_Member_Token__c": {
+  "confidence": "high",
+  "definition": "LinkedIn Sales Navigator package field: LinkedIn member token for the contact. Not used for HiRoad customers."
+ },
+ "LID__No_longer_at_Company__c": {
+  "confidence": "high",
+  "definition": "LinkedIn Sales Navigator data-validation flag indicating the contact is no longer at the associated company. Not relevant for HiRoad customers."
+ },
+ "LandingPageID__c": {
+  "confidence": "low",
+  "definition": "Identifier of the landing page the person arrived on during acquisition."
+ },
+ "LastActivityDate": {
+  "confidence": "high",
+  "definition": "Date of the most recent completed task or event logged against the Contact."
+ },
+ "LastCURequestDate": {
+  "confidence": "high",
+  "definition": "Date of the last Stay-in-Touch request sent for this Contact (legacy Salesforce feature)."
+ },
+ "LastCUUpdateDate": {
+  "confidence": "high",
+  "definition": "Date the Contact was last updated from a Stay-in-Touch response (legacy Salesforce feature)."
+ },
+ "LastModifiedById": {
+  "confidence": "high",
+  "definition": "User or integration that last changed the Contact."
+ },
+ "LastModifiedDate": {
+  "confidence": "high",
+  "definition": "Date and time the Contact was last changed by a user or integration."
+ },
+ "LastName": {
+  "confidence": "high",
+  "definition": "The person's last name. Synced to Marketing Cloud and used for personalization across engagement journeys; mapped to the Individual data model in Data Cloud."
+ },
+ "LastReferencedDate": {
+  "confidence": "high",
+  "definition": "Timestamp of when the current user last viewed a record related to this Contact."
+ },
+ "LastViewedDate": {
+  "confidence": "high",
+  "definition": "Timestamp of when the current user last viewed this record."
+ },
+ "Last_App_Open_Date__c": {
+  "confidence": "high",
+  "definition": "Date the HiRoad app was last opened by the customer."
+ },
+ "Last_Known_Trip_Date__c": {
+  "confidence": "high",
+  "definition": "Date of the most recent telematics trip recorded for the driver. Used in app and trip-activity journeys and mapped to the Individual in Data Cloud."
+ },
+ "Latest_Payment_Date__c": {
+  "confidence": "high",
+  "definition": "Date and time of the customer's most recent payment. Non-pay journeys compare it with the invoice due date to find paid-up and delinquent customers."
+ },
+ "LeadSource": {
+  "confidence": "high",
+  "definition": "Marketing source the person came from (Quote Page, Rate Compare Tool, Facebook, Google AdWords, Customer Referral, etc.). Usually carried over from the converted Lead."
+ },
+ "Lifetime_Savings_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling lifetime savings from the related Account (policy)."
+ },
+ "Lifetime_Savings__c": {
+  "confidence": "high",
+  "definition": "Cumulative dollar savings the customer has earned through telematics discounts. Synced to Marketing Cloud and mapped to the Individual in Data Cloud."
+ },
+ "Location_Permission_Enabled__c": {
+  "confidence": "high",
+  "definition": "True when the app's location permission is enabled on the customer's phone. Updated by the Permission Settings journey and used by the Success Kit journey."
+ },
+ "Logged_Trip__c": {
+  "confidence": "high",
+  "definition": "True when the customer has logged at least one telematics trip. Used in journey queries for trip-based eligibility."
+ },
+ "MailingAddress": {
+  "confidence": "high",
+  "definition": "Compound field combining the mailing street, city, state, postal code, country and geocode components."
+ },
+ "MailingCity": {
+  "confidence": "high",
+  "definition": "City of the Contact's mailing address. Synced to Marketing Cloud for journey data and feeds the Data Cloud address contact point."
+ },
+ "MailingCountry": {
+  "confidence": "high",
+  "definition": "Country of the Contact's mailing address. Feeds the Data Cloud address contact point and address data-quality insight."
+ },
+ "MailingGeocodeAccuracy": {
+  "confidence": "high",
+  "definition": "How precisely the mailing address was geocoded (Address, Street, Zip, City, etc.). Set by Salesforce geocoding rules."
+ },
+ "MailingLatitude": {
+  "confidence": "high",
+  "definition": "Latitude of the geocoded mailing address, populated by Salesforce data integration rules when geocoding is enabled."
+ },
+ "MailingLongitude": {
+  "confidence": "high",
+  "definition": "Longitude of the geocoded mailing address, populated by Salesforce data integration rules when geocoding is enabled."
+ },
+ "MailingPostalCode": {
+  "confidence": "high",
+  "definition": "ZIP or postal code of the Contact's mailing address. Synced to Marketing Cloud and feeds the Data Cloud address contact point."
+ },
+ "MailingState": {
+  "confidence": "high",
+  "definition": "State or province of the Contact's mailing address. Marketing Cloud queries filter on it to build state-specific audiences (for example AZ customer lists and RI eligibility checks)."
+ },
+ "MailingStreet": {
+  "confidence": "high",
+  "definition": "Street portion of the Contact's mailing address. Feeds the Data Cloud address contact point and address data-quality insight."
+ },
+ "MasterRecordId": {
+  "confidence": "high",
+  "definition": "If this Contact was merged into another, holds the ID of the surviving master Contact record."
+ },
+ "Master_Record__c": {
+  "confidence": "low",
+  "definition": "Flag marking this as the master record among duplicate Contacts."
+ },
+ "Max_Quote_Step__c": {
+  "confidence": "low",
+  "definition": "Furthest step reached in the online quote flow, carried over from the Lead."
+ },
+ "MiddleName": {
+  "confidence": "high",
+  "definition": "The person's middle name (standard Salesforce field, rarely populated here)."
+ },
+ "MobilePhone": {
+  "confidence": "high",
+  "definition": "Standard mobile phone number field. In this org the Phone field, not this one, carries the number used for SMS."
+ },
+ "Mobile_Opt_Out_Date__c": {
+  "confidence": "high",
+  "definition": "Date and time the customer opted out of SMS. Set by the SMS opt-out journey and synced to Marketing Cloud for suppression."
+ },
+ "Monthly_Safe_Driving_Discount__c": {
+  "confidence": "high",
+  "definition": "Monthly dollar-value safe driving discount on the policy. Merged into TDLI new and renewing customer emails."
+ },
+ "Motion_Permission_Enabled__c": {
+  "confidence": "high",
+  "definition": "True when the app's motion permission is enabled on the customer's phone. Updated by the Permission Settings journey and used by the Success Kit journey."
+ },
+ "Name": {
+  "confidence": "high",
+  "definition": "Concatenated full name derived from first and last name. Used for personalization in the TDLI renewing-customer email."
+ },
+ "Next_Birth_Date__c": {
+  "confidence": "high",
+  "definition": "Formula computing the customer's next upcoming birthday from their birthdate, for the Birthday journey."
+ },
+ "Next_Year_Anniversary_Date__c": {
+  "confidence": "high",
+  "definition": "Formula computing the next upcoming policy anniversary from the inception date. Used for the Anniversary journey."
+ },
+ "Normalized_Churn_Risk_Score__c": {
+  "confidence": "medium",
+  "definition": "Churn risk score from the Data Cloud model normalized to a comparable scale."
+ },
+ "OS_Version__c": {
+  "confidence": "medium",
+  "definition": "Operating-system version of the phone running the HiRoad app, synced to Marketing Cloud for app-related journeys such as accident detection."
+ },
+ "Offered_Rate_Change_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the offered rate change from the related Account (policy)."
+ },
+ "Offered_Rate_Change__c": {
+  "confidence": "high",
+  "definition": "Offered rate change on the renewal, stored as text and merged into renewal email journeys."
+ },
+ "OwnerId": {
+  "confidence": "high",
+  "definition": "Salesforce user who owns the Contact record."
+ },
+ "Pending_Cancel_Flag_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the pending cancel flag from the related Account (policy)."
+ },
+ "Pending_Cancel_Flag__c": {
+  "confidence": "medium",
+  "definition": "True when the policy is pending cancellation (for example for non-payment). Synced to Marketing Cloud for journey suppression."
+ },
+ "Persona_Assigned_Date__c": {
+  "confidence": "high",
+  "definition": "Date the customer persona was last stamped by the nightly persona batch."
+ },
+ "Persona_Confidence__c": {
+  "confidence": "high",
+  "definition": "High, Medium or Low confidence for the assigned customer persona."
+ },
+ "Phone": {
+  "confidence": "high",
+  "definition": "Primary phone number for the Contact (labelled Business Phone). Used as the SMS number in Marketing Cloud journeys and non-pay texts, and feeds the Data Cloud phone contact point and SMS engagement insight."
+ },
+ "Phone_Model__c": {
+  "confidence": "medium",
+  "definition": "Model of the phone running the HiRoad app, from the app/telematics feed."
+ },
+ "PhotoUrl": {
+  "confidence": "high",
+  "definition": "URL of the Contact's profile photo (standard Salesforce social/photo field)."
+ },
+ "PolicyStatusCd__c": {
+  "confidence": "low",
+  "definition": "Policy status code from the policy system, a coded counterpart to the text policy status."
+ },
+ "PolicyStatus__c": {
+  "confidence": "medium",
+  "definition": "Text status of the customer's policy, such as Inforce, Canceled, Suppressed or State Farm, with variants noting who canceled or an open Zendesk ticket."
+ },
+ "Policy_Effective_Date__c": {
+  "confidence": "high",
+  "definition": "Effective date of the policy. Marketing Cloud derives weeks since inception from it for engagement timing, and the Contact Cancellation insight in Data Cloud uses it for tenure."
+ },
+ "Policy_Number__c": {
+  "confidence": "high",
+  "definition": "The customer's HiRoad policy number. Used to join Contacts to policy, billing and cancellation data in Marketing Cloud queries."
+ },
+ "Policy_Purchase_Date__c": {
+  "confidence": "medium",
+  "definition": "Date the customer purchased the policy."
+ },
+ "Policy_Renewal_Date_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the policy renewal date from the related Account (policy)."
+ },
+ "Policy_Renewal_Date__c": {
+  "confidence": "high",
+  "definition": "Date the customer's policy renews. Merged into the rate-increase renewal emails."
+ },
+ "Policy_Renewal_Rate_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the policy renewal rate from the related Account (policy)."
+ },
+ "Policy_Renewal_Rate__c": {
+  "confidence": "high",
+  "definition": "Premium rate at which the customer's policy will renew. Used by renewal email journey queries."
+ },
+ "Policy_Start_Date__c": {
+  "confidence": "low",
+  "definition": "Start date of the policy; a separate effective date field is the one journeys use."
+ },
+ "Policy_Status_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the policy status from the related Account (policy)."
+ },
+ "Primary_Contact__c": {
+  "confidence": "low",
+  "definition": "Flag marking this person as the primary contact on the policy household."
+ },
+ "Property_Ownership_Status__c": {
+  "confidence": "high",
+  "definition": "Whether the customer rents or owns (e.g. Rent, Own, unknown). Renters cross-sell queries target Rent and unknown values."
+ },
+ "Purchased_Price__c": {
+  "confidence": "medium",
+  "definition": "Price the customer paid for the policy, stored as text and merged into renewal email journeys."
+ },
+ "Purchased__c": {
+  "confidence": "medium",
+  "definition": "True when the person has purchased a policy."
+ },
+ "Push_Enabled__c": {
+  "confidence": "high",
+  "definition": "True when the customer has push notifications enabled in the HiRoad app. Onboarding and push-enablement journeys branch on it."
+ },
+ "RecordTypeId": {
+  "confidence": "high",
+  "definition": "Record type assigned to the Contact. Included in the Marketing Cloud subscriber-data query so the record type is available in the synced Contact data."
+ },
+ "Renewal_Offer_Date_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the renewal offer date from the related Account (policy)."
+ },
+ "Renewal_Offer_Date__c": {
+  "confidence": "high",
+  "definition": "Date the renewal offer was issued. Renewal email journey queries pick contacts whose offer date was one or two days ago."
+ },
+ "Renters_Quote_Session_Key__c": {
+  "confidence": "high",
+  "definition": "Session key of the customer's saved renters quote. The Renters Saved Quote journey targets contacts where this is populated."
+ },
+ "ReportsToId": {
+  "confidence": "high",
+  "definition": "Standard lookup to the Contact this person reports to; not meaningful for HiRoad policyholders."
+ },
+ "Roadside_Coverage__c": {
+  "confidence": "medium",
+  "definition": "True when the policy includes roadside coverage."
+ },
+ "SMS_Policy_Opt_In__c": {
+  "confidence": "high",
+  "definition": "True when the customer opted in to policy-related SMS. The Non-Payment journey splits on it to send SMS plus email versus email only."
+ },
+ "Salutation": {
+  "confidence": "high",
+  "definition": "Standard honorific for the person (Mr., Ms., Mrs., Dr., Prof.)."
+ },
+ "Session_ID__c": {
+  "confidence": "low",
+  "definition": "Web session identifier captured during the quote or purchase flow."
+ },
+ "Suffix": {
+  "confidence": "high",
+  "definition": "Name suffix such as Jr. or III (standard Salesforce field)."
+ },
+ "SystemModstamp": {
+  "confidence": "high",
+  "definition": "System timestamp of the last change, including automated system updates."
+ },
+ "Telematic_Discount_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the telematics discount from the related Account (policy)."
+ },
+ "Term_Renewal_Rate__c": {
+  "confidence": "high",
+  "definition": "Renewal rate for the term pushed from the data warehouse, calculated as the renewal base rate minus the monthly safe driving discount."
+ },
+ "Title": {
+  "confidence": "high",
+  "definition": "Standard job title field; not used for HiRoad policyholders."
+ },
+ "TitleType": {
+  "confidence": "high",
+  "definition": "Seniority level inferred by Salesforce (ceo, executive, vp, directorOrManager, individualContributor). Not relevant for policyholders."
+ },
+ "Total_Earned_Discount_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the total earned discount from the related Account (policy)."
+ },
+ "Tune_Up_Onboarding_Complete_Date__c": {
+  "confidence": "high",
+  "definition": "Date the customer completed Tune Up onboarding in the app. The Challenges journey enters contacts two days after this date."
+ },
+ "Typing_Date__c": {
+  "confidence": "medium",
+  "definition": "Date the persona type (Customer, Prospect, Press, Legal, etc.) was assigned to the Contact."
+ },
+ "Typing_Type__c": {
+  "confidence": "medium",
+  "definition": "Persona type of the Contact (Customer, Prospect, Press, Legal - Hostile/Friendly, Auto Rental/Repair, Nontarget, etc.), defaulting to Customer."
+ },
+ "Underwriting_Score_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the underwriting score from the related Account (policy)."
+ },
+ "Underwriting_Score__c": {
+  "confidence": "low",
+  "definition": "Underwriting score for the customer from the policy system; the Account carries the policy-level version."
+ },
+ "Upcoming_Billing_Amount__c": {
+  "confidence": "high",
+  "definition": "Amount of the customer's next bill. Merged into Welcome journey emails and synced for onboarding queries."
+ },
+ "Upcoming_Billing_Date_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the upcoming billing date from the related Account (policy)."
+ },
+ "UpdatedDate__c": {
+  "confidence": "low",
+  "definition": "Custom updated-date stamp, likely set by an external load; purpose not documented."
+ },
+ "Vehicle_Make_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the vehicle make from the related Account (policy)."
+ },
+ "Vehicle_Make__c": {
+  "confidence": "medium",
+  "definition": "Make of the insured vehicle, synced to Marketing Cloud for use in engagement journeys."
+ },
+ "Vehicle_Model_Policy__c": {
+  "confidence": "high",
+  "definition": "Formula pulling the vehicle model from the related Account (policy)."
+ },
+ "Vehicle_Model__c": {
+  "confidence": "medium",
+  "definition": "Model of the insured vehicle, synced to Marketing Cloud for use in engagement journeys."
+ },
+ "Voluntary_Churn_Band__c": {
+  "confidence": "medium",
+  "definition": "Voluntary churn risk band derived from the score: High, Moderate or Low."
+ },
+ "Voluntary_Churn_Discount_Change__c": {
+  "confidence": "high",
+  "definition": "Change in earned driving discount in dollars per month, latest cycle minus the cycle about three months earlier; negative means the discount shrank. A voluntary churn model input."
+ },
+ "Voluntary_Churn_Driving_Score__c": {
+  "confidence": "high",
+  "definition": "Mean of the four display driving subscores for the latest cycle before voluntary churn scoring."
+ },
+ "Voluntary_Churn_Offer_Change__c": {
+  "confidence": "high",
+  "definition": "Renewal offer change in dollars per month in the 60 days before voluntary churn scoring, from Renewal Offer records."
+ },
+ "Voluntary_Churn_Reason__c": {
+  "confidence": "high",
+  "definition": "Primary churn reason from the Data Cloud scoring transform (PRICE_SHOCK, DISCOUNT_EROSION, NEW_CUSTOMER, DISENGAGED, LOW_SAVINGS, GENERAL). Drives journey content."
+ },
+ "Voluntary_Churn_Risk_Score__c": {
+  "confidence": "medium",
+  "definition": "Voluntary churn risk score for the customer from the Data Cloud scoring transform."
+ },
+ "Voluntary_Churn_Scored_At__c": {
+  "confidence": "medium",
+  "definition": "Date the voluntary churn model last scored this customer."
+ },
+ "Voluntary_Churn_Top_Factors__c": {
+  "confidence": "medium",
+  "definition": "Top contributing factors behind the customer's voluntary churn score, as text."
+ },
+ "X18_Case_Sensitive_ID__c": {
+  "confidence": "high",
+  "definition": "Formula producing the 18-character case-safe version of the Contact ID for use in exports and joins."
+ },
+ "Yesterday_Renewal_Rate_Increase_PCT__c": {
+  "confidence": "low",
+  "definition": "Prior-day renewal rate increase percentage, stored as text."
+ },
+ "ZD_Email_Tag__c": {
+  "confidence": "low",
+  "definition": "Tag used to match the Contact to Zendesk support email activity. Not referenced by any journey or insight."
+ },
+ "account_id__c": {
+  "confidence": "high",
+  "definition": "The HiRoad app/platform account identifier for the customer. Marketing Cloud uses it as the Contact Key to join subscriber, push and behavioral data to the Contact."
+ },
+ "canceled__c": {
+  "confidence": "high",
+  "definition": "True when the customer's policy has been canceled. Marketing Cloud customer lists filter on it to separate current from cancelled customers."
+ },
+ "challenges__c": {
+  "confidence": "high",
+  "definition": "Text list of the challenge IDs the customer is enrolled in from the app. Challenge and Hands-off Phone journeys match on specific challenge IDs."
+ },
+ "cohorts_l__c": {
+  "confidence": "medium",
+  "definition": "List of app cohort identifiers for the customer. Synced to Marketing Cloud for onboarding, push and renters journeys."
+ },
+ "driving_patterns__c": {
+  "confidence": "medium",
+  "definition": "Latest driving-patterns telematics subscore for the driver, synced to Marketing Cloud for driving-feedback journeys."
+ },
+ "et4ae5__HasOptedOutOfMobile__c": {
+  "confidence": "high",
+  "definition": "Marketing Cloud Connect mobile (SMS) opt-out flag. Journey queries exclude contacts where this is true before sending texts; set when the customer replies STOP."
+ },
+ "et4ae5__Mobile_Country_Code__c": {
+  "confidence": "high",
+  "definition": "Marketing Cloud Connect country code for the mobile number, defaulting to US."
+ },
+ "higoal_current_goal_reward_amount__c": {
+  "confidence": "high",
+  "definition": "Reward amount in dollars for the customer's current HiGoal. Merged into the HiGoals completion email."
+ },
+ "higoal_rewards_total__c": {
+  "confidence": "high",
+  "definition": "Total HiGoal rewards the customer has earned. The HiGoals journey only continues customers below the $50 reward cap."
+ },
+ "inception_transaction_timestamps_user__c": {
+  "confidence": "medium",
+  "definition": "Policy inception transaction timestamp in the customer's local time. Marketing Cloud casts it to a date to pick inception cohorts."
+ },
+ "inception_transaction_timestamps_utc__c": {
+  "confidence": "medium",
+  "definition": "UTC timestamp of the policy inception transaction, synced to Marketing Cloud."
+ },
+ "of_Emails_Received__c": {
+  "confidence": "low",
+  "definition": "Count of marketing emails the Contact has received."
+ },
+ "of_Lifetime_Trips__c": {
+  "confidence": "high",
+  "definition": "Total number of telematics trips recorded for the customer. The No App No Trips journey targets customers with zero or null trips."
+ },
+ "of_Sessions__c": {
+  "confidence": "low",
+  "definition": "Count of web or app sessions attributed to the Contact."
+ },
+ "of_Years_Inforce__c": {
+  "confidence": "high",
+  "definition": "Formula: current year minus the inception year, giving the number of years the customer has been in force."
+ },
+ "optimizely_dna__Visitor_Id__c": {
+  "confidence": "medium",
+  "definition": "Visitor ID from the Optimizely managed package, linking the Contact to an Optimizely web experiment visitor."
+ },
+ "platform__c": {
+  "confidence": "high",
+  "definition": "Mobile platform of the customer's HiRoad app, such as ios or android. Digital wallet journeys split on it to send iOS or Android versions of the email."
+ },
+ "rank_relative__c": {
+  "confidence": "low",
+  "definition": "Relative rank value for the driver, likely from a telematics or persona feed. Not referenced by any journey or insight."
+ },
+ "rh2__Currency_Test__c": {
+  "confidence": "high",
+  "definition": "Test field from the Rollup Helper (rh2) managed package; holds no business data."
+ },
+ "rh2__Describe__c": {
+  "confidence": "high",
+  "definition": "Lookup from the Rollup Helper (rh2) managed package used for its object describe metadata; no business meaning."
+ },
+ "rh2__Formula_Test__c": {
+  "confidence": "high",
+  "definition": "Rollup Helper (rh2) test formula that mirrors the package's currency test field; no business data."
+ },
+ "rh2__Integer_Test__c": {
+  "confidence": "high",
+  "definition": "Test number field from the Rollup Helper (rh2) managed package; no business data."
+ },
+ "safe_speeds__c": {
+  "confidence": "medium",
+  "definition": "Latest safe-speeds telematics subscore for the driver, synced to Marketing Cloud for driving-feedback journeys."
+ },
+ "smooth_driving__c": {
+  "confidence": "medium",
+  "definition": "Latest smooth-driving telematics subscore for the driver, synced to Marketing Cloud for driving-feedback journeys."
+ },
+ "telematic_discount__c": {
+  "confidence": "high",
+  "definition": "Telematics discount percentage earned on the policy, stored as text (e.g. 0.3). Journey queries use thresholds like 0.3 or 0.4 to target high-discount drivers."
+ },
+ "total_earned_discount__c": {
+  "confidence": "high",
+  "definition": "Total earned telematics discount for the latest cycle. Merged into the Monthly Driving Stats email."
+ },
+ "upcoming_billing_date__c": {
+  "confidence": "high",
+  "definition": "Date of the customer's next bill. Journey queries select contacts billed a set number of days out (e.g. 20 days) for reminders."
+ }
+}

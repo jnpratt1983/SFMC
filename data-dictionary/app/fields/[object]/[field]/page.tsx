@@ -40,6 +40,13 @@ export default async function FieldPage({ params }: { params: Promise<{ object: 
           <div className="eyebrow">{objectLabel(f.object)} · {f.custom ? "custom field" : "standard field"}</div>
           <h1 className="h-display text-4xl mt-1 break-all"><span className="mono text-[0.9em] font-normal">{f.apiName}</span></h1>
           <p className="text-ink-2 text-lg mt-1">{f.label}</p>
+          <p className="mt-3 max-w-3xl text-[1.05rem] leading-relaxed">
+            {f.definition ? f.definition : <span className="text-ink-3">No definition yet. Add one to <span className="mono">definitions/{f.object}.json</span> in the repo.</span>}
+          </p>
+          {f.definitionSource && <div className="mt-2 flex flex-wrap gap-2">
+            <Chip>{f.definitionSource === "dictionary" ? "Dictionary definition" : "From the Salesforce field description"}</Chip>
+            {f.definitionConfidence && f.definitionConfidence !== "high" && <Chip tone="accent">{f.definitionConfidence === "low" ? "Low confidence · please review" : "Medium confidence"}</Chip>}
+          </div>}
         </div>
         <div className="flex flex-wrap gap-2">
           {f.sfmc.syncedDE ? <Chip tone="fill">Marketing Cloud · {f.sfmc.syncedDE}</Chip> : <Chip>Not synced to Marketing Cloud</Chip>}
@@ -55,7 +62,7 @@ export default async function FieldPage({ params }: { params: Promise<{ object: 
               {rows.filter(([, v]) => v != null && v !== "").map(([k, v]) => (<div key={k} className="contents"><dt>{k}</dt><dd>{v}</dd></div>))}
             </dl>
             {(f.description || f.helpText) && <div className="rule mt-4 pt-4 text-sm">
-              {f.description && <p><span className="eyebrow block mb-1">Description</span>{f.description}</p>}
+              {f.description && <p><span className="eyebrow block mb-1">Salesforce description</span>{f.description}</p>}
               {f.helpText && <p className="mt-3"><span className="eyebrow block mb-1">Help text</span>{f.helpText}</p>}
             </div>}
             {f.formula && <div className="rule mt-4 pt-4"><span className="eyebrow block mb-2">Formula</span><pre className="sql">{f.formula}</pre></div>}

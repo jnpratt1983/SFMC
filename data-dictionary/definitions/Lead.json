@@ -1,0 +1,914 @@
+{
+ "Account_Created__c": {
+  "confidence": "medium",
+  "definition": "True once the lead created an app account."
+ },
+ "Address": {
+  "confidence": "high",
+  "definition": "Standard compound address field combining street, city, state, postal code, country and geolocation."
+ },
+ "Age_Range__c": {
+  "confidence": "medium",
+  "definition": "Age bracket of the lead as text. Feeds the NBA prediction object in Data Cloud."
+ },
+ "App_Downloaded__c": {
+  "confidence": "medium",
+  "definition": "True once the lead downloaded the HiRoad app."
+ },
+ "Audience_Key__c": {
+  "confidence": "high",
+  "definition": "Formula returning the email address, used as the audience key when the AZ lead audience queries load leads into advertising audience data extensions."
+ },
+ "Auto_Renters_Bundle_OptIn_Flag__c": {
+  "confidence": "high",
+  "definition": "True when the lead opted into the auto plus renters bundle in the quote. Built for the Renters Bundle Coverages nurture test; the Coverages journey splits on it to send the Bundled email variants."
+ },
+ "CTA_Click_Formula__c": {
+  "confidence": "high",
+  "definition": "Formula checkbox that is true when a Facebook click ID is present on the lead."
+ },
+ "CTA_Click__c": {
+  "confidence": "medium",
+  "definition": "True when the lead clicked the Get a Quote call to action, per the field help text."
+ },
+ "Call_Score__c": {
+  "confidence": "high",
+  "definition": "Phone propensity score copied from Data Cloud. Selected by the Review NBA query and snapshotted by the CALL, CALL + SMS and SMS update steps in the Review journey."
+ },
+ "Campaignid__c": {
+  "confidence": "low",
+  "definition": "Campaign ID captured with the lead, per the help text. Source not evident."
+ },
+ "City": {
+  "confidence": "high",
+  "definition": "Standard city of the lead's address. Selected by the Purchase journey query and copied into the AZ lead audience data extensions."
+ },
+ "City__c": {
+  "confidence": "medium",
+  "definition": "Custom text copy of the city. The AZ lead audience queries populate a column of this name from the standard city."
+ },
+ "Company": {
+  "confidence": "medium",
+  "definition": "Standard Salesforce Company field, relabeled Household in this org. Salesforce requires a value on every lead; HiRoad leads are individual people rather than businesses."
+ },
+ "Conversion_Attempts__c": {
+  "confidence": "high",
+  "definition": "Number of times LeadConversionBatch has attempted to convert this lead."
+ },
+ "Conversion_Error__c": {
+  "confidence": "high",
+  "definition": "Error message from LeadConversionBatch when a conversion attempt fails."
+ },
+ "Conversion_Status__c": {
+  "confidence": "high",
+  "definition": "Status of the LeadConversionBatch job for purchased leads: Queued, Converted, Failed, Needs Review or Prior Lead."
+ },
+ "ConvertedAccountId": {
+  "confidence": "high",
+  "definition": "Standard ID of the Account created or matched when the lead was converted."
+ },
+ "ConvertedContactId": {
+  "confidence": "high",
+  "definition": "Standard ID of the Contact created or matched when the lead was converted."
+ },
+ "ConvertedDate": {
+  "confidence": "high",
+  "definition": "Standard date the lead was converted to a Contact and Account."
+ },
+ "ConvertedOpportunityId": {
+  "confidence": "high",
+  "definition": "Standard ID of the Opportunity created on conversion, if one was created."
+ },
+ "Converted_Source__c": {
+  "confidence": "medium",
+  "definition": "Restricted picklist recording the source credited at conversion (Compare.com, Mindful Driver, Re-engagement, Quote Page, etc.)."
+ },
+ "CookieIDTimeDate__c": {
+  "confidence": "low",
+  "definition": "Date and time the cookie ID was captured."
+ },
+ "CookieID__c": {
+  "confidence": "high",
+  "definition": "Website cookie ID captured in the quote flow. Journey queries select it, the Purchase and Review SMS include it, and Data Cloud uses it to tie the lead to the Individual and email contact point."
+ },
+ "Country": {
+  "confidence": "high",
+  "definition": "Standard country of the lead's address. Feeds the Data Cloud address contact point."
+ },
+ "County__c": {
+  "confidence": "medium",
+  "definition": "County of the lead's address."
+ },
+ "CreatedById": {
+  "confidence": "high",
+  "definition": "Standard ID of the user that created the lead. One Marketing Cloud query excludes leads created by a specific integration user."
+ },
+ "CreatedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp when the lead was created. Journey queries use it to pick up leads created today or in the last 7 days, and it anchors the response-model training sets and the Eligible to Requote label."
+ },
+ "CreatedDate__c": {
+  "confidence": "low",
+  "definition": "Custom date labeled Created Date. Purpose beyond the standard created date not evident."
+ },
+ "Created_Date_Time__c": {
+  "confidence": "high",
+  "definition": "Formula returning the standard created date/time, exposed for reports and integrations."
+ },
+ "Credit_Score__c": {
+  "confidence": "medium",
+  "definition": "Credit score value captured for the lead during quoting. A feature in the email, call, SMS and channel-uplift response-model training sets and the NBA prediction object."
+ },
+ "Current_Journey__c": {
+  "confidence": "medium",
+  "definition": "Picklist naming which quote-abandon journey the lead is currently in (Quote Discovery, Purchase, Coverages, Drivers, Vehicles, Re-engagement, Saved Quote) or None."
+ },
+ "Currently_Insured_Status__c": {
+  "confidence": "high",
+  "definition": "Indicates if the lead is currently insured: CI (insured), NCI (not insured) or NA. A feature in the response-model training sets."
+ },
+ "Customer_Number__c": {
+  "confidence": "low",
+  "definition": "Customer number assigned to the lead, presumably once they purchase. Population not evident."
+ },
+ "Date_of_Birth__c": {
+  "confidence": "high",
+  "definition": "The lead's date of birth from the quote. Synced to the Data Cloud Lead object."
+ },
+ "Days_Since_Created__c": {
+  "confidence": "high",
+  "definition": "Formula: days since the lead was created. The AZ and RI lead audience queries use it to bound audiences at 60 or 270 days, and it feeds the NBA prediction object."
+ },
+ "Days_Since_Purchased__c": {
+  "confidence": "high",
+  "definition": "Formula: days between today and the purchase date. Synced to the Data Cloud Lead and NBA prediction objects."
+ },
+ "Declined__c": {
+  "confidence": "high",
+  "definition": "True when the customer was declined during quoting. Journey queries exclude declined leads, the exit query removes them, and Data Cloud counts declines per unified individual."
+ },
+ "Description": {
+  "confidence": "high",
+  "definition": "Standard free-text description of the lead."
+ },
+ "Disabled_At__c": {
+  "confidence": "medium",
+  "definition": "Date and time the lead's account was disabled; a change to the lead triggers the Account Deletion Confirmation journey."
+ },
+ "DoNotCall": {
+  "confidence": "high",
+  "definition": "Standard checkbox indicating the person has asked not to be called."
+ },
+ "Driver_Id__c": {
+  "confidence": "medium",
+  "definition": "Telematics driver identifier for the lead. Synced to the Data Cloud Lead object."
+ },
+ "Eligibile_discount__c": {
+  "confidence": "medium",
+  "definition": "Discount percentage the lead has earned, used by the Trial Mode Requote queries which select leads with a discount above 25 percent."
+ },
+ "Eligible_to_Re_quote__c": {
+  "confidence": "low",
+  "definition": "Checkbox marking the lead eligible to be re-quoted. No automation populating it was found."
+ },
+ "Eligible_to_Requote_Label__c": {
+  "confidence": "medium",
+  "definition": "Checkbox label for the requote model, synced to the Data Cloud Lead object."
+ },
+ "Email": {
+  "confidence": "high",
+  "definition": "The lead's email address, the main contact key for quote-abandon journeys. Every journey query requires it, decision splits use it to choose Email vs Email & SMS paths, and it feeds the Data Cloud email contact point."
+ },
+ "EmailBouncedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of the most recent email bounce for the lead."
+ },
+ "EmailBouncedReason": {
+  "confidence": "high",
+  "definition": "Standard reason text recorded when an email to the lead bounced. Maps to the latest bounce reason on the Data Cloud email contact point."
+ },
+ "EmailClickLikelihood__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring email click likelihood bucket (Least to Most Likely), written by the Update Lead Engagement Score journey."
+ },
+ "EmailClickScore__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring email click score (0-1), written by the Update Lead Engagement Score journey. Feeds the NBA prediction object."
+ },
+ "EmailEngagementPersona__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring persona (winback/dormant, window shopper, selective subscriber, loyalist), written by the Update Lead Engagement Score journey."
+ },
+ "EmailOpenLikelihood__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring email open likelihood bucket (Least to Most Likely), written by the Update Lead Engagement Score journey."
+ },
+ "EmailOpenScore__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring email open score (0-1), written by the Update Lead Engagement Score journey. Feeds the NBA prediction object."
+ },
+ "EmailSubscribeLikelihood__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring subscribe-retention likelihood bucket, written by the Update Lead Engagement Score journey."
+ },
+ "EmailSubscribeScore__c": {
+  "confidence": "high",
+  "definition": "Einstein Engagement Scoring subscribe-retention score (0-1), written by the Update Lead Engagement Score journey."
+ },
+ "Email_Score__c": {
+  "confidence": "high",
+  "definition": "Email propensity score copied from Data Cloud. Selected by the Review NBA query and snapshotted by the Review journey update steps."
+ },
+ "Fax": {
+  "confidence": "high",
+  "definition": "Standard fax number field. Not used by HiRoad processes."
+ },
+ "FirstName": {
+  "confidence": "high",
+  "definition": "The lead's first name as entered in the quote flow. Used as the greeting in the quote-abandon emails and SMS (Compare, Coverages, Drivers, Purchase, Review, Saved Quote) and synced to Data Cloud."
+ },
+ "FirstTripStartTime__c": {
+  "confidence": "medium",
+  "definition": "Timestamp when the lead's first recorded trip started, from the telematics feed."
+ },
+ "First_Month_Discount_Amount__c": {
+  "confidence": "high",
+  "definition": "Currency amount of the discount applied to the first month of the quote. Merged into the Coverages journey emails and selected by the Compare, Drivers, Purchase, Quote Discovery and Review NBA queries."
+ },
+ "First_Trip_Taken__c": {
+  "confidence": "medium",
+  "definition": "Date of the lead's first recorded trip. Synced to the Data Cloud Lead object."
+ },
+ "Five_Year_LTV__c": {
+  "confidence": "medium",
+  "definition": "Predicted five-year lifetime value of the lead. The Purchase journey query floors it to a whole number."
+ },
+ "Five_Year_PLE__c": {
+  "confidence": "high",
+  "definition": "Five Year Policy Lifetime Expectancy for the lead. Synced to the Data Cloud Lead object."
+ },
+ "Gender__c": {
+  "confidence": "high",
+  "definition": "Restricted picklist for the lead's gender: Male, Female, Non-Binary."
+ },
+ "GeocodeAccuracy": {
+  "confidence": "high",
+  "definition": "Standard picklist describing how precisely the address was geocoded (Address, Street, Zip, City, State, Unknown, etc.)."
+ },
+ "Geolocation__Latitude__s": {
+  "confidence": "medium",
+  "definition": "Latitude component of the custom geolocation field."
+ },
+ "Geolocation__Longitude__s": {
+  "confidence": "medium",
+  "definition": "Longitude component of the custom geolocation field."
+ },
+ "Geolocation__c": {
+  "confidence": "medium",
+  "definition": "Custom geolocation of the lead, stored as latitude and longitude components."
+ },
+ "Hard_Brake__c": {
+  "confidence": "medium",
+  "definition": "Hard braking metric from trial-mode telematics, stored as text."
+ },
+ "Hard_Turn__c": {
+  "confidence": "medium",
+  "definition": "Hard turning metric from trial-mode telematics, stored as text."
+ },
+ "HasOptedOutOfEmail": {
+  "confidence": "high",
+  "definition": "Standard email opt-out checkbox. Journey queries exclude leads where it is true, and the Review NBA journey Channel Availability split uses it to decide whether email can be sent."
+ },
+ "HasOptedOutOfFax": {
+  "confidence": "high",
+  "definition": "Standard fax opt-out checkbox. Not used by HiRoad."
+ },
+ "Id": {
+  "confidence": "high",
+  "definition": "Salesforce record ID of the lead. It is the key nearly every Marketing Cloud quote-abandon and NBA query selects, and it maps to the Lead and Individual data model objects in Data Cloud."
+ },
+ "InState__c": {
+  "confidence": "high",
+  "definition": "True (default) when the lead is in a state HiRoad is licensed to operate in; false for unlicensed locations such as Puerto Rico."
+ },
+ "Inception_Date_Time__c": {
+  "confidence": "low",
+  "definition": "Date and time the purchased policy took effect."
+ },
+ "Ind_id__c": {
+  "confidence": "low",
+  "definition": "Numeric individual identifier. Purpose not evident."
+ },
+ "IndividualId": {
+  "confidence": "high",
+  "definition": "Standard lookup to the Individual record that holds consent and data-privacy preferences for this person."
+ },
+ "Industry": {
+  "confidence": "high",
+  "definition": "Standard industry picklist. Not relevant to consumer auto leads and not populated by the quote flow."
+ },
+ "Inquiry_Type__c": {
+  "confidence": "medium",
+  "definition": "Restricted picklist for web contact-form inquiries: Quanata Solutions, PR Inquiry, Customer Service, Human Resources, General Inquiry/Other."
+ },
+ "Insurance_Status__c": {
+  "confidence": "low",
+  "definition": "Text describing the lead's current insurance status from the quote."
+ },
+ "Internal_Traffic__c": {
+  "confidence": "medium",
+  "definition": "True when the lead came from internal or employee traffic. Used in the response-model training and scoring sets, presumably to exclude internal tests."
+ },
+ "IsConverted": {
+  "confidence": "high",
+  "definition": "Standard flag that is true once the lead has been converted to a Contact and Account, which the LeadConversionBatch job does for purchased leads."
+ },
+ "IsDeleted": {
+  "confidence": "high",
+  "definition": "Standard Salesforce flag that is true when the lead has been deleted and is sitting in the Recycle Bin."
+ },
+ "IsPriorityRecord": {
+  "confidence": "high",
+  "definition": "Standard Important checkbox used to flag a priority record in Salesforce."
+ },
+ "IsUnreadByOwner": {
+  "confidence": "high",
+  "definition": "Standard flag that is true until the owner opens the lead record."
+ },
+ "Jigsaw": {
+  "confidence": "high",
+  "definition": "Standard Data.com key. Legacy field, not used."
+ },
+ "JigsawContactId": {
+  "confidence": "high",
+  "definition": "Standard Data.com contact ID. Legacy field, not used."
+ },
+ "Jurisdiction__c": {
+  "confidence": "low",
+  "definition": "Text for the lead's jurisdiction. Purpose not evident."
+ },
+ "KeepPosted__c": {
+  "confidence": "medium",
+  "definition": "Consent to contact Superfocus leads, per the field description."
+ },
+ "LID__LinkedIn_Company_Id__c": {
+  "confidence": "high",
+  "definition": "LinkedIn Sales Navigator managed-package field holding the LinkedIn ID of the company. Not relevant to consumer leads."
+ },
+ "LID__LinkedIn_Member_Token__c": {
+  "confidence": "high",
+  "definition": "LinkedIn Sales Navigator managed-package field holding the LinkedIn member token for the lead. Not relevant to consumer leads."
+ },
+ "LandingPageID__c": {
+  "confidence": "high",
+  "definition": "Identifier of the landing page the lead came through. Journey queries route compare landing pages to the Compare journey and keep compare and renters pages out of the other quote-abandon journeys."
+ },
+ "LastActivityDate": {
+  "confidence": "high",
+  "definition": "Standard date of the most recent completed task or event logged on the lead."
+ },
+ "LastModifiedById": {
+  "confidence": "high",
+  "definition": "Standard ID of the user that last changed the lead. Journey queries filter to a short list of integration user IDs so only leads updated by the quote-flow integrations enter."
+ },
+ "LastModifiedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of the last change to the lead. Several quote-step journey queries only pick up leads modified in the last hour."
+ },
+ "LastName": {
+  "confidence": "high",
+  "definition": "The lead's last name as entered in the quote flow. Synced to Marketing Cloud for personalization and to the Individual and NBA prediction objects in Data Cloud."
+ },
+ "LastReferencedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of when the current user last viewed a record related to this lead."
+ },
+ "LastTransferDate": {
+  "confidence": "high",
+  "definition": "Standard date the lead was last transferred to a different owner."
+ },
+ "LastTripEndTime__c": {
+  "confidence": "medium",
+  "definition": "Timestamp when the lead's most recent recorded trip ended, from the telematics feed."
+ },
+ "LastViewedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of when the current user last viewed the record."
+ },
+ "Last_Activity_Before_Conversion__c": {
+  "confidence": "low",
+  "definition": "Text describing the last activity recorded before the lead converted."
+ },
+ "Last_Channel_Scoring_Date__c": {
+  "confidence": "high",
+  "definition": "When Data Cloud last ran the channel propensity model for this lead; the Review NBA query requires it to be populated."
+ },
+ "Last_Conversion_Attempt__c": {
+  "confidence": "high",
+  "definition": "Date and time the lead was converted or the last conversion attempt completed."
+ },
+ "Latitude": {
+  "confidence": "high",
+  "definition": "Standard geocoded latitude of the lead's address, set by Salesforce data integration rules when geocoding is enabled."
+ },
+ "LeadSource": {
+  "confidence": "high",
+  "definition": "Standard picklist for where the lead came from (default Website; quote-flow leads carry Quote Page or Quote Page- Saved, ad leads carry Facebook, etc.). The Purchase journey query selects Quote Page leads, and it is a feature in the response-model training sets."
+ },
+ "Lead_Score_Last_Update__c": {
+  "confidence": "high",
+  "definition": "When LeadScoreSyncBatch last picked up a change to the Einstein score; this is the batch run time, not Einstein's scoring time."
+ },
+ "Lead_Score__c": {
+  "confidence": "high",
+  "definition": "Einstein Lead Score (1-99) copied from ScoreIntelligence by the nightly LeadScoreSyncBatch. Keeps the last known score if Einstein removes it and stops updating once the lead converts."
+ },
+ "Lead_Scoring_Eligible__c": {
+  "confidence": "high",
+  "definition": "Set to true for leads created on or after 9/28 to mark them eligible for Einstein Lead Scoring."
+ },
+ "Line_of_Business__c": {
+  "confidence": "high",
+  "definition": "Restricted picklist for the product the lead is quoting: Auto or Rental."
+ },
+ "Longitude": {
+  "confidence": "high",
+  "definition": "Standard geocoded longitude of the lead's address, set by Salesforce data integration rules when geocoding is enabled."
+ },
+ "MA_Campaign__c": {
+  "confidence": "high",
+  "definition": "MediaAlpha campaign the lead came from. The Quote Discovery journey splits on it into MA Insured and MA Uninsured paths."
+ },
+ "MA_Token__c": {
+  "confidence": "high",
+  "definition": "MediaAlpha click token for the lead, selected by the MediaAlpha journey queries for partner attribution."
+ },
+ "MasterRecordId": {
+  "confidence": "high",
+  "definition": "If this lead was merged into another lead and deleted, the ID of the surviving master lead record. Standard Salesforce merge field."
+ },
+ "Master_Record__c": {
+  "confidence": "high",
+  "definition": "True (default) for the primary lead among duplicates. The quote-abandon journey queries only select master records."
+ },
+ "Max_Quote_Step__c": {
+  "confidence": "high",
+  "definition": "The furthest step of the online quote pages the lead reached, stored as a step number (1.0, 1.5, 5.0, 5.5, etc.). Journey queries use it to route the lead to the matching quote-step journey, and it feeds the NBA prediction object and response-model insights."
+ },
+ "MiddleName": {
+  "confidence": "high",
+  "definition": "Standard Salesforce middle name field."
+ },
+ "Mindful_Driver_text__c": {
+  "confidence": "low",
+  "definition": "Text copy of the mindful driver answer. Purpose beyond the checkbox is not evident."
+ },
+ "MobileOptOutSTOP__c": {
+  "confidence": "high",
+  "definition": "True when the person texted STOP; set by the SMS Opt Out journey's Sales Cloud update activities."
+ },
+ "MobilePhone": {
+  "confidence": "high",
+  "definition": "Standard mobile phone number. The Review NBA query and the Facebook lead audience staging query normalize it (strip punctuation, prefix 1) for SMS and audience matching."
+ },
+ "Mobile_Country_Code__c": {
+  "confidence": "high",
+  "definition": "Formula that normalizes the phone number into digits with a leading 1 (strips +, parentheses). Every journey query selects it as the SMS send number and the Review NBA Channel Availability split checks it."
+ },
+ "Mobile_Opt_In_Date__c": {
+  "confidence": "medium",
+  "definition": "Date and time the lead opted into SMS; written by the SMS Opt Out journey's Sales Cloud update activity."
+ },
+ "Mobile_Opt_Out_Date__c": {
+  "confidence": "high",
+  "definition": "Date and time the lead opted out of SMS. Journey decision splits (Email vs Email & SMS vs SMS) and the Review NBA Channel Availability split use it to suppress texts."
+ },
+ "Most_likely_to_purchase__c": {
+  "confidence": "low",
+  "definition": "Numeric 0-999 score labeled Most likely to purchase. Source not evident."
+ },
+ "NBA_Assignment__c": {
+  "confidence": "high",
+  "definition": "How the NBA test arm was chosen: MODEL (email response score rule) or RANDOM (learning slice). Only RANDOM rows are unbiased for uplift measurement."
+ },
+ "NBA_Entry_At__c": {
+  "confidence": "high",
+  "definition": "When the lead entered the NBA channel test via the Review journey update step; the 30-day purchase window starts here."
+ },
+ "NBA_Entry_Call_Score__c": {
+  "confidence": "high",
+  "definition": "Legacy call propensity score as it stood when the lead entered the NBA test."
+ },
+ "NBA_Entry_Email_Model_Score__c": {
+  "confidence": "high",
+  "definition": "Email response model score (open likelihood) as it stood at NBA test entry. The v17 routing rule reads this."
+ },
+ "NBA_Entry_Email_Score__c": {
+  "confidence": "high",
+  "definition": "Legacy email propensity score as it stood when the lead entered the NBA test."
+ },
+ "NBA_Entry_SMS_Score__c": {
+  "confidence": "high",
+  "definition": "Legacy SMS propensity score as it stood when the lead entered the NBA test."
+ },
+ "NBA_Test_Arm__c": {
+  "confidence": "high",
+  "definition": "Channel arm assigned by the Review journey v17 at entry: SMS, CALL, CALL_SMS, or INELIGIBLE for leads outside the test population. Feeds the Channel Uplift training set."
+ },
+ "Name": {
+  "confidence": "high",
+  "definition": "Standard concatenated full name (first and last). Merged into the Purchase and Saved Quote journey emails and SMS as the display name."
+ },
+ "Newsletter__c": {
+  "confidence": "medium",
+  "definition": "True when the lead opted into the newsletter. A test newsletter query selects on it."
+ },
+ "NumberOfEmployees": {
+  "confidence": "high",
+  "definition": "Standard employee count field. Not relevant to consumer leads."
+ },
+ "Over_Speeding__c": {
+  "confidence": "medium",
+  "definition": "Speeding metric from trial-mode telematics, stored as text."
+ },
+ "OwnerId": {
+  "confidence": "high",
+  "definition": "Standard owner of the lead record, a user or queue."
+ },
+ "Parent__c": {
+  "confidence": "medium",
+  "definition": "Lookup to the parent lead this record duplicates or rolls up to."
+ },
+ "Permissions_Enabled__c": {
+  "confidence": "medium",
+  "definition": "True once the lead enabled the phone permissions the app needs to record trips."
+ },
+ "Permissions_Set_Date__c": {
+  "confidence": "medium",
+  "definition": "Date the lead enabled app permissions. Synced to the Data Cloud Lead object."
+ },
+ "Phone": {
+  "confidence": "high",
+  "definition": "Standard phone number for the lead. Source for the formula that builds the normalized SMS number, and feeds the Data Cloud phone contact point and SMS engagement insight."
+ },
+ "Phone_Use__c": {
+  "confidence": "medium",
+  "definition": "Phone-use-while-driving metric from trial-mode telematics, stored as text."
+ },
+ "PhotoUrl": {
+  "confidence": "high",
+  "definition": "Standard URL of the lead's social profile photo. Not populated by HiRoad processes."
+ },
+ "PostalCode": {
+  "confidence": "high",
+  "definition": "Standard zip/postal code of the lead's address. The AZ lead audience queries copy it into a Zipcode column."
+ },
+ "Predicted_Channel__c": {
+  "confidence": "high",
+  "definition": "Formula deriving the NBA channel mix: Email Only when no phone, Call + SMS + Email or Call + Email when the call score is 42.3 or higher (SMS added at 39.8), otherwise SMS + Email. The Review NBA journey Prediction split routes on it."
+ },
+ "Previous_Insurance__c": {
+  "confidence": "medium",
+  "definition": "The lead's prior insurance carrier as entered in the quote. A feature in the response-model training sets."
+ },
+ "Projected_Bundled_Dollars_Off__c": {
+  "confidence": "medium",
+  "definition": "Projected dollar savings from bundling auto with renters coverage."
+ },
+ "Projected_Bundled_First_Month_Bill__c": {
+  "confidence": "medium",
+  "definition": "Projected first month bill if the lead bundles auto with renters coverage. Companion to the bundle opt-in flag used in the Coverages journey."
+ },
+ "Projected_First_Month_Bill__c": {
+  "confidence": "high",
+  "definition": "Projected first month bill amount from the quote. Merged into the Coverages, Purchase, Review and Saved Quote emails and SMS, and selected by the Review NBA query."
+ },
+ "Prospect_Segment__c": {
+  "confidence": "medium",
+  "definition": "Restricted picklist placing the lead in a value tier from Lowest Value to Highest Value Prospects."
+ },
+ "Publisher__c": {
+  "confidence": "medium",
+  "definition": "Advertising publisher that sourced the lead. A feature in the response-model training sets and the NBA prediction object."
+ },
+ "Purchased_Date__c": {
+  "confidence": "high",
+  "definition": "Date the lead purchased a policy. Feeds the NBA prediction object and the Channel Uplift training set as the purchase timing."
+ },
+ "Push_to__c": {
+  "confidence": "low",
+  "definition": "Text labeled Push to. Purpose not evident."
+ },
+ "Quote_Session_Key__c": {
+  "confidence": "high",
+  "definition": "Identifier of the lead's online quote session. Every quote-abandon email (Quote Discovery, Drivers, Coverages, Purchase, Review, Re-engagement) uses it to build the link back into the saved quote."
+ },
+ "Rapid_Acceleration__c": {
+  "confidence": "medium",
+  "definition": "Rapid acceleration metric from trial-mode telematics, stored as text."
+ },
+ "Rating": {
+  "confidence": "high",
+  "definition": "Standard Hot/Warm/Cold lead rating picklist. Not populated by the quote flow in any evidence found."
+ },
+ "Re_engaged__c": {
+  "confidence": "high",
+  "definition": "True if the lead is part of the Re-engagement journey, per the field help text."
+ },
+ "Recommended_Channel_Image__c": {
+  "confidence": "high",
+  "definition": "Formula showing an SMS, Email or Phone icon based on the recommended channel."
+ },
+ "Recommended_Channel__c": {
+  "confidence": "medium",
+  "definition": "Recommended contact channel for the lead (SMS, Email or Phone), displayed through the channel image formula."
+ },
+ "RecordTypeId": {
+  "confidence": "high",
+  "definition": "Record type of the lead. The quote-abandon, Re-engagement, Saved Quote and Review NBA journey queries all filter to one specific record type ID so only that type of quote lead enters a journey."
+ },
+ "Referral_Record__c": {
+  "confidence": "medium",
+  "definition": "Lookup to the Referral record that created this lead."
+ },
+ "Referred_By_Lead__c": {
+  "confidence": "medium",
+  "definition": "Lookup to the Lead that referred this lead."
+ },
+ "Referred_By__c": {
+  "confidence": "medium",
+  "definition": "Lookup to the Contact (existing customer) that referred this lead."
+ },
+ "Relative_rank__c": {
+  "confidence": "medium",
+  "definition": "Single-character relative rank of the lead. The Purchase journey query only selects leads with a rank, and it is synced to the Data Cloud Individual and Lead objects."
+ },
+ "Renters_Quote_Session_Key__c": {
+  "confidence": "high",
+  "definition": "Identifier of the lead's standalone renters quote session. The Standalone Renters nurture journey only enters leads where it is populated and uses it in the email links."
+ },
+ "Research__c": {
+  "confidence": "low",
+  "definition": "Checkbox labeled Research. Purpose not evident."
+ },
+ "Resume_Link__c": {
+  "confidence": "low",
+  "definition": "Link to a resume, used for Human Resources inquiries submitted through the web contact form."
+ },
+ "Retention_Letter__c": {
+  "confidence": "low",
+  "definition": "Text labeled Retention Letter. Purpose not evident."
+ },
+ "Retention_Prob__c": {
+  "confidence": "low",
+  "definition": "Retention probability stored as text. Source not evident."
+ },
+ "SMS_Score__c": {
+  "confidence": "high",
+  "definition": "SMS propensity score copied from Data Cloud. Selected by the Review NBA query and snapshotted by the Review journey update steps."
+ },
+ "Salutation": {
+  "confidence": "high",
+  "definition": "Standard salutation picklist (Mr., Ms., Mrs., Dr., Prof.). Not populated by the quote flow in any evidence found."
+ },
+ "Saved_Quote__c": {
+  "confidence": "high",
+  "definition": "True when the lead saved their quote. The quote-abandon step journeys exclude saved-quote leads (they go to the Saved Quote journey instead), and it is a feature in the response-model training sets."
+ },
+ "ScoreIntelligenceId": {
+  "confidence": "high",
+  "definition": "Standard lookup to the Einstein Lead Scoring record that holds this lead's score. The nightly LeadScoreSyncBatch copies the score from that record into the Lead Score field."
+ },
+ "Score_Snapshot_Eligible__c": {
+  "confidence": "high",
+  "definition": "Formula: true for Auto leads created in the last 30 days, converted or not. Drives the Lead Score Snapshot scheduled flow; change the window here, not in the flow."
+ },
+ "Score__c": {
+  "confidence": "medium",
+  "definition": "Overall driving score from trial-mode telematics, stored as text."
+ },
+ "Sent_to_CC__c": {
+  "confidence": "low",
+  "definition": "Checkbox indicating the lead was sent to Customer Care (CC). Population not evident."
+ },
+ "Shopping__c": {
+  "confidence": "low",
+  "definition": "Checkbox labeled Shopping. Purpose and population not evident."
+ },
+ "Site_Referred__c": {
+  "confidence": "medium",
+  "definition": "URL of the referring site that sent the visitor."
+ },
+ "SourcePartner__c": {
+  "confidence": "low",
+  "definition": "Name of the partner that sourced the lead."
+ },
+ "State": {
+  "confidence": "high",
+  "definition": "Standard state/province of the lead's address. Journey queries filter on it for licensed states (AZ, RI), and it is a feature in the email, call, SMS and channel-uplift response-model training sets."
+ },
+ "State__c": {
+  "confidence": "high",
+  "definition": "Custom text copy of the lead's state. Journey queries filter on AZ and RI, and the Coverages journey splits RI vs AZ on it."
+ },
+ "Status": {
+  "confidence": "high",
+  "definition": "Standard lead status picklist: New (default), Nurture, Consideration, Quote Complete, Unqualified, MQL, Purchased. Describes where the lead sits in the pre-purchase funnel."
+ },
+ "Street": {
+  "confidence": "high",
+  "definition": "Standard street address line captured on the quote. Feeds the Data Cloud address contact point and the address data-quality insight."
+ },
+ "Street_Address__c": {
+  "confidence": "medium",
+  "definition": "Custom text copy of the lead's street address."
+ },
+ "Sub_Status__c": {
+  "confidence": "low",
+  "definition": "Restricted picklist of sub-statuses (Claims, Renewal, Customer Care, High Risk, Out of State, Welcome, Success Kit, No App/No Trip). Population not evident."
+ },
+ "SubscriberKey__c": {
+  "confidence": "high",
+  "definition": "Formula returning the 18-character case-safe lead ID, used as the Marketing Cloud subscriber key in the email prospect key queries."
+ },
+ "Suffix": {
+  "confidence": "high",
+  "definition": "Standard Salesforce name suffix field (Jr., III, etc.)."
+ },
+ "SystemModstamp": {
+  "confidence": "high",
+  "definition": "Standard system timestamp updated by any user or automated change to the record."
+ },
+ "Test_Record__c": {
+  "confidence": "medium",
+  "definition": "True for internal test leads that should be excluded from reporting and sends."
+ },
+ "Title": {
+  "confidence": "medium",
+  "definition": "Standard job title field. Merged into the Saved Quote E4 email, otherwise not part of the quote flow."
+ },
+ "Trial_Mode_Start_Date__c": {
+  "confidence": "medium",
+  "definition": "Date the lead started Trial Mode."
+ },
+ "Trial_Mode_Trip_Completion__c": {
+  "confidence": "medium",
+  "definition": "Percentage of trial-mode trips completed by the lead."
+ },
+ "Trial_Mode__c": {
+  "confidence": "medium",
+  "definition": "True for leads in HiRoad Trial Mode, who drive with the app before buying. The quote-abandon and Re-engagement journey queries exclude trial-mode leads."
+ },
+ "Trip_Taken__c": {
+  "confidence": "medium",
+  "definition": "True once the lead has recorded a trip in the app during Trial Mode."
+ },
+ "U_Email_Cookie__c": {
+  "confidence": "low",
+  "definition": "Text labeled U Email Cookie, presumably a web tracking cookie tied to the email. Purpose not evident."
+ },
+ "Underwriting_Score__c": {
+  "confidence": "low",
+  "definition": "Underwriting score for the lead stored as text. Source not evident."
+ },
+ "UpdatedDate__c": {
+  "confidence": "low",
+  "definition": "Custom date labeled Updated Date. Purpose beyond the standard last modified date not evident."
+ },
+ "Vehicle_Make__c": {
+  "confidence": "high",
+  "definition": "Make of the vehicle on the quote. Merged into the Compare, Purchase, Review and Saved Quote emails and SMS, and a feature in the response-model training sets."
+ },
+ "Vehicle_Model__c": {
+  "confidence": "high",
+  "definition": "Model of the vehicle on the quote. Merged into the Compare, Purchase, Review and Saved Quote emails and SMS."
+ },
+ "WHCDB_Days_since_last_update_or_activity__c": {
+  "confidence": "medium",
+  "definition": "Formula: days since the lead's last activity or last modification, whichever is more recent."
+ },
+ "Website": {
+  "confidence": "high",
+  "definition": "Standard website URL field. Not populated by the quote flow; synced to Data Cloud only as part of the standard Lead mapping."
+ },
+ "X18_Case_Sensitive_ID__c": {
+  "confidence": "high",
+  "definition": "Formula returning the 18-character case-safe version of the lead ID for use in reports and external joins."
+ },
+ "Zip_Code__c": {
+  "confidence": "medium",
+  "definition": "Custom text copy of the lead's zip code."
+ },
+ "Zipcode__c": {
+  "confidence": "medium",
+  "definition": "Numeric zip code. The AZ lead audience queries populate a column of this name from the standard postal code."
+ },
+ "account_id__c": {
+  "confidence": "medium",
+  "definition": "The lead's account identifier from the HiRoad app. The SMS Opt Out journey uses it to find the lead to update."
+ },
+ "client_ip_address__c": {
+  "confidence": "medium",
+  "definition": "IP address of the visitor when the lead was captured on the website."
+ },
+ "client_user_agent__c": {
+  "confidence": "medium",
+  "definition": "Browser user agent string of the visitor when the lead was captured on the website."
+ },
+ "et4ae5__HasOptedOutOfMobile__c": {
+  "confidence": "high",
+  "definition": "Marketing Cloud Connect mobile opt-out checkbox. Selected by the Compare, Purchase, MediaAlpha and Facebook audience queries so SMS sends can be suppressed for opted-out leads."
+ },
+ "et4ae5__Mobile_Country_Code__c": {
+  "confidence": "high",
+  "definition": "Marketing Cloud Connect picklist for the country code of the lead's mobile number, defaulting to US."
+ },
+ "fbclid__c": {
+  "confidence": "medium",
+  "definition": "Facebook click identifier captured from the landing URL, showing the lead arrived from a Facebook ad click."
+ },
+ "landing_page_url__c": {
+  "confidence": "high",
+  "definition": "Full URL of the landing page the lead first hit. Synced to the Data Cloud Lead object."
+ },
+ "lead_likely_to_convert__c": {
+  "confidence": "low",
+  "definition": "Numeric score answering whether the lead is likely to convert. Source not evident."
+ },
+ "mindful_driver__c": {
+  "confidence": "high",
+  "definition": "Answer to the mindful driver discount question in the quote flow. Selected by the Coverages and Standalone Renters queries and merged into Coverages SMS."
+ },
+ "numberoftrips__c": {
+  "confidence": "low",
+  "definition": "Number of trips from the telematics feed, stored as text. Overlaps with the numeric trips logged field."
+ },
+ "of_Calls_to_CC__c": {
+  "confidence": "high",
+  "definition": "Number of calls the lead made to Customer Care before becoming a customer. Feeds the lead engagement insight and the NBA prediction object."
+ },
+ "of_Emails_Received__c": {
+  "confidence": "medium",
+  "definition": "Count of marketing emails the lead has received."
+ },
+ "of_SMS_Delivered__c": {
+  "confidence": "medium",
+  "definition": "Count of SMS messages delivered to the lead. Feeds the unified-individual lead engagement insight."
+ },
+ "of_Sessions__c": {
+  "confidence": "medium",
+  "definition": "Count of quote sessions the lead has had."
+ },
+ "of_Trips_Logged__c": {
+  "confidence": "medium",
+  "definition": "Number of trips the lead has logged in the app. Synced to the Data Cloud Lead object."
+ },
+ "of_Vehicles__c": {
+  "confidence": "medium",
+  "definition": "Number of vehicles on the quote, stored as text."
+ },
+ "optimizely_dna__Visitor_Id__c": {
+  "confidence": "medium",
+  "definition": "Optimizely managed-package field holding the website visitor ID used for experiment and personalization matching."
+ },
+ "platform__c": {
+  "confidence": "low",
+  "definition": "Short text for the platform the lead came from. Values not evident."
+ },
+ "purchased__c": {
+  "confidence": "high",
+  "definition": "True once the lead bought a policy; set from the Abandoned Cart journey records. Journey queries exclude purchased leads, the exit query removes them from journeys, LeadConversionBatch converts them, and it is the outcome label for the response-model training sets."
+ },
+ "sessionid__c": {
+  "confidence": "low",
+  "definition": "Website session identifier captured with the lead."
+ },
+ "sfleadcaphfprod__External_Lead_ID__c": {
+  "confidence": "low",
+  "definition": "Managed-package field (sfleadcaphfprod namespace, which looks like a Salesforce lead-capture connector) holding the lead's ID in the external ad platform it was captured from."
+ },
+ "totaldistance__c": {
+  "confidence": "medium",
+  "definition": "Total distance driven from the telematics feed, stored as text."
+ },
+ "utm_campaign__c": {
+  "confidence": "high",
+  "definition": "UTM campaign from the landing URL."
+ },
+ "utm_content__c": {
+  "confidence": "high",
+  "definition": "UTM content from the landing URL, identifying the specific ad or creative."
+ },
+ "utm_medium__c": {
+  "confidence": "high",
+  "definition": "UTM medium from the landing URL (paid, sms, email, etc.). A feature in the response-model training sets and the NBA prediction object."
+ },
+ "utm_source__c": {
+  "confidence": "high",
+  "definition": "UTM source from the landing URL. Journey queries use it to route partner leads (Surehits, MediaAlpha, QuoteWizard, Transparently, Zendrive) to their journeys, and it is a feature in the response-model training sets."
+ },
+ "utm_term__c": {
+  "confidence": "high",
+  "definition": "UTM term from the landing URL, identifying the paid keyword."
+ }
+}
