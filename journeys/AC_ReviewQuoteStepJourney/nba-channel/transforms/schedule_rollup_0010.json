@@ -1,0 +1,18 @@
+{
+ "frequency": "Hourly",
+ "interval": 1,
+ "daysOfWeek": [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday"
+ ],
+ "time": {
+  "hour": 0,
+  "minute": 10,
+  "timeZone": "America/Chicago"
+ }
+}

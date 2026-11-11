@@ -11,7 +11,10 @@
    (decision splits read Journey Data, the entry snapshot, so a wait inside the journey would not refresh the scores).
    Other filters unchanged (3-day creation window, 14-day email suppression). To widen the test population later, change
    DATEADD(day, -3, ...) to -7 and point the NOT EXISTS at a 7-day suppression DE (add a query next to
-   emails_sent_last_14_days rather than editing it: every AC_ journey shares that DE). */
+   emails_sent_last_14_days rather than editing it: every AC_ journey shares that DE).
+   2026-11-11: 0053h000003B5ZYAA0 (Automated Process) added to the lastmodifiedbyid list. The Data Cloud score copy
+   (Channel_Scores_Lead_default) stamps every scored lead as last modified by Automated Process each hour, which the
+   original two-user list rejected unless Airbyte happened to touch the lead afterwards. */
 SELECT
     c.id,
     c.email,
@@ -45,7 +48,7 @@ SELECT
 FROM ent.Lead_Salesforce c
 WHERE (c.max_quote_step__c = '5.0' OR c.max_quote_step__c = '5.5')
   AND c.createddate >= DATEADD(day, -3, GETDATE())
-  AND c.lastmodifiedbyid IN ('0053h000005MGvoAAG', '0053h000007viW9AAI')
+  AND c.lastmodifiedbyid IN ('0053h000005MGvoAAG', '0053h000007viW9AAI', '0053h000003B5ZYAA0')
   AND c.recordtypeid = '0123h000000VF9DAAW'
   AND (c.saved_quote__c = 'FALSE' OR c.saved_quote__c = 'False' OR c.saved_quote__c = '0')
   AND LOWER(c.landingpageid__c) NOT LIKE '%compare%'

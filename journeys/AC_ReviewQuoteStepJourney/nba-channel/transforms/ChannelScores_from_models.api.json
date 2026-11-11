@@ -1,0 +1,320 @@
+{
+ "label": "Channel Scores",
+ "name": "ChannelScores",
+ "dataSpaceName": "default",
+ "type": "BATCH",
+ "description": "Publishes the three channel scores (0-100) from the Channel_Scores_Models transform output to Channel_Scores__dlm for the copy-field enrichment to Lead. Rewired 2026-11-11.",
+ "definitions": [
+  {
+   "label": "Channel Scores",
+   "name": "ChannelScoresDefinition",
+   "version": "56.0",
+   "type": "STL",
+   "nodes": {
+    "LOAD_M": {
+     "action": "load",
+     "sources": [],
+     "parameters": {
+      "dataset": {
+       "name": "Channel_Scores_Field_v2__dlm",
+       "type": "dataModelObject"
+      },
+      "fields": [
+       "Lead_Id__c",
+       "KQ_Lead_Id11__c",
+       "Predicted_SMS_CM_12l_eo_predicted_column__c",
+       "Predicted_Opened_First_predicted_column__c",
+       "Predicted_Call_CM_12l_e_predicted_column__c"
+      ],
+      "sampleDetails": {
+       "type": "TopN",
+       "sortBy": []
+      }
+     }
+    },
+    "F_KQ": {
+     "action": "formula",
+     "sources": [
+      "LOAD_M"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Text",
+        "defaultValue": "",
+        "formulaExpression": "KQ_Lead_Id11__c",
+        "label": "Key Qualifier Lead Id",
+        "name": "KQ_Lead_Id__c",
+        "precision": 255,
+        "type": "TEXT"
+       }
+      ]
+     }
+    },
+    "F_SMS": {
+     "action": "formula",
+     "sources": [
+      "F_KQ"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "round(Predicted_SMS_CM_12l_eo_predicted_column__c, 2)",
+        "label": "SMS Score",
+        "name": "SMS_Score__c",
+        "precision": 18,
+        "scale": 2,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "F_EMAIL": {
+     "action": "formula",
+     "sources": [
+      "F_SMS"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "round(Predicted_Opened_First_predicted_column__c, 2)",
+        "label": "Email Score",
+        "name": "Email_Score_Out__c",
+        "precision": 18,
+        "scale": 2,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "F_CALL": {
+     "action": "formula",
+     "sources": [
+      "F_EMAIL"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "Number",
+        "defaultValue": "",
+        "formulaExpression": "round(Predicted_Call_CM_12l_e_predicted_column__c, 2)",
+        "label": "Call Score",
+        "name": "Call_Score_Out__c",
+        "precision": 18,
+        "scale": 2,
+        "type": "NUMBER"
+       }
+      ]
+     }
+    },
+    "F_OUT_TS": {
+     "action": "formula",
+     "sources": [
+      "F_CALL"
+     ],
+     "parameters": {
+      "expressionType": "SQL",
+      "fields": [
+       {
+        "businessType": "DateTime",
+        "defaultValue": "",
+        "formulaExpression": "now()",
+        "label": "Scored At",
+        "name": "Scored_At__c",
+        "type": "DATETIME",
+        "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+       }
+      ]
+     }
+    },
+    "OUTPUT0": {
+     "action": "outputD360",
+     "sources": [
+      "F_OUT_TS"
+     ],
+     "parameters": {
+      "dedupOrder": [],
+      "fieldsMappings": [
+       {
+        "sourceField": "KQ_Lead_Id__c",
+        "targetField": "KQ_Lead_Id__c"
+       },
+       {
+        "sourceField": "Lead_Id__c",
+        "targetField": "Lead_Id__c"
+       },
+       {
+        "sourceField": "Email_Score_Out__c",
+        "targetField": "Email_Score__c"
+       },
+       {
+        "sourceField": "SMS_Score__c",
+        "targetField": "SMS_Score__c"
+       },
+       {
+        "sourceField": "Call_Score_Out__c",
+        "targetField": "Call_Score__c"
+       },
+       {
+        "sourceField": "Scored_At__c",
+        "targetField": "Scored_At__c"
+       }
+      ],
+      "name": "Channel_Scores__dlm",
+      "type": "dataModelObject",
+      "writeMode": "OVERWRITE"
+     }
+    }
+   },
+   "outputDataObjects": [
+    {
+     "category": "Other",
+     "label": "Channel Scores",
+     "name": "Channel_Scores__dlm",
+     "type": "dataModelObject",
+     "fields": [
+      {
+       "isPrimaryKey": false,
+       "label": "Key Qualifier Lead Id",
+       "name": "KQ_Lead_Id__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": true,
+       "keyQualifierField": "KQ_Lead_Id__c",
+       "label": "Lead Id",
+       "name": "Lead_Id__c",
+       "type": "Text"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Email Score",
+       "name": "Email_Score__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "SMS Score",
+       "name": "SMS_Score__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Call Score",
+       "name": "Call_Score__c",
+       "type": "Number"
+      },
+      {
+       "isPrimaryKey": false,
+       "label": "Scored At",
+       "name": "Scored_At__c",
+       "type": "DateTime"
+      }
+     ]
+    }
+   ],
+   "ui": {
+    "nodes": {
+     "LOAD_M": {
+      "label": "Channel Scores Models output",
+      "type": "LOAD_DATASET",
+      "top": 112,
+      "left": 112,
+      "parameters": {
+       "sampleSize": 500,
+       "sampleDetails": {
+        "type": "TopN"
+       },
+       "dataspace": "default"
+      }
+     },
+     "T_OUT": {
+      "label": "Scores",
+      "type": "TRANSFORM",
+      "top": 112,
+      "left": 392,
+      "graph": {
+       "F_KQ": {
+        "label": "F_KQ",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_SMS": {
+        "label": "F_SMS",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_EMAIL": {
+        "label": "F_EMAIL",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_CALL": {
+        "label": "F_CALL",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       },
+       "F_OUT_TS": {
+        "label": "F_OUT_TS",
+        "type": "FORMULA",
+        "top": 0,
+        "left": 0
+       }
+      },
+      "connectors": [
+       {
+        "source": "LOAD_M",
+        "target": "F_KQ"
+       },
+       {
+        "source": "F_KQ",
+        "target": "F_SMS"
+       },
+       {
+        "source": "F_SMS",
+        "target": "F_EMAIL"
+       },
+       {
+        "source": "F_EMAIL",
+        "target": "F_CALL"
+       },
+       {
+        "source": "F_CALL",
+        "target": "F_OUT_TS"
+       }
+      ]
+     },
+     "OUTPUT0": {
+      "label": "Channel Scores",
+      "type": "OUTPUT",
+      "top": 112,
+      "left": 672
+     }
+    },
+    "connectors": [
+     {
+      "source": "LOAD_M",
+      "target": "T_OUT"
+     },
+     {
+      "source": "T_OUT",
+      "target": "OUTPUT0"
+     }
+    ],
+    "hiddenColumns": []
+   }
+  }
+ ]
+}
