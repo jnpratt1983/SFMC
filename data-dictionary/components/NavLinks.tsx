@@ -13,7 +13,7 @@ const links = [
 ];
 
 export function NavLinks() {
-  const p = usePathname() || "/";
+  const p = (usePathname() || "/").replace(/\/?$/, "/");
   return (
     <nav className="flex flex-wrap items-center gap-x-5 gap-y-1 order-last sm:order-none w-full sm:w-auto" aria-label="Primary">
       {links.map((l) => (
