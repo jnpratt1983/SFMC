@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* Quanata identity standards: Carbon + Dust base, Qurple as line work and highlight only (never a fill). */
+:root {
+  --carbon: #24263a;
+  --dust: #f4f3f0;
+  --qurple: #bb29bb;
+  --electricity: #7062e6;
+  --ash: #e7efef;
+  --seafoam: #b5dfe1;
+  --eclipse: #4a4e6e;
+  --aurora: #5e6383;
+  --twilight: #7b7f99;
+  --horizon: #9a9eb4;
+
+  --bg: var(--dust);
+  --surface: #ffffff;
+  --surface-2: #faf9f7;
+  --text: var(--carbon);
+  --text-2: var(--eclipse);
+  --text-3: var(--twilight);
+  --line: #d9d8d3;
+  --line-strong: var(--horizon);
+  --accent: var(--qurple);
+  --accent-2: var(--electricity);
+  --chip: var(--ash);
+  --chip-text: var(--eclipse);
+  --code-bg: #eeede9;
+  --focus: var(--qurple);
+}
+
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --bg: #1c1d2d;
+    --surface: var(--carbon);
+    --surface-2: #2b2d44;
+    --text: var(--dust);
+    --text-2: #c9cbd6;
+    --text-3: var(--horizon);
+    --line: #383b55;
+    --line-strong: var(--aurora);
+    --accent: #d65cd6;
+    --accent-2: #9d93ff;
+    --chip: #33365a;
+    --chip-text: #d7d9e4;
+    --code-bg: #15162a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1c1d2d;
+  --surface: var(--carbon);
+  --surface-2: #2b2d44;
+  --text: var(--dust);
+  --text-2: #c9cbd6;
+  --text-3: var(--horizon);
+  --line: #383b55;
+  --line-strong: var(--aurora);
+  --accent: #d65cd6;
+  --accent-2: #9d93ff;
+  --chip: #33365a;
+  --chip-text: #d7d9e4;
+  --code-bg: #15162a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--text);
+  --color-ink-2: var(--text-2);
+  --color-ink-3: var(--text-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-chip: var(--chip);
+  --color-chip-text: var(--chip-text);
+  --color-code: var(--code-bg);
+  --color-carbon: var(--carbon);
+  --color-dust: var(--dust);
+  --color-qurple: var(--qurple);
+  --color-electricity: var(--electricity);
+  --color-seafoam: var(--seafoam);
+  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+html { background: var(--bg); }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01", "tnum";
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-underline-offset: 3px; }
+::selection { background: var(--seafoam); color: var(--carbon); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Line language: thin rules, outlined chips, the Qiwi portal mark */
+.rule { border-top: 1px solid var(--line); }
+.chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  padding: 0.1rem 0.6rem; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.01em;
+  color: var(--text-2); white-space: nowrap; line-height: 1.4;
+}
+.chip-fill { background: var(--chip); color: var(--chip-text); border-color: transparent; }
+.chip-accent { border-color: var(--accent); color: var(--accent); }
+.chip-accent2 { border-color: var(--accent-2); color: var(--accent-2); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.mono { font-family: var(--font-mono); font-size: 0.85em; }
+.kbd { font-family: var(--font-mono); font-size: 0.7rem; border: 1px solid var(--line-strong); border-radius: 4px; padding: 0 0.35rem; color: var(--text-3); }
+.table-wrap { overflow-x: auto; }
+table.dd { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+table.dd th { text-align: left; font-weight: 600; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+table.dd td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.dd tr:hover td { background: var(--surface-2); }
+table.dd th.sortable { cursor: pointer; user-select: none; }
+table.dd th.sortable:hover { color: var(--accent); }
+pre.sql { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 1rem; overflow-x: auto; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.5; white-space: pre; color: var(--text); }
+.qiwi { stroke: var(--accent); fill: none; stroke-width: 1.25; }
+.hero-grid { background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 32px 32px; mask-image: radial-gradient(ellipse at 70% 40%, #000 20%, transparent 70%); }
+.eyebrow { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--text-3); }
+.h-display { font-weight: 300; letter-spacing: -0.02em; line-height: 1.05; }
+.usage-pill { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; color: var(--text-2); }
+.usage-pill b { font-weight: 600; color: var(--text); }
+.dot { width: 6px; height: 6px; border-radius: 999px; display: inline-block; }
+input.search, select.search {
+  background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); border-radius: 8px;
+  padding: 0.5rem 0.75rem; font-size: 0.875rem; width: 100%;
+}
+input.search::placeholder { color: var(--text-3); }
+.nav-link { color: var(--text-2); font-size: 0.875rem; font-weight: 500; padding: 0.35rem 0; border-bottom: 2px solid transparent; }
+.nav-link:hover { color: var(--text); }
+.nav-link[aria-current="page"] { color: var(--text); border-bottom-color: var(--accent); }
+.prose-sm p { margin: 0.4rem 0; }
+.detail-grid { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1.25rem; font-size: 0.875rem; }
+.detail-grid dt { color: var(--text-3); font-size: 0.78rem; font-weight: 500; padding-top: 0.1rem; }
+.detail-grid dd { color: var(--text); overflow-wrap: anywhere; }
+@media (max-width: 640px) { .detail-grid { grid-template-columns: 1fr; gap: 0.1rem; } .detail-grid dd { margin-bottom: 0.5rem; } }

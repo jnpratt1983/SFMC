@@ -1,0 +1,51 @@
+name: Data dictionary monthly refresh
+
+on:
+  schedule:
+    - cron: "0 14 1 * *"   # 1st of every month, 14:00 UTC (06:00 Pacific)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: data-dictionary
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+      - name: Authenticate to Salesforce
+        env:
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+        run: |
+          echo "$SFDX_AUTH_URL" > /tmp/auth.txt
+          sf org login sfdx-url -f /tmp/auth.txt -a blueowl-prod --set-default
+          rm /tmp/auth.txt
+      - name: Pull and build the dictionary
+        env:
+          SF_ORG: blueowl-prod
+          MC_CLIENT_ID: ${{ secrets.MC_CLIENT_ID }}
+          MC_CLIENT_SECRET: ${{ secrets.MC_CLIENT_SECRET }}
+          MC_AUTH_BASE: ${{ secrets.MC_AUTH_BASE }}
+          MC_MID: ${{ secrets.MC_MID }}
+        run: bash pipeline/refresh.sh
+      - name: Verify the site still builds
+        run: npm ci && npm run build
+      - name: Commit the refreshed data
+        run: |
+          git config user.name "dictionary-refresh[bot]"
+          git config user.email "dictionary-refresh@users.noreply.github.com"
+          git add data/   # relative to data-dictionary/
+          git diff --cached --quiet && echo "no changes" && exit 0
+          git commit -m "Monthly dictionary refresh $(date -u +%Y-%m-%d)"
+          git push
