@@ -11,6 +11,7 @@ Query activities and notes for HiRoad's Marketing Cloud Engagement tenant
 | journeys/ChurnRiskActivation | Churn Risk activation (Predicted Did Cancel V7), not yet launched | Out-of-time validation (2026-10-16) of `Normalized_Churn_Risk_Score__c` and `Churn_Risk_Score__c` against actual cancellations: AUCs vs tenure and persona baselines, band fit, training-set diagnosis, reproducible script and data |
 | journeys/RE_ChurnRetention | RE_ChurnRetention (planned, daily 06:30) + RE_ChurnRetention_<Month>2026 | Renewal-window retention journey spec (2026-10-16): entry, suppression and exit query activities, DE schemas, tracks by churn factor, measurement without holdouts, prerequisites |
 | audits | - | Marketing Cloud health audit 2026-10-07 and its read-only collector scripts |
+| data-dictionary | monthly GitHub Action | Quanata-branded data dictionary site (Next.js, Vercel): every Lead, Contact, Account, Bill and Monthly Driving Stats field with its Marketing Cloud journey usage (email, push, SMS, decision split, query) and Data Cloud lineage, plus all calculated insights. See its README to deploy |
 
 Files are numbered in automation step order. Each file's header comment names the
 query activity, its target data extension and update type, and what changed from the
