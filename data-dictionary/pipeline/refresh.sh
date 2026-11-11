@@ -7,5 +7,6 @@ cd "$(dirname "$0")"
 python3 pull_salesforce.py
 python3 pull_datacloud.py
 python3 pull_sfmc.py
+python3 pull_models.py
 python3 build.py
 echo "dictionary rebuilt: $(python3 -c "import json;d=json.load(open('../data/dictionary.json'));print(d['generatedAt'], d['summary'])")"

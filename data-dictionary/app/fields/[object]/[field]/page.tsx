@@ -112,6 +112,12 @@ export default async function FieldPage({ params }: { params: Promise<{ object: 
             )}
           </Section>
 
+          {(f.models?.length ?? 0) > 0 && (
+            <Section title="Predictive models" eyebrow="written by a model">
+              <ul className="space-y-2 text-sm">{f.models!.map((m) => <li key={m.id}><Link href={`/models/${m.id}/`} className="hover:underline decoration-[var(--accent)]">{m.name}</Link>{m.note && <div className="text-xs text-ink-3">{m.note}</div>}</li>)}</ul>
+            </Section>
+          )}
+
           <Section title="Data Cloud" eyebrow={f.dc.stream ? `${dcCount} downstream reference${dcCount === 1 ? "" : "s"}` : "not ingested"}>
             {!f.dc.stream ? <Empty>The CRM data stream for {objectLabel(f.object)} does not include this field.</Empty> : (
               <div className="space-y-4 text-sm">

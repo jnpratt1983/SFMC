@@ -9,6 +9,7 @@ const links = [
   { href: "/queries/", match: "/queries/", label: "Queries" },
   { href: "/calculated-insights/", match: "/calculated-insights/", label: "Calculated insights" },
   { href: "/data-cloud/", match: "/data-cloud/", label: "Data Cloud" },
+  { href: "/models/", match: "/models/", label: "Models" },
   { href: "/changes/", match: "/changes/", label: "Changes" },
 ];
 

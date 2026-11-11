@@ -1,0 +1,81 @@
+{
+  "id": "nba-channel",
+  "order": 2,
+  "name": "Next Best Action channel scores",
+  "version": "point-in-time, Nov 2026",
+  "stage": "In test",
+  "platform": "Data Cloud Model Builder (three CatBoost binary classifiers inside one batch transform)",
+  "owner": "Jennifer Pratt (MarTech)",
+  "summary": "Three scores on every recent lead: how likely they are to click a text, open the first email, and phone us. The call and text scores decide whether a lead stalled at the review step gets a call task, a text, or both.",
+  "predicts": "Text click within 14 days, first journey email opened, inbound call within 30 days.",
+  "population": "Leads created in the last 14 days, about 4,400 at a time, rescored every hour.",
+  "usedFor": "Routing in the Review quote-step journey (v17), which is also the test of whether model routing beats random routing.",
+  "components": [
+    { "name": "Predicted SMS", "apiName": "Predicted_SMS_CM_12l_eod907571dc", "target": "Clicked_14d", "trained": "2026-11-03", "note": "9 inputs. Text-born leads removed from training (they counted their own creation as a click)." },
+    { "name": "Predicted Opened_First_Email", "apiName": "Predicted_Opened_First_Email_CM_12l_eod20adcc71", "target": "Opened_First_Email", "trained": "2026-11-03", "note": "11 inputs. Email domain is the strongest. Not used for routing today." },
+    { "name": "Predicted Call", "apiName": "Predicted_Call_CM_12l_eod7bc9743a", "target": "Called_Us_30d", "trained": "2026-11-03", "note": "11 inputs. Training starts 2025-05-02, when call tickets can be tied to a lead." }
+  ],
+  "retired": "The three legacy models (Predicted Is Phone / SMS / Email V2) are disabled. They had learned purchase intent, not channel preference, and showed no lift in the Jan to Sep 2026 holdout (10.2% vs 11.9% control).",
+  "outputs": [
+    { "field": "Lead.Call_Score__c", "note": "0 to 100; call when 42.3 or higher (top 20%)" },
+    { "field": "Lead.SMS_Score__c", "note": "0 to 100; text when 39.8 or higher (top half)" },
+    { "field": "Lead.Email_Score__c", "note": "0 to 100; informational" },
+    { "field": "Lead.Predicted_Channel__c", "note": "formula on the two thresholds" },
+    { "field": "Lead.Last_Channel_Scoring_Date__c", "note": "stamped every hourly run" },
+    { "field": "Lead.NBA_Test_Arm__c", "note": "arm the lead was routed to at journey entry" },
+    { "field": "Lead.NBA_Assignment__c", "note": "model-routed or random" },
+    { "field": "Lead.NBA_Entry_At__c" }
+  ],
+  "chain": [
+    { "what": "Build the scoring rows from recent leads", "kind": "Data Cloud transform", "transform": "ChannelScoringSet", "schedule": "Hourly at :00 Central", "automated": true },
+    { "what": "Run the three models", "kind": "Data Cloud transform (built in the UI)", "transform": "Channel_Scores_Models", "schedule": "Hourly at :35", "automated": true },
+    { "what": "Publish the scores", "kind": "Data Cloud transform", "transform": "ChannelScores", "schedule": "Hourly at :10", "automated": true },
+    { "what": "Copy the scores to Lead", "kind": "Copy-field enrichment", "ref": "Channel_Scores_Lead_default", "schedule": "About 3 minutes after the publish", "automated": true },
+    { "what": "Pick journey entrants", "kind": "Marketing Cloud automation", "ref": "AC_NBATEST (query AC_ReviewNBA_v9)", "schedule": "Every 15 minutes", "automated": true },
+    { "what": "Feed text sends and clicks back to Salesforce (training label)", "kind": "Apex job", "ref": "SMSTrackingSync", "schedule": "Daily 22:30 UTC", "automated": true },
+    { "what": "Rebuild the point-in-time training files", "kind": "Scripts", "ref": "pit_pull_ci.py, pit_build.py", "schedule": "No schedule, run by hand before a retrain", "automated": false }
+  ],
+  "consumers": [
+    { "kind": "Journey", "name": "AC_ReviewQuoteStepJourney_November20262026", "note": "v17. First 38 entrants on 2026-11-11; 12 to 18 a day expected." }
+  ],
+  "quality": {
+    "verdict": "Unproven in market",
+    "summary": "All three models clear the 0.58 training gate after the leaks were removed. Whether routing on them lifts purchases is exactly what the v17 test measures; there is no outcome read yet.",
+    "passLine": "Training AUC at least 0.58 with no leaking input among the top contributors. In market: model-routed arm ahead of random on 30-day purchase.",
+    "nextReview": "2026-12-11",
+    "nextReviewWhat": "First monthly test read: reach rate per call arm, text click rate, opt-outs, score distribution."
+  },
+  "validation": [
+    { "date": "2026-11-03", "what": "Predicted Call, Model Builder metrics", "metric": "AUC", "value": "0.792", "baseline": "gate 0.58", "result": "pass", "note": "Top inputs: quote step 25%, UTM source 22%, state 11%." },
+    { "date": "2026-11-03", "what": "Predicted Opened_First_Email", "metric": "AUC", "value": "0.662", "baseline": "gate 0.58", "result": "pass", "note": "Email domain 32%." },
+    { "date": "2026-11-03", "what": "Predicted SMS (v2)", "metric": "AUC", "value": "0.650", "baseline": "gate 0.58", "result": "pass", "note": "v1 scored 0.722 with two leaking inputs; removed." },
+    { "date": "2026-11-11", "what": "Chain verification", "metric": "Agreement", "value": "99%", "baseline": "", "result": "pass", "note": "Transform scores equal the predict endpoint for spot-checked leads; 99% of 1,813 leads agree with the 11-03 scores." }
+  ],
+  "checks": [
+    { "id": "m-sms", "label": "Predicted SMS is enabled", "type": "model_enabled", "model": "Predicted_SMS_CM_12l_eod907571dc" },
+    { "id": "m-email", "label": "Predicted Opened_First_Email is enabled", "type": "model_enabled", "model": "Predicted_Opened_First_Email_CM_12l_eod20adcc71" },
+    { "id": "m-call", "label": "Predicted Call is enabled", "type": "model_enabled", "model": "Predicted_Call_CM_12l_eod7bc9743a" },
+    { "id": "t-set", "label": "Scoring set ran in the last 3 hours", "type": "transform_run", "transform": "ChannelScoringSet", "maxAgeHours": 3 },
+    { "id": "t-models", "label": "Model transform ran in the last 3 hours", "type": "transform_run", "transform": "Channel_Scores_Models", "maxAgeHours": 3 },
+    { "id": "t-publish", "label": "Publish transform ran in the last 3 hours", "type": "transform_run", "transform": "ChannelScores", "maxAgeHours": 3 },
+    { "id": "lead-stamp", "label": "Scores reached Lead in the last 3 hours", "type": "soql_max", "soql": "SELECT MAX(Last_Channel_Scoring_Date__c) m FROM Lead WHERE Last_Channel_Scoring_Date__c = LAST_N_DAYS:7", "maxAgeHours": 3 },
+    { "id": "scored-rows", "label": "Published scores cover the scoring set", "type": "row_match", "a": "Channel_Scoring_Set__dlm", "b": "Channel_Scores__dlm", "tolerancePct": 3 }
+  ],
+  "manualTasks": [
+    { "title": "Monthly test read", "cadence": "Monthly", "owner": "Jennifer", "nextDue": "2026-12-11", "why": "The journey is a test. Arms are only comparable once 30 days have passed since entry, and the harm stop is checked at each read.", "steps": ["Pull entrants by NBA_Test_Arm__c and NBA_Assignment__c from Lead (the Journey Builder population counter reads 0; do not use it).", "Month 1: reach rate per call arm, text click rate, opt-outs, call volume, score distribution of the model-routed path.", "From month 2: 30-day purchase by arm for leads with 30 days of follow-up.", "Stop an arm if it is more than 3 points worse than the best arm with probability above 0.90."], "runbook": "journeys/AC_ReviewQuoteStepJourney/nba-channel/TEST_PLAN.md" },
+    { "title": "Retrain the three models", "cadence": "Quarterly, or sooner if a monthly read shows the scores drifting", "owner": "Jennifer", "nextDue": "2027-02-03", "why": "Training is manual (Schedule Training is left on Manual in Model Builder). The training files are point-in-time CSV uploads, so new history only arrives when the files are rebuilt.", "steps": ["Rebuild the three point-in-time CSVs with pit_pull_ci.py and pit_build.py.", "Upload each as a file data stream and map it to its training data model object.", "Retrain each model in Model Builder with the filters and exclusions in POINT_IN_TIME_SNAPSHOT.md.", "Gate: AUC at least 0.58 and no current-state or leaking input in the top contributors.", "Open Channel_Scores_Models in the Data Cloud UI and point each AI node at the new version (the API refuses any change to a transform that contains a model node)."], "runbook": "journeys/AC_ReviewQuoteStepJourney/nba-channel/POINT_IN_TIME_SNAPSHOT.md" },
+    { "title": "Reset the routing thresholds", "cadence": "After every retrain", "owner": "Jennifer", "why": "The cut points are percentiles of the score distribution (call at the 80th percentile, text at the median). A new model version shifts both.", "steps": ["Take the 80th percentile of Call_Score__c and the median of SMS_Score__c on the first full scoring run.", "Update the Predicted_Channel__c formula (42.3 and 39.8 today) and deploy."] },
+    { "title": "Protect the hourly schedules", "cadence": "Whenever a transform or its schedule is edited", "owner": "Jennifer", "why": "An hourly Data Cloud schedule only runs from its start hour to midnight, and the UI dialog only offers on-the-hour times. Saving from the UI silently cuts the chain to a few runs a day and breaks the :00 / :35 / :10 order.", "steps": ["Never save a schedule from the UI dialog.", "Set schedules by API with start hour 0 and the right minute (bodies are in the transforms folder).", "After any edit, check run history shows one run every hour."], "runbook": "journeys/AC_ReviewQuoteStepJourney/nba-channel/SCORING_SCHEDULE_2026-11-04.md" }
+  ],
+  "openItems": [
+    "Every hourly run re-stamps the scoring date, so about 4,400 leads are updated every hour (roughly 100,000 Lead updates a day through flows and the Marketing Cloud sync). A daily stamp would cut that.",
+    "The entry query accepts leads last modified by three system users. A new integration user touching leads would block entries until its id is added.",
+    "Legacy transforms LeadMultiChannelScoring and ChannelPredictionTrainingData are still active (unscheduled); Channel_Scores_Field__dlm is empty; the three prediction objects from the old predict jobs can be deleted.",
+    "Scores reach Lead 1.5 to 3.5 hours after the lead is created."
+  ],
+  "docs": [
+    { "label": "Model design and build notes", "path": "journeys/AC_ReviewQuoteStepJourney/nba-channel/README.md" },
+    { "label": "Scoring chain runbook", "path": "journeys/AC_ReviewQuoteStepJourney/nba-channel/SCORING_SCHEDULE_2026-11-04.md" },
+    { "label": "Test plan", "path": "journeys/AC_ReviewQuoteStepJourney/nba-channel/TEST_PLAN.md" }
+  ]
+}

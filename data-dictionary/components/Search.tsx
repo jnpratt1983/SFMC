@@ -10,10 +10,11 @@ function href(r: Row) {
   if (r.t === "field") { const [o, ...rest] = r.k.split("."); return `/fields/${o}/${rest.join(".")}/`; }
   if (r.t === "ci") return `/calculated-insights/${r.k}/`;
   if (r.t === "journey") return `/journeys/${r.k}/`;
+  if (r.t === "model") return `/models/${r.k}/`;
   if (r.t === "segment") return `/data-cloud/#segment-${r.k}`;
   return "/";
 }
-const TYPE_LABEL: Record<string, string> = { field: "Field", ci: "Calculated insight", journey: "Journey", segment: "Segment" };
+const TYPE_LABEL: Record<string, string> = { field: "Field", ci: "Calculated insight", journey: "Journey", segment: "Segment", model: "Model" };
 const OBJ_LABEL: Record<string, string> = { Monthly_Driving_Stat__c: "Monthly Driving Stats", Bill__c: "Bill" };
 
 export function Search({ autoFocus = false, big = false }: { autoFocus?: boolean; big?: boolean }) {
