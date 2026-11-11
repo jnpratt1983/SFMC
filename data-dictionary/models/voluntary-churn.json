@@ -1,0 +1,77 @@
+{
+  "id": "voluntary-churn",
+  "order": 1,
+  "name": "Voluntary Churn 60d",
+  "version": "v4",
+  "stage": "Production",
+  "platform": "Data Cloud Model Builder (CatBoost, binary classification)",
+  "owner": "Jennifer Pratt (MarTech)",
+  "summary": "Scores every active customer from 0 to 100 on how likely they are to cancel on their own in the next 60 days. Non-pay and company cancels are left out of the label on purpose, so the score points at leavers we could keep.",
+  "predicts": "Preventable voluntary cancellation within 60 days of the scoring date (high premium, replacement carrier, insured request, app or service).",
+  "population": "Contacts on an in-force policy in Arizona and Rhode Island, about 8,000 a day.",
+  "usedFor": "Band and reason on the Contact record, and the second entry tier of the RE_ChurnRetention journey (not built in Marketing Cloud yet). The first tier is a renewal offer more than $20 or 10% higher.",
+  "components": [
+    { "name": "Voluntary Churn 60d v4", "apiName": "Voluntary_Churn_60d_v4_CM_12l_eod11583779", "target": "Label_60 (cancelled voluntarily within 60 days)", "trained": "2026-10-31", "note": "45 inputs: tenure, renewal offer, bills, driving, savings and discount history, app, email open rate, tickets. Trained on monthly snapshots through 2026-04; Insurance driving-decline rows excluded." }
+  ],
+  "retired": "v1, v2 and v3 are disabled in Einstein Studio. The two older scores (Churn_Risk_Score__c and Normalized_Churn_Risk_Score__c) still refresh monthly and still feed the Customer 360 component until the December cutover.",
+  "outputs": [
+    { "field": "Contact.Voluntary_Churn_Risk_Score__c", "note": "0 to 100, higher means more likely to leave" },
+    { "field": "Contact.Voluntary_Churn_Band__c", "note": "High = top 10% of the day's scores, Moderate = next 20%, Low = the rest" },
+    { "field": "Contact.Voluntary_Churn_Reason__c", "note": "rule-based reason code (price shock, new customer, disengaged and so on), not a model output" },
+    { "field": "Contact.Voluntary_Churn_Top_Factors__c", "note": "the three inputs that moved this customer's score most" },
+    { "field": "Contact.Voluntary_Churn_Scored_At__c", "note": "the date the values on this Contact last changed" },
+    { "field": "Contact.Voluntary_Churn_Offer_Change__c" },
+    { "field": "Contact.Voluntary_Churn_Discount_Change__c" },
+    { "field": "Contact.Voluntary_Churn_Driving_Score__c" }
+  ],
+  "chain": [
+    { "what": "Build today's scoring rows, one per active customer", "kind": "Data Cloud transform", "transform": "ChurnPITScoringSet", "schedule": "Daily 05:00 Central", "automated": true },
+    { "what": "Score the rows with v4", "kind": "Predict job (streaming)", "ref": "Voluntary_Churn_Score_V4__dlm", "schedule": "Follows the scoring set", "automated": true },
+    { "what": "Write score, band, reason and factors to Contact", "kind": "Script on Jennifer's Mac (launchd com.hiroad.churn-writeback)", "ref": "c360-sfdx/scripts/write_back_scores.py", "schedule": "Daily 07:00 Central", "automated": true, "note": "Runs only if the Mac is awake. Refuses to write when the scoring set is more than 30 hours old or more than 1% of rows are unscored." },
+    { "what": "Sync the Contact fields to Marketing Cloud", "kind": "Marketing Cloud Connect", "ref": "Contact_Salesforce", "schedule": "About every 15 minutes", "automated": true },
+    { "what": "Rebuild the training history", "kind": "Data Cloud transform", "transform": "ChurnPITTrainingSet", "schedule": "No schedule, run by hand before a retrain", "automated": false }
+  ],
+  "consumers": [
+    { "kind": "Journey", "name": "RE_ChurnRetention", "note": "Planned. Data extensions exist; query activities, automation and journey are not built. Legal review of the holdout is pending." },
+    { "kind": "Salesforce", "name": "Contact record", "note": "Fields are populated; not on the page layout yet." }
+  ],
+  "quality": {
+    "verdict": "Beats the baseline",
+    "summary": "On customers the model never saw (May to August 2026 snapshots) it ranks leavers better than tenure alone, and the top 10% cancel at 2.3 times the average rate. It misses the 0.68 target, so treat it as a ranking aid alongside the renewal-offer rule, not a stand-alone predictor.",
+    "passLine": "Holdout AUC at least 0.05 above tenure; every tenure bucket at or above 0.60.",
+    "nextReview": "2026-12-19",
+    "nextReviewWhat": "First full 60-day read of production scores against real cancellations."
+  },
+  "validation": [
+    { "date": "2026-10-31", "what": "v4 holdout, 24,450 rows", "metric": "AUC", "value": "0.639", "baseline": "tenure 0.564, v3 0.628", "result": "pass", "note": "Top decile cancels at 11.3%, 2.28x the average. Ahead of v3 in all four tenure buckets." },
+    { "date": "2026-11-11", "what": "Live read of v3 scores, 22 of 60 days", "metric": "AUC", "value": "0.576", "baseline": "tenure 0.522", "result": "early", "note": "87 voluntary cancels so far; wide interval (0.51 to 0.66). High band 2.4% vs 1.0% Low. Renewal offer over $20: 3.3x." },
+    { "date": "2026-10-20", "what": "v3 holdout", "metric": "AUC", "value": "0.627", "baseline": "tenure 0.560", "result": "superseded" }
+  ],
+  "checks": [
+    { "id": "model", "label": "v4 is enabled in Einstein Studio", "type": "model_enabled", "model": "Voluntary_Churn_60d_v4_CM_12l_eod11583779" },
+    { "id": "scoring-set", "label": "Scoring set ran in the last 30 hours", "type": "transform_run", "transform": "ChurnPITScoringSet", "maxAgeHours": 30 },
+    { "id": "scored-rows", "label": "Every scoring row has a score", "type": "row_match", "a": "Churn_PIT_Scoring_Set__dlm", "b": "Voluntary_Churn_Score_V4__dlm", "tolerancePct": 1 },
+    { "id": "writeback", "label": "Contact scores written in the last 4 days", "type": "soql_max", "soql": "SELECT MAX(Voluntary_Churn_Scored_At__c) m FROM Contact WHERE Voluntary_Churn_Risk_Score__c != null", "maxAgeHours": 96 }
+  ],
+  "manualTasks": [
+    { "title": "Confirm the daily write-back is still running", "cadence": "Weekly", "owner": "Jennifer", "nextDue": "2026-11-18", "why": "The write-back is a scheduled job on one laptop. If the Mac is asleep or off at 07:00 nothing runs and nothing alerts.", "steps": ["Open ~/Library/Logs/churn/ and check the newest log has today's or yesterday's date.", "If it is missing, run: bash ~/Desktop/c360-sfdx/scripts/run_churn_writeback.sh", "Exit code 2 means the scoring set is stale or rows are unscored: check the ChurnPITScoringSet run and the predict job in Data Cloud before rerunning."] },
+    { "title": "Copy the band cut points to the Marketing Cloud config row", "cadence": "Monthly", "owner": "Jennifer", "nextDue": "2026-12-11", "why": "RE_ChurnRetention_Config_AF_10202026 holds the High and Moderate cuts (59.91 / 48.45 on 2026-11-11). The write-back prints the current cuts. This step goes away once the entry query reads Voluntary_Churn_Band__c directly.", "steps": ["Read the cut points from the latest write-back log.", "Update the row with ConfigKey = current in the config data extension."] },
+    { "title": "Check the live score against real cancellations", "cadence": "Monthly, first full read 2026-12-19", "owner": "Jennifer", "nextDue": "2026-12-19", "why": "The holdout number is from history. This is the only check that the score still ranks leavers in production.", "steps": ["Take scores as they stood 60 days earlier (Contact history on the score field).", "Join to cancellations by reason; keep preventable voluntary only.", "Report AUC against tenure, cancel rate by band, and top-decile lift. Expect about 0.63.", "Add the result to this model's validation list."] },
+    { "title": "Retrain on newly closed snapshots", "cadence": "Quarterly", "owner": "Jennifer", "nextDue": "2027-02-01", "why": "Model Builder does not retrain on its own here. Each month adds a closed 60-day snapshot of offers, savings and outcomes.", "steps": ["Run ChurnPITTrainingSet, then the train and holdout view transforms for the new version.", "Map the new outputs to data model objects (lake object record, Map Fields).", "Train the new version in Model Builder with the variable list in BUILD_GUIDE.md.", "Batch-predict the holdout and run validate_holdout.py. Compare with the current version on the same rows, joined on Row_Key.", "Promote only if it beats the current version: update the scoring transform, re-map the scoring data model object, create the production predict job (Streaming), point write_back_scores.py at the new output, disable the old model."], "runbook": "journeys/ChurnRiskActivation/BUILD_GUIDE.md" },
+    { "title": "Re-map the scoring data model object", "cadence": "Whenever a scoring-set column is added or renamed", "owner": "Jennifer", "why": "New transform columns do not reach the model or the write-back until the mapping is saved in the Data Cloud UI.", "steps": ["Open the Churn_PIT_Scoring_Set lake object record, Map Fields.", "Confirm the auto-drawn lines and press Save (lines show before they are saved)."] },
+    { "title": "Extend the snapshot calendar", "cadence": "Once, before December 2028", "owner": "Jennifer", "nextDue": "2028-11-01", "why": "Churn_Snapshot_Calendar.csv lists month-end snapshot dates through 2028-12. Training stops gaining months after that.", "steps": ["Regenerate the CSV with later months and upload it as a full replace."] }
+  ],
+  "openItems": [
+    "The top input, the earned-discount fraction from Savings History, was filled on 66% of new rows on 2026-11-02 against about 90% in the backfill. Ask Data Analytics for the true value as a recurring feed.",
+    "A streaming predict job that falls behind is only caught by the unscored-row check.",
+    "About 640 customers who left the book keep an older v3 score dated 2026-11-02.",
+    "December: point the Customer 360 component, persona batch and Wave dataset at the new fields, then switch off the two legacy churn score transforms.",
+    "Contact is at the 20-field history-tracking limit."
+  ],
+  "docs": [
+    { "label": "Program summary", "path": "CHURN_PROGRAM_SUMMARY.md" },
+    { "label": "End-to-end checklist", "path": "CHURN_PROGRAM_CHECKLIST.md" },
+    { "label": "Brief for Data Science", "path": "CHURN_MODEL_FOR_DATA_SCIENCE.md" },
+    { "label": "v4 holdout report", "path": "journeys/ChurnRiskActivation/2026-10-31_v4_holdout_validation.md" }
+  ]
+}

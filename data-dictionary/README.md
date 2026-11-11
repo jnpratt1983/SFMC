@@ -1,6 +1,6 @@
 # Quanata Data Dictionary
 
-A living, Quanata-branded data dictionary for the HiRoad Salesforce org: every field on **Lead, Contact, Account, Bill and Monthly Driving Stats**, with where each one is used in **Marketing Cloud journeys** (down to the email, push, SMS, decision split and SQL query) and in **Data Cloud** (stream, data lake object, model object fields, calculated insights, segments, identity rules, data graphs, data actions, activations). It also lists every **calculated insight** with its SQL and where it is used.
+A living, Quanata-branded data dictionary for the HiRoad Salesforce org: every field on **Lead, Contact, Account, Bill and Monthly Driving Stats**, with where each one is used in **Marketing Cloud journeys** (down to the email, push, SMS, decision split and SQL query) and in **Data Cloud** (stream, data lake object, model object fields, calculated insights, segments, identity rules, data graphs, data actions, activations). It also lists every **calculated insight** with its SQL and where it is used, and the **predictive models** (voluntary churn, Next Best Action channel scores, Einstein lead score) with their running health, validation results and the manual upkeep each needs.
 
 Built with Next.js (static export) and Tailwind, hosted on Vercel, refreshed monthly by a GitHub Action.
 
@@ -12,6 +12,7 @@ npm install
 npm run dev          # http://localhost:3000
 npm run build        # static site in out/
 npm run refresh      # re-pull metadata and rebuild data/ (needs Salesforce CLI auth + Marketing Cloud creds)
+npm run refresh:models   # re-read model health only (Salesforce CLI auth), rebuild data/
 ```
 
 ## Deploy to Vercel
@@ -39,7 +40,7 @@ To refresh by hand: `npm run refresh`, then commit `data/`. The refresh log list
 ## Layout
 
 ```
-app/                      Next.js routes (home, objects, fields, journeys, queries, calculated-insights, data-cloud, changes)
+app/                      Next.js routes (home, objects, fields, journeys, queries, calculated-insights, data-cloud, models, changes)
 components/               Header, search, field table, shared UI
 lib/data.ts               typed access to data/dictionary.json
 data/dictionary.json      the dictionary (generated)
@@ -47,6 +48,7 @@ data/search-index.json    compact index for the search box (generated)
 data/snapshots/, changelog.json   monthly diffs (generated)
 pipeline/                 pull + build scripts (see pipeline/README.md)
 definitions/              hand-maintained field definitions, one JSON per object (see definitions/README.md)
+models/                   hand-maintained model pages, one JSON per model: checks, validation results, upkeep tasks (see models/README.md)
 public/brand/             Quanata logo SVGs
 ```
 

@@ -1,12 +1,13 @@
 # Pipeline
 
-Four stdlib-only Python scripts turn live metadata into `data/dictionary.json` (read by the site at build time), `data/search-index.json` (loaded in the browser for search), a dated snapshot in `data/snapshots/` and `data/changelog.json`.
+Five stdlib-only Python scripts turn live metadata into `data/dictionary.json` (read by the site at build time), `data/search-index.json` (loaded in the browser for search), a dated snapshot in `data/snapshots/` and `data/changelog.json`.
 
 | Script | Source | What it pulls |
 |---|---|---|
 | `pull_salesforce.py` | REST describe, Tooling `CustomField`, `FieldDefinition`, Metadata API | Every field on Lead, Contact, Account, Bill__c, Monthly_Driving_Stat__c with type, picklists, formula, description, help text, created/modified; the Data Cloud package-kit field maps (`DataSrcDataModelFieldMap`); Flows and Apex that name a `__dlm`/`__cio` object |
 | `pull_datacloud.py` | `/ssot/*` Connect API | Data streams with field mappings, DLO and DMO metadata, calculated insights (SQL included), segments with criteria, activations, data graphs, data actions, transforms, identity resolution rules |
 | `pull_sfmc.py` | Marketing Cloud REST + SOAP | Published journeys (`extras=all`), their event definitions, all automations and SQL query activities, data extensions (fields for the `*_Salesforce` synced DEs, journey entry DEs and query targets), and the email / push / SMS assets used by published journeys |
+| `pull_models.py` | `/ssot/data-transforms`, `/ssot/machine-learning/configured-models`, SOQL | For the models in `models/*.json`: transform last runs, run history and schedules, Einstein Studio model status and inputs, and the freshness and row-count checks each model file declares |
 | `build.py` | the raw JSON above | Resolves usage and writes the outputs |
 
 Run everything with `bash pipeline/refresh.sh` (or `npm run refresh`). Raw pulls land in `pipeline/raw/` (git-ignored) and the scripts are incremental enough to re-run freely.

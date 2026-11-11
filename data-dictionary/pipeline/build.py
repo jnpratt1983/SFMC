@@ -708,6 +708,105 @@ def changelog(fields, cis, journeys, segs):
     json.dump(cur, open(os.path.join(snapdir, TODAY + ".json"), "w"))
     return log_entries
 
+# ---------------------------------------------------------------- models
+MODELS_DIR = os.path.join(ROOT, "models")
+
+def _ts(v):
+    """Parse a Salesforce datetime or date into an aware datetime (dates count as the end of that day, UTC)."""
+    if not v: return None
+    v = str(v)
+    try:
+        if len(v) == 10: return datetime.datetime.fromisoformat(v + "T23:59:59+00:00")
+        v = re.sub(r"\.\d+", "", v).replace("Z", "+00:00")
+        v = re.sub(r"([+-]\d{2})(\d{2})$", r"\1:\2", v)
+        d = datetime.datetime.fromisoformat(v)
+        return d if d.tzinfo else d.replace(tzinfo=datetime.timezone.utc)
+    except ValueError:
+        return None
+
+def _age(hours):
+    if hours is None: return "never"
+    if hours < 1: return f"{max(int(hours * 60), 0)} min ago"
+    if hours < 48: return f"{hours:.0f} h ago"
+    return f"{hours / 24:.0f} days ago"
+
+def models_build(fields, journeys):
+    """Merge models/*.json (hand-maintained) with pipeline/raw/models_health.json (pulled) into the `models` section.
+    Each check gets state ok / fail / unknown plus what was observed; a model's `running` is the worst of its checks."""
+    try:
+        health = load("models_health")
+    except FileNotFoundError:
+        health = {}
+        log("models: no models_health.json (run pull_models.py); checks will show as not checked")
+    now = _ts(health.get("checkedAt"))
+    trs, cms, obs = health.get("transforms", {}), health.get("configuredModels", {}), health.get("checks", {})
+    fkeys = {f["key"] for f in fields}
+    jby = {j["name"]: j["id"] for j in journeys}
+    out = []
+    for p in sorted(glob.glob(os.path.join(MODELS_DIR, "*.json"))):
+        m = json.load(open(p))
+        for c in m.get("components", []):
+            cm = cms.get(c.get("apiName") or "")
+            c["status"] = cm["status"] if cm else None
+            c["inputs"] = cm["inputs"] if cm else []
+        for st in m.get("chain", []):
+            t = trs.get(st.get("transform") or "")
+            if t:
+                runs = t.get("runs") or []
+                day = [r for r in runs if now and _ts(r.get("start")) and (now - _ts(r["start"])).total_seconds() <= 86400]
+                st["live"] = {"lastRun": t.get("lastRunDate"), "lastRunStatus": t.get("lastRunStatus"), "rows": runs[0].get("rows") if runs else None,
+                              "runs24h": len(day), "failed24h": sum(1 for r in day if (r.get("status") or "").upper() not in ("SUCCESS", "SKIPPED_NO_CHANGES", "RUNNING", "IN_PROGRESS")),
+                              "schedule": t.get("schedule")}
+        for o in m.get("outputs", []):
+            o["known"] = o["field"] in fkeys
+        for c in m.get("consumers", []):
+            c["journeyId"] = jby.get(c.get("name"))
+        for c in m.get("checks", []):
+            state, seen = "unknown", "not checked"
+            if not now:
+                pass
+            elif c["type"] == "model_enabled":
+                cm = cms.get(c["model"])
+                state, seen = ("ok" if cm and cm["status"] == "Enabled" else "fail"), (cm["status"] if cm else "model not found")
+            elif c["type"] == "transform_run":
+                t = trs.get(c["transform"]) or {}
+                last = _ts(t.get("lastRunDate"))
+                hrs = (now - last).total_seconds() / 3600 if last else None
+                good = (t.get("lastRunStatus") or "").upper() in ("SUCCESS", "SKIPPED_NO_CHANGES")
+                state = "ok" if hrs is not None and hrs <= c["maxAgeHours"] and good else "fail"
+                seen = f"last run {_age(hrs)}, {t.get('lastRunStatus') or t.get('error') or 'no status'}"
+            elif c["type"] == "soql_max":
+                r = obs.get(m["id"] + ":" + c["id"]) or {}
+                v = (r.get("record") or {}).get("m")
+                last = _ts(v)
+                hrs = max((now - last).total_seconds() / 3600, 0) if last else None
+                if r.get("error"): seen = "query failed: " + r["error"][:120]
+                else:
+                    state = "ok" if hrs is not None and hrs <= c["maxAgeHours"] else "fail"
+                    seen = f"latest {v}" if v else "no rows"
+            elif c["type"] == "row_match":
+                r = obs.get(m["id"] + ":" + c["id"]) or {}
+                a, b2 = (r.get("a") or {}).get("totalSize"), (r.get("b") or {}).get("totalSize")
+                if a is None or b2 is None: seen = "count failed"
+                else:
+                    gap = abs(a - b2) / a * 100 if a else 100
+                    state = "ok" if gap <= c["tolerancePct"] else "fail"
+                    seen = f"{a:,} rows in, {b2:,} scored ({gap:.1f}% apart)"
+            c["state"], c["observed"] = state, seen
+        states = [c["state"] for c in m.get("checks", [])]
+        m["running"] = "fail" if "fail" in states else "unknown" if (not states or "unknown" in states) else "ok"
+        m["checkedAt"] = health.get("checkedAt")
+        for o in m.get("outputs", []):
+            f = next((f for f in fields if f["key"] == o["field"]), None)
+            if f is not None:
+                f.setdefault("models", []).append({"id": m["id"], "name": m["name"], "note": o.get("note") or ""})
+        out.append(m)
+    out.sort(key=lambda m: m.get("order", 99))
+    mine = {c.get("apiName") for m in out for c in m.get("components", [])}
+    others = [o for o in health.get("otherModels", []) if o["apiName"] not in mine]
+    others.sort(key=lambda o: (o["status"] != "Enabled", o["label"] or ""))
+    return out, others
+
 # ---------------------------------------------------------------- main
 DEFS = os.path.join(ROOT, "definitions")
 
@@ -739,7 +838,9 @@ def main():
     undefined = apply_definitions(fields)
     journeys, queries, synced, jlist = mc_build(fields)
     cis, segs, acts, graphs, dactions, streams, transforms = dc_build(fields)
+    models, other_models = models_build(fields, journeys)
     for f in fields:
+        f.setdefault("models", [])
         f["usage"] = {"sfmcJourneys": len(f["sfmc"]["journeys"]), "sfmcQueries": len(f["sfmc"]["queries"]),
                       "dc": len(f["dc"]["calculatedInsights"]) + len(f["dc"]["segments"]) + len(f["dc"]["identityResolution"]) + len(f["dc"]["dataGraphs"]) + len(f["dc"]["dataActions"]) + len(f["dc"]["activations"]),
                       "inSfmc": bool(f["sfmc"]["syncedDE"]), "inDataCloud": bool(f["dc"]["stream"])}
@@ -756,13 +857,14 @@ def main():
     jstat = Counter(j.get("status") for j in jlist)
     out = {"generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"), "org": {"instanceUrl": inst, "alias": os.environ.get("SF_ORG", "blueowl-prod")},
            "objects": objects, "fields": fields, "journeys": journeys, "queries": queries, "calculatedInsights": cis, "segments": segs, "activations": acts,
-           "dataGraphs": graphs, "dataActions": dactions, "streams": streams, "transforms": transforms, "changelog": changes,
+           "dataGraphs": graphs, "dataActions": dactions, "streams": streams, "transforms": transforms, "models": models, "otherModels": other_models, "changelog": changes,
            "summary": {"fields": len(fields), "undefinedFields": undefined, "journeysReported": len(journeys), "journeyStatuses": dict(jstat), "queriesWithFields": len(queries), "cis": len(cis), "segments": len(segs)}}
     os.makedirs(DATA, exist_ok=True)
     json.dump(out, open(os.path.join(DATA, "dictionary.json"), "w"), indent=0)
     idx = [{"t": "field", "k": f["key"], "o": f["object"], "n": f["apiName"], "l": f["label"], "ty": f["typeDetail"], "j": f["usage"]["sfmcJourneys"], "q": f["usage"]["sfmcQueries"], "d": f["usage"]["dc"]} for f in fields]
     idx += [{"t": "ci", "k": c["apiName"], "n": c["apiName"], "l": c["displayName"]} for c in cis]
     idx += [{"t": "journey", "k": j["id"], "n": j["name"], "l": j["status"]} for j in journeys]
+    idx += [{"t": "model", "k": m["id"], "n": m["name"], "l": m["stage"] + " model"} for m in models]
     idx += [{"t": "segment", "k": s["apiName"], "n": s["apiName"], "l": s["displayName"]} for s in segs]
     json.dump(idx, open(os.path.join(DATA, "search-index.json"), "w"))
     log("fields", len(fields), "journeys", len(journeys), "queries", len(queries), "cis", len(cis), "segments", len(segs))

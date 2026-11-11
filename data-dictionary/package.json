@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "refresh": "bash pipeline/refresh.sh",
+    "refresh:models": "cd pipeline && python3 pull_models.py && python3 build.py",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run build"
   },

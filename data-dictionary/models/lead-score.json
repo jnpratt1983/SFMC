@@ -1,0 +1,58 @@
+{
+  "id": "lead-score",
+  "order": 3,
+  "name": "Einstein Lead Score",
+  "version": "retrained by Salesforce 2026-11-09",
+  "stage": "Under evaluation",
+  "platform": "Sales Cloud Einstein Lead Scoring (managed by Salesforce)",
+  "owner": "Kevin Brown (field sync), Jennifer Pratt (evaluation)",
+  "summary": "Salesforce's built-in 1 to 99 score for how likely an Auto lead is to convert. Salesforce trains and refreshes it; we copy it to a Lead field every night and keep a daily history so it can be judged.",
+  "predicts": "Lead conversion, as Salesforce defines it. We judge it on purchase (purchased__c) within 7 and 14 days.",
+  "population": "Auto record-type leads created in roughly the last 45 days, about 9,800.",
+  "usedFor": "Nothing in production yet. Two journey tests are planned (savings-forward creative in the Purchase step journey; text plus email against email only in the Drivers step journey).",
+  "components": [
+    { "name": "Einstein Lead Scoring model", "target": "Lead conversion", "trained": "2026-11-09", "note": "Not visible in Model Builder or the model API. Factors are under Setup, Einstein Lead Scoring. This is not the Einstein Discovery 'Likely to Convert' panel on the Lead page, which is a separate model." }
+  ],
+  "outputs": [
+    { "field": "Lead.Lead_Score__c", "note": "nightly copy of the Einstein score; kept after conversion" },
+    { "field": "Lead.Lead_Score_Last_Update__c" }
+  ],
+  "chain": [
+    { "what": "Score and re-score leads", "kind": "Einstein Lead Scoring", "ref": "Lead.ScoreIntelligence.Score", "schedule": "Salesforce-managed", "automated": true },
+    { "what": "Copy the score to a Lead field", "kind": "Apex batch", "ref": "LeadScoreSyncBatch", "schedule": "Nightly", "automated": true },
+    { "what": "Record a dated copy when a score is new, changed or a week old", "kind": "Scheduled flow", "ref": "Lead_Score_Snapshot (object Lead_Score_Snapshot__c)", "schedule": "Daily 05:00 Pacific", "automated": true }
+  ],
+  "consumers": [
+    { "kind": "Journey test", "name": "AC_PurchaseQuoteStepJourney_July2026", "note": "Planned, scenario 1." },
+    { "kind": "Journey test", "name": "AC_DriversQuote_July2026", "note": "Planned, scenario 2." }
+  ],
+  "quality": {
+    "verdict": "Not yet proven",
+    "summary": "The model in place until 2026-11-08 barely separated buyers (AUC 0.55, far behind quote step and lead age). The retrained model spreads scores across the full range and, on its first day, predicted which brand-new leads come back to quote. It tracks lead age closely, so it has to beat quote step plus age to be worth using.",
+    "passLine": "7-day purchase AUC above quote step and lead age together, on leads scored before the outcome.",
+    "nextReview": "2026-11-17",
+    "nextReviewWhat": "First 7-day forward read of the retrained scores (14-day read from 2026-11-23)."
+  },
+  "validation": [
+    { "date": "2026-11-10", "what": "Retrained model, first forward day, leads 0 to 3 days old", "metric": "AUC (back to quote)", "value": "0.65", "baseline": "quote step 0.58", "result": "early", "note": "No signal on leads older than 3 days (0.505). Scores saturate at 91 to 99 from quote step 4." },
+    { "date": "2026-11-09", "what": "Previous model, 7-day purchase, 8,566 leads", "metric": "AUC", "value": "0.55", "baseline": "quote step 0.74, lead age 0.83", "result": "fail", "note": "80% of leads scored exactly 83." }
+  ],
+  "checks": [
+    { "id": "sync", "label": "Lead_Score__c refreshed in the last 36 hours", "type": "soql_max", "soql": "SELECT MAX(Lead_Score_Last_Update__c) m FROM Lead WHERE Lead_Score__c != null", "maxAgeHours": 36 },
+    { "id": "snapshot", "label": "Snapshot flow wrote rows in the last 2 days", "type": "soql_max", "soql": "SELECT MAX(Snapshot_Date__c) m FROM Lead_Score_Snapshot__c", "maxAgeHours": 60 }
+  ],
+  "manualTasks": [
+    { "title": "Forward read of the retrained scores", "cadence": "2026-11-17 (7-day) and 2026-11-23 (14-day), then after every Einstein retrain", "owner": "Jennifer", "nextDue": "2026-11-17", "why": "Only scores recorded before the outcome count. The snapshot table is the only record of what a lead's score was on a given day.", "steps": ["Run scripts/lead_score_read.py in c360-sfdx (needs the pandas virtual environment).", "Use snapshots dated 2026-11-09 or later with at least 7 days of follow-up.", "Judge on purchased__c, taking the first purchased = true in Lead history (the flag flips back and forth on about 1 in 5 buyers).", "Compare with quote step and lead age together, not the score alone.", "Add the result to this model's validation list."], "runbook": "data-cloud/lead-score-test/TEST_PLAN.md (c360-sfdx)" },
+    { "title": "Watch for a silent retrain", "cadence": "Monthly", "owner": "Jennifer", "nextDue": "2026-12-09", "why": "Salesforce retrains without notice and the score table carries no timestamps. A retrain invalidates earlier reads and any score bands a journey uses.", "steps": ["In Lead_Score_Snapshot__c, count leads whose score changed between consecutive days.", "Several thousand changes in one day (7,420 on 2026-11-09) means a retrain: rerun the forward read and reset any bands."] },
+    { "title": "Set score bands on journey entrants", "cadence": "Before each journey test starts, and after a retrain", "owner": "Jennifer", "why": "New leads score high (average 81 in the first 3 days), so bands taken from all leads would put nearly every entrant in the top band.", "steps": ["Take the score distribution of the journey's own entrants over the last 30 days.", "Cut bands on that distribution and stamp the band on the lead at entry."] }
+  ],
+  "openItems": [
+    "Lead_Score__c, Lead_Score_Last_Update__c and Five_Year_PLE__c are not in the Marketing Cloud Connect Lead sync yet, so no journey can read the score (Jennifer).",
+    "The score is not on any Lead page layout.",
+    "Buyers lose their live Einstein score; use Lead_Score__c or the snapshot table for any read that includes them."
+  ],
+  "docs": [
+    { "label": "Journey test plan", "path": "data-cloud/lead-score-test/TEST_PLAN.md (c360-sfdx)" },
+    { "label": "First forward read", "path": "data-cloud/lead-score-test/EARLY_READ_2026-11-10.md (c360-sfdx)" }
+  ]
+}

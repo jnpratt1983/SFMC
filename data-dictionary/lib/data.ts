@@ -17,6 +17,7 @@ export type Field = {
     calculatedInsights: { apiName: string; displayName: string }[]; segments: { apiName: string; displayName: string }[];
     identityResolution: { ruleset: string; rule: string; type: string; object?: string }[]; dataGraphs: { name: string; status: string }[];
     dataActions: { name: string }[]; activations: { name: string; target: string; segment: string }[] };
+  models?: { id: string; name: string; note: string }[];
   usage: { sfmcJourneys: number; sfmcQueries: number; dc: number; inSfmc: boolean; inDataCloud: boolean };
 };
 export type ObjectInfo = {
@@ -40,12 +41,28 @@ export type CI = {
 };
 export type Segment = { apiName: string; displayName: string; status: string; segmentOn: string; publishInterval: string; publishStatus?: string | null; lastPublish?: string | null; refs: string[]; calculatedInsights: string[]; salesforceFields: string[]; activations: { name: string; target: string; segment: string }[] };
 export type ChangeEntry = { date: string; previous: string | null; fieldsAdded: string[]; fieldsRemoved: string[]; cisAdded: string[]; cisRemoved: string[]; journeysAdded: string[]; journeysRemoved: string[]; segmentsAdded: string[]; segmentsRemoved: string[]; fieldLabels?: Record<string, string> };
+export type ModelCheck = { id: string; label: string; type: string; state: "ok" | "fail" | "unknown"; observed: string };
+export type ModelTask = { title: string; cadence: string; owner: string; nextDue?: string; why: string; steps: string[]; runbook?: string };
+export type ModelStep = { what: string; kind: string; transform?: string; ref?: string; schedule: string; automated: boolean; note?: string;
+  live?: { lastRun: string | null; lastRunStatus: string | null; runs24h: number; failed24h: number; schedule: { frequency: string; hour: number; minute: number; zone: string; next: string } | null } };
+export type Model = {
+  id: string; name: string; version: string; stage: string; platform: string; owner: string; summary: string; predicts: string; population: string; usedFor: string; retired?: string;
+  components: { name: string; apiName?: string; target: string; trained: string; note?: string; status: string | null; inputs: string[] }[];
+  outputs: { field: string; note?: string; known: boolean }[]; chain: ModelStep[];
+  consumers: { kind: string; name: string; note?: string; journeyId: string | null }[];
+  quality: { verdict: string; summary: string; passLine: string; nextReview?: string; nextReviewWhat?: string };
+  validation: { date: string; what: string; metric: string; value: string; baseline: string; result: string; note?: string }[];
+  checks: ModelCheck[]; running: "ok" | "fail" | "unknown"; checkedAt: string | null;
+  manualTasks: ModelTask[]; openItems: string[]; docs: { label: string; path: string }[];
+};
+export type OtherModel = { apiName: string; label: string; status: string; capability: string; createdDate: string; inputs: number };
 export type Dictionary = {
   generatedAt: string; org: { instanceUrl: string; alias: string }; objects: ObjectInfo[]; fields: Field[]; journeys: Journey[]; queries: Query[];
   calculatedInsights: CI[]; segments: Segment[]; activations: { id: string; name: string; target: string; segment: string; status: string; refreshType: string; lastPublish: string | null; lastPublishStatus: string | null; attributes: string[]; salesforceFields: string[] }[];
   dataGraphs: { name: string; status: string; primaryObject: string; objects: string[]; salesforceFields: string[] }[]; dataActions: { name: string; objects: string[]; salesforceFields: string[] }[];
   streams: { object: string; name: string; dlo: string; status: string; lastRefresh: string; lastRunStatus: string; totalRecords: number; mappedFields: number; refresh: string; dmos: string[] }[];
   transforms: { name: string; label: string; type: string; status: string; lastRun: string | null; lastRunStatus: string | null }[];
+  models: Model[]; otherModels: OtherModel[];
   changelog: ChangeEntry[]; summary: { fields: number; journeysReported: number; journeyStatuses: Record<string, number>; queriesWithFields: number; cis: number; segments: number };
 };
 
@@ -54,6 +71,11 @@ export const fieldsByKey = new Map(data.fields.map((f) => [f.key, f]));
 export const objectsByName = new Map(data.objects.map((o) => [o.apiName, o]));
 export const journeysById = new Map(data.journeys.map((j) => [j.id, j]));
 export const cisByName = new Map(data.calculatedInsights.map((c) => [c.apiName, c]));
+export const modelsById = new Map((data.models ?? []).map((m) => [m.id, m]));
+export function modelHref(id: string) { return `/models/${id}/`; }
+export const RUNNING_LABEL: Record<string, string> = { ok: "Running", fail: "Needs attention", unknown: "Not checked" };
+export function runningColor(state: string) { return state === "ok" ? "var(--seafoam)" : state === "fail" ? "var(--accent)" : "var(--horizon)"; }
+export function buildDay() { return new Date().toISOString().slice(0, 10); }
 export const segmentsByName = new Map(data.segments.map((s) => [s.apiName, s]));
 
 export function fieldHref(key: string) {

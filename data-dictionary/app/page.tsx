@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { data, objectHref, fmtDate } from "@/lib/data";
+import { data, objectHref, modelHref, fmtDate } from "@/lib/data";
 import { Search } from "@/components/Search";
 import { Qiwi, Section, Stat } from "@/components/ui";
+import { RunningBadge } from "@/components/ModelBits";
 
 export default function Home() {
   const s = data.summary;
@@ -51,6 +52,19 @@ export default function Home() {
           ))}
         </div>
       </Section>
+
+      {(data.models?.length ?? 0) > 0 && (
+        <Section title="Predictive models" eyebrow="Health and upkeep" aside={<Link href="/models/" className="text-sm hover:underline decoration-[var(--accent)]">All models and the upkeep calendar →</Link>}>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {data.models.map((m) => (
+              <Link key={m.id} href={modelHref(m.id)} className="card p-5 hover:border-[var(--accent)] transition-colors block">
+                <div className="flex items-baseline justify-between gap-2"><h3 className="text-lg font-medium">{m.name}</h3><span className="chip chip-fill shrink-0">{m.stage}</span></div>
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-2"><RunningBadge state={m.running} /><span>{m.quality.verdict}</span><span>{m.manualTasks.length} manual tasks</span></div>
+              </Link>
+            ))}
+          </div>
+        </Section>
+      )}
 
       <Section title="Latest refresh" eyebrow="Living dictionary" aside={<Link href="/changes/" className="text-sm hover:underline decoration-[var(--accent)]">Full change log →</Link>}>
         {latest ? (
