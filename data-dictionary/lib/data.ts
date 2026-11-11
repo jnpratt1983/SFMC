@@ -7,6 +7,7 @@ export type Field = {
   key: string; object: string; apiName: string; label: string; type: string; typeDetail: string; custom: boolean;
   length?: number | null; precision?: number | null; scale?: number | null; required?: boolean; unique?: boolean; externalId?: boolean;
   picklistValues: { value: string; label: string; active: boolean }[]; formula?: string | null; defaultValue?: unknown;
+  definition: string; definitionSource: "dictionary" | "salesforce" | null; definitionConfidence?: string | null;
   description: string; helpText: string; referenceTo: string[]; relationshipName?: string | null;
   createdDate?: string | null; createdBy?: string | null; lastModifiedDate?: string | null; lastModifiedBy?: string | null;
   historyTracked?: boolean | null; businessStatus?: string | null; businessOwner?: string | null; securityClassification?: string | null; complianceGroup?: string | null;
@@ -21,7 +22,7 @@ export type Field = {
 export type ObjectInfo = {
   apiName: string; label: string; pluralLabel?: string; custom?: boolean; fieldCount: number; customCount: number;
   syncedDE: string | null; stream: string | null; dmos: string[];
-  stats: { inSfmc: number; inDataCloud: number; usedInJourneys: number; usedInQueries: number; usedInDataCloud: number; unused: number };
+  stats: { inSfmc: number; inDataCloud: number; usedInJourneys: number; usedInQueries: number; usedInDataCloud: number; defined?: number; unused: number };
 };
 export type JourneyItem = { kind: string; name: string; activityKey: string | null; fields: { key: string; how: string }[]; unresolvedColumns: string[]; detail: Record<string, unknown> | null };
 export type Journey = {

@@ -42,4 +42,5 @@ next-env.d.ts
 
 # pipeline raw pulls (regenerated each refresh; contain message content and SQL)
 pipeline/raw/
+pipeline/raw
 pipeline/__pycache__/

@@ -1,0 +1,470 @@
+{
+ "AccountSource": {
+  "confidence": "high",
+  "definition": "Standard picklist recording the channel through which the Account originated; defaults to Website. The values mirror the lead-source list (Quote Page, Rate Compare Tool, Facebook, Google AdWords, Acxiom, Customer Referral, events) so the source carries over from the lead. Mapped to account source in Data Cloud."
+ },
+ "Active_CA_NDA__c": {
+  "confidence": "medium",
+  "definition": "Checkbox indicating a confidentiality agreement or NDA is currently active with this business or partner Account (2023 business-development field)."
+ },
+ "AcxHH_Link__c": {
+  "confidence": "medium",
+  "definition": "Acxiom household link key (surname + address link, per help text) used to tie the Account to Acxiom household records in the 2021 data append."
+ },
+ "BillingAddress": {
+  "confidence": "high",
+  "definition": "Compound address field that groups the billing street, city, state, postal code, country and geocode into one value for display and the API; it is read-only and derived from the individual billing fields."
+ },
+ "BillingCity": {
+  "confidence": "high",
+  "definition": "City of the Account's billing address. Mapped to the Data Cloud Contact Point Address object and checked by the address data-quality insight."
+ },
+ "BillingCountry": {
+  "confidence": "high",
+  "definition": "Country of the Account's billing address. Mapped to the Data Cloud Contact Point Address object and checked by the address data-quality insight."
+ },
+ "BillingGeocodeAccuracy": {
+  "confidence": "high",
+  "definition": "Standard picklist recording how precisely the billing address was geocoded, from exact Address down to Zip, City, County, State or Unknown. Set by Salesforce geocoding data integration rules."
+ },
+ "BillingLatitude": {
+  "confidence": "high",
+  "definition": "Latitude of the billing address, filled by Salesforce's address geocoding (or manual entry). Mapped to the geo-latitude of the Data Cloud Contact Point Address object."
+ },
+ "BillingLongitude": {
+  "confidence": "high",
+  "definition": "Longitude of the billing address, filled by Salesforce's address geocoding (or manual entry). Mapped to the geo-longitude of the Data Cloud Contact Point Address object."
+ },
+ "BillingPostalCode": {
+  "confidence": "high",
+  "definition": "ZIP or postal code of the Account's billing address. Mapped to the postal code of the Data Cloud Contact Point Address object."
+ },
+ "BillingState": {
+  "confidence": "high",
+  "definition": "State or province of the Account's billing address. Mapped to the state/province of the Data Cloud Contact Point Address object."
+ },
+ "BillingStreet": {
+  "confidence": "high",
+  "definition": "Street line(s) of the Account's billing address. Mapped to Address Line 1 of the Data Cloud Contact Point Address object and checked by the address data-quality insight."
+ },
+ "Cancel_Date__c": {
+  "confidence": "high",
+  "definition": "Date and time the policy was canceled (per description), from the policy system; blank while the policy is active. Journey queries require it to be blank to select active customers, and the exit queries use it to remove canceled customers from journeys."
+ },
+ "Cancellation__c": {
+  "confidence": "high",
+  "definition": "Reason the policy was canceled (per description), as text from the policy system. Synced to Marketing Cloud as Cancellation_Reason in the customer/policy data extension."
+ },
+ "ChannelProgramLevelName": {
+  "confidence": "high",
+  "definition": "Level within the partner channel program the Account holds. Standard Partner Relationship Management field; blank unless partner programs are used."
+ },
+ "ChannelProgramName": {
+  "confidence": "high",
+  "definition": "Name of the partner channel program the Account is enrolled in. Standard Partner Relationship Management field; blank unless partner programs are used."
+ },
+ "Claim_Close_Date__c": {
+  "confidence": "medium",
+  "definition": "Date the claim on the policy was closed, from the policy/claims feed (May 2025 policy field set). No journey or Data Cloud usage found."
+ },
+ "Claim_Flag__c": {
+  "confidence": "medium",
+  "definition": "Checkbox indicating the policy has had a claim, from the policy/claims feed (May 2025 policy field set). No journey or Data Cloud usage found."
+ },
+ "Claim_Number__c": {
+  "confidence": "medium",
+  "definition": "Claim number for the claim on the policy, from the policy/claims feed (May 2025 policy field set). No journey or Data Cloud usage found."
+ },
+ "Contact__c": {
+  "confidence": "medium",
+  "definition": "Lookup to the primary Contact (policyholder) for this household Account, added in 2021. The Contact's standard Account link is what journeys and Data Cloud rely on; no usage of this lookup was found."
+ },
+ "CreatedById": {
+  "confidence": "high",
+  "definition": "Lookup to the User (or integration user) who created the Account record."
+ },
+ "CreatedDate": {
+  "confidence": "high",
+  "definition": "Date and time the Account record was created in Salesforce. Mapped to created date in the Data Cloud Account object."
+ },
+ "Current_Rate_Change__c": {
+  "confidence": "high",
+  "definition": "Rate change applied to the customer's current policy term (per description), stored as text by the policy feed. Synced to the Marketing Cloud customer/policy data extension."
+ },
+ "Current_Term_Effective_Date__c": {
+  "confidence": "high",
+  "definition": "Effective date of the customer's current policy term; updates when the next term becomes active (per description). Journey queries offset it by two or three months to time TDLI touchpoints 20 days before a bill."
+ },
+ "Current_Term_Expiration_Date__c": {
+  "confidence": "high",
+  "definition": "Expiration date of the customer's current policy term, updated at term start (per description). Renewal and TDLI queries select households 54 or 30 days before it and within a six-month window, and it is merged into the TDLI R-30 email."
+ },
+ "Customer_Number__c": {
+  "confidence": "high",
+  "definition": "Comma-separated customer number(s) belonging to the policy (per description), from the policy system. Marketing Cloud queries match it against the Contact's customer number to join policy data to the person, and it is merged into the no-trips emails."
+ },
+ "DNR_Flag__c": {
+  "confidence": "medium",
+  "definition": "Do-not-renew flag from the policy system: true when the policy will not be offered renewal. Synced to the Marketing Cloud customer/policy data extension so renewal journeys can exclude these households."
+ },
+ "Description": {
+  "confidence": "high",
+  "definition": "Free-form long text describing the Account. Mapped to the description in the Data Cloud Account object."
+ },
+ "Five_Year_PLE__c": {
+  "confidence": "low",
+  "definition": "Five-year PLE value for the policy (per description), a decimal model output supplied by the policy/analytics feed in July 2026. The acronym is not expanded in the metadata and no journey usage was found."
+ },
+ "Future_Flag__c": {
+  "confidence": "low",
+  "definition": "Checkbox from the policy system, synced to the Marketing Cloud customer/policy data extension. Likely marks a policy with a future effective date (bound but not yet in force), but the meaning is not documented."
+ },
+ "Geolocation__Latitude__s": {
+  "confidence": "low",
+  "definition": "Latitude half of the custom Geolocation field added in 2021 with the State Farm Customer flag; separate from the standard billing geocode. No journey or Data Cloud usage found."
+ },
+ "Geolocation__Longitude__s": {
+  "confidence": "low",
+  "definition": "Longitude half of the custom Geolocation field added in 2021 with the State Farm Customer flag; separate from the standard billing geocode. No journey or Data Cloud usage found."
+ },
+ "Geolocation__c": {
+  "confidence": "low",
+  "definition": "Custom compound latitude/longitude field added in 2021, separate from the standard billing address geocode. No journey or Data Cloud usage found and the source of the coordinates is not documented."
+ },
+ "Google_Drive_Documents__c": {
+  "confidence": "medium",
+  "definition": "URL to the Google Drive folder or documents for a business or partner Account (2023 business-development field). Not used for policy households."
+ },
+ "HH_BU__c": {
+  "confidence": "medium",
+  "definition": "Business unit / state the household belongs to (RI, AZ, WA, OR, HiRoad or Other); defaults to RI. Set up in 2021 for household marketing when State Farm state business units were tracked alongside HiRoad."
+ },
+ "Household_Status__c": {
+  "confidence": "medium",
+  "definition": "Lifecycle stage of the policy household: Purchased, Onboarding, Engagement or Cancelled (restricted picklist, 2022). Current journey queries rely on Cancel Date and In Force rather than this field."
+ },
+ "Id": {
+  "confidence": "high",
+  "definition": "Salesforce's unique 18-character record ID for the Account. Marketing Cloud queries carry it as Policy_AccountId when joining policy data to the Contact, and Data Cloud maps it to the Account and contact-point data model objects that feed the data-quality insights."
+ },
+ "Ideal_Percentage__c": {
+  "confidence": "low",
+  "definition": "Intended as a percentage score of how closely the household matches the 'Ideal HiRoader' profile, to be filled by a formula over key attributes (per help text). It is a plain editable percent field with no formula attached, so how it is populated is unclear."
+ },
+ "InForce__c": {
+  "confidence": "high",
+  "definition": "True when the policy currently has active coverage (in force), from the policy system. Synced to the Marketing Cloud customer/policy data extension used by the renewal, TDLI and no-trip journeys."
+ },
+ "Inception_Date__c": {
+  "confidence": "medium",
+  "definition": "Date and time the household's policy first took effect, captured on the Account when it was created from the policy feed (2021-era field). Newer policy dates such as Policy Effective Date and the inception transaction timestamps are the ones current feeds and journeys use."
+ },
+ "Inception_Transaction_Timestamp_UTC__c": {
+  "confidence": "high",
+  "definition": "UTC timestamp of the policy's inception transaction in the policy system (per description), added Aug 2026."
+ },
+ "Inception_Transaction_Timestamp_User__c": {
+  "confidence": "high",
+  "definition": "Timestamp of the policy's inception transaction in the user's local time (per description), the companion to the UTC version; added Aug 2026."
+ },
+ "Increase_Amount_Dollars__c": {
+  "confidence": "high",
+  "definition": "Dollar amount of the renewal rate increase, stored as text by the policy feed. Marketing Cloud converts it to a decimal, and the rate-increase renewal journey query requires it to be populated."
+ },
+ "Industry": {
+  "confidence": "high",
+  "definition": "Standard picklist for the Account's industry (Agriculture, Banking, Insurance, Healthcare, etc.). Mapped to primary industry in the Data Cloud Account object; relevant to business accounts rather than policy households."
+ },
+ "IsCustomerPortal": {
+  "confidence": "high",
+  "definition": "Standard checkbox that is true when the Account has been enabled as a customer portal / Experience Cloud customer account."
+ },
+ "IsDeleted": {
+  "confidence": "high",
+  "definition": "Standard flag that is true when the Account has been deleted and sits in the Recycle Bin. Deleted records are hidden from normal queries until they are purged or restored."
+ },
+ "IsPartner": {
+  "confidence": "high",
+  "definition": "Standard checkbox that is true when the Account has been enabled as a partner account for Experience Cloud partner users."
+ },
+ "IsPriorityRecord": {
+  "confidence": "high",
+  "definition": "Standard 'Important' checkbox that Salesforce sets when a record is flagged as a priority record; read-only."
+ },
+ "Jigsaw": {
+  "confidence": "high",
+  "definition": "Legacy Data.com (Jigsaw) key used to link the Account to a Data.com company record. Data.com has been retired, so this is historical only."
+ },
+ "JigsawCompanyId": {
+  "confidence": "high",
+  "definition": "Read-only legacy Data.com company identifier associated with the Account; historical only since Data.com was retired."
+ },
+ "Jira__c": {
+  "confidence": "medium",
+  "definition": "Long text listing links to Jira tickets related to a business or partner Account (2023 business-development field). Not used for policy households."
+ },
+ "LID__LinkedIn_Company_Id__c": {
+  "confidence": "high",
+  "definition": "LinkedIn ID of the company behind the Account (per description), written by the LinkedIn Sales Navigator managed package (LID namespace) to link the Account to its LinkedIn company page."
+ },
+ "LastActivityDate": {
+  "confidence": "high",
+  "definition": "Most recent of the due date of the last closed task and the end date of the last event logged against the Account. Feeds the days-since-last-activity formula and maps to the Data Cloud Account object."
+ },
+ "LastModifiedById": {
+  "confidence": "high",
+  "definition": "Lookup to the User (or integration user) who last saved the Account record."
+ },
+ "LastModifiedDate": {
+  "confidence": "high",
+  "definition": "Date and time a user or integration last saved the Account. Mapped to last-modified date in the Data Cloud Account object."
+ },
+ "LastReferencedDate": {
+  "confidence": "high",
+  "definition": "Timestamp of when the current user last viewed this Account or a related record; used by Salesforce for Recent Items."
+ },
+ "LastViewedDate": {
+  "confidence": "high",
+  "definition": "Timestamp of when the current user last viewed this Account; used by Salesforce for Recent Items."
+ },
+ "Lifetime_Savings__c": {
+  "confidence": "high",
+  "definition": "Total dollars the household has saved through HiRoad safe-driving discounts over the life of the policy, rolled up from the telematics/policy feed. Merged into the rate-increase renewal emails (AZ TDLI and RI non-TDLI) and carried in the customer/policy data extension."
+ },
+ "MasterRecordId": {
+  "confidence": "high",
+  "definition": "When this Account was merged into another, holds the ID of the surviving (master) Account; blank otherwise. Set by Salesforce during a merge."
+ },
+ "Master_Record__c": {
+  "confidence": "medium",
+  "definition": "Checkbox flagging this Account as the master (surviving) record among duplicates, added in 2022 with the 18-character ID formula, apparently for a dedupe/merge effort. Not used by journeys or Data Cloud."
+ },
+ "Mindful_Driver__c": {
+  "confidence": "low",
+  "definition": "Checkbox from the May 2025 policy field set flagging the household as a 'Mindful Driver'. The qualifying criteria are not documented and no journey or Data Cloud usage was found."
+ },
+ "Monthly_Rate_After_Discounts__c": {
+  "confidence": "high",
+  "definition": "Monthly premium after discounts: the policy renewal rate minus the monthly safe-driving discount, computed upstream and provided to Salesforce by the Policy DAG (per description)."
+ },
+ "Monthly_Safe_Driving_Discount__c": {
+  "confidence": "high",
+  "definition": "Monthly safe-driving discount in dollars earned by TDLI customers (per description), from the policy feed. TDLI journeys require it to be greater than zero and merge it into the new-customer and renewing-customer emails."
+ },
+ "NDA_CA_Link__c": {
+  "confidence": "medium",
+  "definition": "URL to the signed NDA or confidentiality agreement for this business or partner Account (2023 business-development field)."
+ },
+ "Name": {
+  "confidence": "high",
+  "definition": "Display name of the Account. In this org an Account represents a policy household, so this is the policyholder's name as loaded from the policy feed. It is merged into the TDLI renewing-customer email and maps to the Account name in Data Cloud."
+ },
+ "Non_Pay_Status__c": {
+  "confidence": "medium",
+  "definition": "Checkbox indicating the policy is in non-payment status, fed from billing/policy data (Oct 2024). Supports non-pay retention messaging; not referenced directly by the Marketing Cloud queries in scope."
+ },
+ "Notes_summary__c": {
+  "confidence": "medium",
+  "definition": "Long text summary of notes and interactions for a business or partner Account, maintained by users (2024). Companion to the generative notes summary field."
+ },
+ "NumberOfEmployees": {
+  "confidence": "high",
+  "definition": "Number of people employed at the Account. Standard field mapped to employee count in the Data Cloud Account object; applies to business accounts, not policy households."
+ },
+ "Offered_Rate_Change__c": {
+  "confidence": "medium",
+  "definition": "Rate change offered for the upcoming renewal term, stored as text by the policy feed. Synced to the Marketing Cloud customer/policy data extension used by the renewal journeys."
+ },
+ "OwnerId": {
+  "confidence": "high",
+  "definition": "Lookup to the User who owns the Account record and therefore has full access to it; defaults to the creating user."
+ },
+ "ParentId": {
+  "confidence": "high",
+  "definition": "Lookup to a parent Account for building account hierarchies. Maps to the parent account ID in the Data Cloud Account object; not used by the policy journeys."
+ },
+ "Pending_Cancel_Flag__c": {
+  "confidence": "medium",
+  "definition": "True when the policy is pending cancellation but not yet canceled, from the policy feed (Nov 2025). Synced to the Marketing Cloud customer/policy data extension so journeys can suppress or target at-risk households."
+ },
+ "Phone": {
+  "confidence": "high",
+  "definition": "Primary phone number for the Account. Flows into the Data Cloud Contact Point Phone object (raw and E.164-formatted) and feeds the phone data-quality and SMS engagement insights."
+ },
+ "PhotoUrl": {
+  "confidence": "high",
+  "definition": "Read-only URL of the Account's profile image, set by Salesforce when a social profile photo is associated with the record."
+ },
+ "PolicyStatus__c": {
+  "confidence": "high",
+  "definition": "Text status of the policy: Customer, Canceled, They canceled, We canceled, Rate, or Open Zendesk Ticket (per description). Fed from the policy system and synced to the Marketing Cloud customer/policy data extension."
+ },
+ "Policy_Effective_Date__c": {
+  "confidence": "high",
+  "definition": "Date the policy took effect (per description), from the policy system. Journey queries use it to split customers purchased before or after 2026-09-21 and to time the TDLI new-customer email about two months after the effective date."
+ },
+ "Policy_Number__c": {
+  "confidence": "high",
+  "definition": "HiRoad policy number for the household as issued by the policy system. Carried into the Marketing Cloud customer/policy data extension and every renewal, TDLI and no-app/no-trip journey query so sends can be tied back to the policy."
+ },
+ "Policy_Purchase_Date__c": {
+  "confidence": "high",
+  "definition": "Date the policy was purchased (per description), from the policy system. Synced to the Marketing Cloud customer/policy data extension."
+ },
+ "Policy_Renewal_Date__c": {
+  "confidence": "high",
+  "definition": "Date the policy is due to renew (per description), from the policy system. Renewal journey queries select households 54 or 30 days before this date and within a six-month window, and it is merged into the rate-increase renewal emails."
+ },
+ "Policy_Renewal_Rate__c": {
+  "confidence": "high",
+  "definition": "Monthly premium rate at renewal in dollars, from the policy feed (Nov 2025). Synced to Marketing Cloud; Monthly Rate After Discounts is derived from it minus the monthly safe-driving discount."
+ },
+ "Prompt_Builder_Summary__c": {
+  "confidence": "medium",
+  "definition": "Generative AI summary of the Account's notes, produced by an Einstein Prompt Builder template (2024) as a companion to the manual notes summary."
+ },
+ "Purchased_Price__c": {
+  "confidence": "high",
+  "definition": "Price of the policy at purchase in dollars (per description), from the policy feed (Aug 2026). Not used by journeys."
+ },
+ "RecordTypeId": {
+  "confidence": "high",
+  "definition": "Lookup to the Record Type that controls which page layout and picklist values apply to this Account."
+ },
+ "Reference_Links__c": {
+  "confidence": "medium",
+  "definition": "Long text of reference URLs for a business or partner Account (2023 business-development field). Not used for policy households."
+ },
+ "Renewal_Offer_Date__c": {
+  "confidence": "medium",
+  "definition": "Date the renewal offer was issued to the household, from the policy system. A journey query selects accounts whose offer date was two days earlier so renewal communications follow the offer."
+ },
+ "ShippingAddress": {
+  "confidence": "high",
+  "definition": "Compound address field that groups the shipping street, city, state, postal code, country and geocode into one read-only value derived from the individual shipping fields."
+ },
+ "ShippingCity": {
+  "confidence": "high",
+  "definition": "City of the Account's shipping address. Standard field; not used in this org's journeys or Data Cloud mappings."
+ },
+ "ShippingCountry": {
+  "confidence": "high",
+  "definition": "Country of the Account's shipping address. Standard field; not used in this org's journeys or Data Cloud mappings."
+ },
+ "ShippingGeocodeAccuracy": {
+  "confidence": "high",
+  "definition": "Standard picklist recording how precisely the shipping address was geocoded (Address through Zip, City, County, State or Unknown). Set by Salesforce geocoding rules."
+ },
+ "ShippingLatitude": {
+  "confidence": "high",
+  "definition": "Latitude of the shipping address, filled by Salesforce geocoding or manual entry. Standard field; not used in this org's journeys or Data Cloud mappings."
+ },
+ "ShippingLongitude": {
+  "confidence": "high",
+  "definition": "Longitude of the shipping address, filled by Salesforce geocoding or manual entry. Standard field; not used in this org's journeys or Data Cloud mappings."
+ },
+ "ShippingPostalCode": {
+  "confidence": "high",
+  "definition": "ZIP or postal code of the Account's shipping address. Standard field; not used in this org's journeys or Data Cloud mappings."
+ },
+ "ShippingState": {
+  "confidence": "high",
+  "definition": "State or province of the Account's shipping address. Standard field; not used in this org's journeys or Data Cloud mappings."
+ },
+ "ShippingStreet": {
+  "confidence": "high",
+  "definition": "Street line(s) of the Account's shipping address. Standard field; not used in this org's journeys or Data Cloud mappings."
+ },
+ "SicDesc": {
+  "confidence": "high",
+  "definition": "Standard Industry Classification description for the Account's line of business. Standard field relevant to business accounts, not policy households."
+ },
+ "State_Farm_Customer__c": {
+  "confidence": "medium",
+  "definition": "Checkbox marking the household as an existing State Farm customer, added in 2021 with the household marketing fields. No journey or Data Cloud usage found."
+ },
+ "Status_HH_CC__c": {
+  "confidence": "low",
+  "definition": "Lookup to a Contact created in 2021 alongside the household-status fields; the name suggests the contact whose status drives the household status. Purpose is not documented and no usage was found."
+ },
+ "Status_hh__c": {
+  "confidence": "medium",
+  "definition": "Free-text household marketing status such as former customer or suppression list (per help text), set up in 2021 for household marketing. Appears superseded by the Household Status picklist."
+ },
+ "SystemModstamp": {
+  "confidence": "high",
+  "definition": "Date and time the record was last changed by a user or by an automated system process; always equal to or later than Last Modified Date. Used by integrations such as Marketing Cloud Connect to detect changed records."
+ },
+ "Telematic_Discount__c": {
+  "confidence": "medium",
+  "definition": "Telematics (safe-driving) discount currently applied to the policy, stored as text by the policy feed. Synced to the Marketing Cloud customer/policy data extension."
+ },
+ "Term_Renewal_Rate__c": {
+  "confidence": "high",
+  "definition": "Renewal premium for the customer's next term, available about 30 days before renewal (per description). Provided by the policy feed and synced to the Marketing Cloud customer/policy data extension."
+ },
+ "Total_Earned_Discount__c": {
+  "confidence": "medium",
+  "definition": "Total safe-driving discount earned on the policy to date, as a number from the telematics/policy feed. Synced to the Marketing Cloud customer/policy data extension."
+ },
+ "Type": {
+  "confidence": "high",
+  "definition": "Standard picklist classifying the Account; defaults to Customer. The other values (Prospect, Partner, Competitor, Press, Legal Hostile/Friendly, Insurance, Auto Repair/Dealer, Business Development, Data Science) cover non-policy business relationships kept alongside policyholder accounts."
+ },
+ "Underwriting_Score__c": {
+  "confidence": "medium",
+  "definition": "Underwriting score for the policy from the policy system, stored to six decimals. Synced to the Marketing Cloud customer/policy data extension but not used in journey logic."
+ },
+ "Upcoming_Billing_Amount__c": {
+  "confidence": "high",
+  "definition": "Dollar amount of the household's next bill (per description), from the billing feed; pairs with Upcoming Billing Date."
+ },
+ "Upcoming_Billing_Date__c": {
+  "confidence": "high",
+  "definition": "Date of the household's next bill, from the billing feed. Journey queries target it 20 or 12 days ahead so TDLI savings and billing messages land before the bill."
+ },
+ "Vehicle_Make__c": {
+  "confidence": "medium",
+  "definition": "Make of the insured vehicle on the policy, loaded as text from the policy system. Synced to Marketing Cloud and included in the customer/policy data extension used by the renewal, TDLI and no-trip journeys."
+ },
+ "Vehicle_Model__c": {
+  "confidence": "medium",
+  "definition": "Model of the insured vehicle on the policy, loaded as text from the policy system. Synced to Marketing Cloud and included in the customer/policy data extension used by the renewal, TDLI and no-trip journeys."
+ },
+ "WHCDB_Days_since_last_update_or_activity__c": {
+  "confidence": "high",
+  "definition": "Formula: days since the Account was last touched, taking the smaller of days since the last activity and days since the last modification, and falling back to last modification when there is no activity date. A 2020 hygiene field for spotting stale accounts."
+ },
+ "Website": {
+  "confidence": "high",
+  "definition": "Website URL for the Account. Standard field mapped to the website address in the Data Cloud Account object; relevant only to business accounts, not policy households."
+ },
+ "X18_Case_Sensitive_ID__c": {
+  "confidence": "high",
+  "definition": "Formula that returns the 18-character case-safe version of the Account ID, for matching records in spreadsheets and external tools that are not case-sensitive."
+ },
+ "Yesterday_Renewal_Rate_Increase_PCT__c": {
+  "confidence": "medium",
+  "definition": "Percentage rate increase at renewal as of the previous day's policy feed, stored as text. Synced to the Marketing Cloud customer/policy data extension for renewal messaging."
+ },
+ "hh_id__c": {
+  "confidence": "medium",
+  "definition": "Numeric household ID from the Acxiom / State Farm household data (per help text), loaded in the 2020 household-marketing data append. Not a Salesforce ID."
+ },
+ "hh_size__c": {
+  "confidence": "medium",
+  "definition": "Household size from the 2020 Acxiom household append: the whole number is the number of adults and the decimal digit counts young children, e.g. 2.1 = two adults and one young child (per help text)."
+ },
+ "ind_id__c": {
+  "confidence": "low",
+  "definition": "Defined in help text as the number of occupants in the household, loaded with the 2020 Acxiom household append. Despite the 'ind_id' name it is described as a count rather than an individual identifier."
+ },
+ "of_Years_Inforce__c": {
+  "confidence": "high",
+  "definition": "Formula: the current calendar year minus the year the policy took effect, giving an approximate count of years in force (not an exact anniversary count). Synced to Marketing Cloud for tenure-based messaging."
+ },
+ "rh2__testCurrency__c": {
+  "confidence": "medium",
+  "definition": "Test currency field created by the Rollup Helper managed package (rh2 namespace, Passage Technology) when it was installed in 2021. Used by the package to validate currency rollups; not business data."
+ }
+}

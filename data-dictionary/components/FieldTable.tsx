@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
-export type Row = { key: string; apiName: string; label: string; typeDetail: string; custom: boolean; description: string; inSfmc: boolean; inDataCloud: boolean; journeys: number; queries: number; dc: number; object: string; objectLabel: string };
+export type Row = { key: string; apiName: string; label: string; typeDetail: string; custom: boolean; description: string; definition: string; inSfmc: boolean; inDataCloud: boolean; journeys: number; queries: number; dc: number; object: string; objectLabel: string };
 
 type SortKey = "apiName" | "label" | "typeDetail" | "journeys" | "queries" | "dc";
 
@@ -16,7 +16,7 @@ export function FieldTable({ rows, showObject = false }: { rows: Row[]; showObje
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     let r = rows;
-    if (s) r = r.filter((x) => x.apiName.toLowerCase().includes(s) || x.label.toLowerCase().includes(s) || (x.description || "").toLowerCase().includes(s) || x.typeDetail.toLowerCase().includes(s));
+    if (s) r = r.filter((x) => x.apiName.toLowerCase().includes(s) || x.label.toLowerCase().includes(s) || (x.description || "").toLowerCase().includes(s) || (x.definition || "").toLowerCase().includes(s) || x.typeDetail.toLowerCase().includes(s));
     if (kind === "custom") r = r.filter((x) => x.custom); else if (kind === "standard") r = r.filter((x) => !x.custom);
     if (use === "journeys") r = r.filter((x) => x.journeys > 0);
     else if (use === "queries") r = r.filter((x) => x.queries > 0);
@@ -44,7 +44,7 @@ export function FieldTable({ rows, showObject = false }: { rows: Row[]; showObje
   return (
     <div>
       <div className="flex flex-col sm:flex-row gap-2 mb-3">
-        <input className="search sm:max-w-sm" placeholder="Filter by API name, label, description…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter fields" />
+        <input className="search sm:max-w-sm" placeholder="Filter by API name, label, definition…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter fields" />
         <select className="search sm:w-44" value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Field kind">
           <option value="all">Custom + standard</option><option value="custom">Custom only</option><option value="standard">Standard only</option>
         </select>
@@ -67,6 +67,7 @@ export function FieldTable({ rows, showObject = false }: { rows: Row[]; showObje
               {showObject && <th>Object</th>}
               {th("API name", "apiName")}
               {th("Label", "label")}
+              <th className="min-w-[18rem]">Definition</th>
               {th("Type", "typeDetail")}
               <th>Synced</th>
               {th("Journeys", "journeys", "text-right")}
@@ -82,6 +83,7 @@ export function FieldTable({ rows, showObject = false }: { rows: Row[]; showObje
                   {showObject && <td className="text-ink-2 whitespace-nowrap">{r.objectLabel}</td>}
                   <td><Link href={`/fields/${o}/${rest.join(".")}/`} className="mono hover:underline decoration-[var(--accent)]">{r.apiName}</Link>{r.custom ? "" : <span className="ml-2 chip" style={{ fontSize: "0.6rem" }}>std</span>}</td>
                   <td className="text-ink-2">{r.label}</td>
+                  <td className="text-ink-2 text-xs leading-snug max-w-[28rem]" title={r.definition}>{r.definition ? <span className="line-clamp-2">{r.definition}</span> : <span className="text-ink-3">–</span>}</td>
                   <td className="text-ink-2 whitespace-nowrap">{r.typeDetail}</td>
                   <td className="whitespace-nowrap">
                     {r.inSfmc && <span className="chip chip-fill mr-1" title="Marketing Cloud Connect synced DE">MC</span>}

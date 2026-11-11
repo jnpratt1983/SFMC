@@ -709,8 +709,34 @@ def changelog(fields, cis, journeys, segs):
     return log_entries
 
 # ---------------------------------------------------------------- main
+DEFS = os.path.join(ROOT, "definitions")
+
+def apply_definitions(fields):
+    """Overlay hand-written definitions from definitions/<Object>.json.
+    Falls back to the Salesforce field description when the overlay has no entry."""
+    missing = []
+    for f in fields:
+        path = os.path.join(DEFS, f["object"] + ".json")
+        entry = None
+        if os.path.exists(path):
+            entry = (json.load(open(path)) if path not in apply_definitions.cache else apply_definitions.cache[path]) .get(f["apiName"])
+            apply_definitions.cache[path] = apply_definitions.cache.get(path) or json.load(open(path))
+        if entry and entry.get("definition"):
+            f["definition"], f["definitionSource"], f["definitionConfidence"] = entry["definition"].strip(), "dictionary", entry.get("confidence")
+        elif f.get("description"):
+            f["definition"], f["definitionSource"], f["definitionConfidence"] = f["description"], "salesforce", None
+        else:
+            f["definition"], f["definitionSource"], f["definitionConfidence"] = "", None, None
+            missing.append(f["key"])
+    if missing:
+        log("fields with no definition (add them to definitions/<Object>.json):", len(missing))
+        for k in missing: log("  ", k)
+    return missing
+apply_definitions.cache = {}
+
 def main():
     fields, objects, inst = build_fields()
+    undefined = apply_definitions(fields)
     journeys, queries, synced, jlist = mc_build(fields)
     cis, segs, acts, graphs, dactions, streams, transforms = dc_build(fields)
     for f in fields:
@@ -724,14 +750,14 @@ def main():
         o["dmos"] = next((s["dmos"] for s in streams if s["object"] == o["apiName"]), [])
         o["stats"] = {"inSfmc": sum(1 for f in fs if f["usage"]["inSfmc"]), "inDataCloud": sum(1 for f in fs if f["usage"]["inDataCloud"]),
                       "usedInJourneys": sum(1 for f in fs if f["usage"]["sfmcJourneys"]), "usedInQueries": sum(1 for f in fs if f["usage"]["sfmcQueries"]),
-                      "usedInDataCloud": sum(1 for f in fs if f["usage"]["dc"]), "unused": sum(1 for f in fs if not (f["usage"]["sfmcJourneys"] or f["usage"]["sfmcQueries"] or f["usage"]["dc"]))}
+                      "usedInDataCloud": sum(1 for f in fs if f["usage"]["dc"]), "defined": sum(1 for f in fs if f["definition"]), "unused": sum(1 for f in fs if not (f["usage"]["sfmcJourneys"] or f["usage"]["sfmcQueries"] or f["usage"]["dc"]))}
     changes = changelog(fields, cis, journeys, segs)
     from collections import Counter
     jstat = Counter(j.get("status") for j in jlist)
     out = {"generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"), "org": {"instanceUrl": inst, "alias": os.environ.get("SF_ORG", "blueowl-prod")},
            "objects": objects, "fields": fields, "journeys": journeys, "queries": queries, "calculatedInsights": cis, "segments": segs, "activations": acts,
            "dataGraphs": graphs, "dataActions": dactions, "streams": streams, "transforms": transforms, "changelog": changes,
-           "summary": {"fields": len(fields), "journeysReported": len(journeys), "journeyStatuses": dict(jstat), "queriesWithFields": len(queries), "cis": len(cis), "segments": len(segs)}}
+           "summary": {"fields": len(fields), "undefinedFields": undefined, "journeysReported": len(journeys), "journeyStatuses": dict(jstat), "queriesWithFields": len(queries), "cis": len(cis), "segments": len(segs)}}
     os.makedirs(DATA, exist_ok=True)
     json.dump(out, open(os.path.join(DATA, "dictionary.json"), "w"), indent=0)
     idx = [{"t": "field", "k": f["key"], "o": f["object"], "n": f["apiName"], "l": f["label"], "ty": f["typeDetail"], "j": f["usage"]["sfmcJourneys"], "q": f["usage"]["sfmcQueries"], "d": f["usage"]["dc"]} for f in fields]
