@@ -1,5 +1,18 @@
 [
  {
+  "date": "2026-11-11",
+  "previous": "2026-11-10",
+  "fieldsAdded": [],
+  "fieldsRemoved": [],
+  "cisAdded": [],
+  "cisRemoved": [],
+  "journeysAdded": [],
+  "journeysRemoved": [],
+  "segmentsAdded": [],
+  "segmentsRemoved": [],
+  "fieldLabels": {}
+ },
+ {
   "date": "2026-11-10",
   "previous": null,
   "fieldsAdded": [],

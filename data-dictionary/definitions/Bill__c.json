@@ -1,0 +1,210 @@
+{
+ "Authorization_Code__c": {
+  "confidence": "medium",
+  "definition": "Intended to hold the payment processor authorization code for the bill's payment. Never populated by the billing feed; flagged for deprecation in the 2026-10-21 field audit."
+ },
+ "Bill_Amount__c": {
+  "confidence": "medium",
+  "definition": "Legacy bill amount field. Never populated by the current billing feed; the Customer 360 page reads it but falls back to Total Gross Bill Amount when it is blank."
+ },
+ "Billing_Cycle__c": {
+  "confidence": "medium",
+  "definition": "Intended to describe the billing cycle the invoice belongs to. Never populated by the billing feed; flagged for deprecation in the 2026-10-21 field audit."
+ },
+ "Consolidated_Invoice_List__c": {
+  "confidence": "medium",
+  "definition": "Text list of the invoice numbers rolled into a consolidated invoice when a customer has more than one policy billed together, supplied by the billing feed on every bill. Display only."
+ },
+ "Contact__c": {
+  "confidence": "high",
+  "definition": "Lookup to the policyholder Contact the bill belongs to, populated 100% by the Assign Contact to Bill flow that matches on customer number. This is the join Data Cloud uses for the Bill model and the key Marketing Cloud uses as subscriber key."
+ },
+ "CreatedById": {
+  "confidence": "high",
+  "definition": "Standard reference to the user who created the record, normally the integration user that runs the feed."
+ },
+ "CreatedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of when Salesforce created the record, which on this feed-loaded object is when the row was first inserted by the integration."
+ },
+ "Currency__c": {
+  "confidence": "medium",
+  "definition": "Intended to hold the currency of the bill amounts. Never populated by the billing feed (all bills are USD); flagged for deprecation in the 2026-10-21 field audit."
+ },
+ "Customer_Number__c": {
+  "confidence": "high",
+  "definition": "HiRoad customer number of the policyholder, supplied by the billing feed on every bill. It is the join key Marketing Cloud queries use to match bills to Contacts for the non-payment journey, and the key the Customer 360 page and several flows use to find a customer's bills."
+ },
+ "Due_Date__c": {
+  "confidence": "medium",
+  "definition": "Due date of the bill as supplied by the billing feed, populated on every record. Invoice Due Date is the field automation actually uses; the Customer 360 page falls back to this one only when Invoice Due Date is blank."
+ },
+ "Email__c": {
+  "confidence": "medium",
+  "definition": "Policyholder email address as held by the billing system, populated on every bill. Carried for reference and sync; journeys use the Contact email instead."
+ },
+ "Failure_Reason_Code__c": {
+  "confidence": "medium",
+  "definition": "Intended to hold the processor's code for a failed payment attempt. Never populated by the billing feed; flagged for deprecation in the 2026-10-21 field audit."
+ },
+ "Failure_Reason_Text__c": {
+  "confidence": "medium",
+  "definition": "Intended to hold the human-readable reason a payment attempt failed. The Customer 360 page displays it, but the billing feed has never populated it."
+ },
+ "FirstName__c": {
+  "confidence": "medium",
+  "definition": "Policyholder first name as held by the billing system, populated on every bill. Carried for reference and sync; journeys personalize from the Contact instead."
+ },
+ "Has_Consolidated_Invoices__c": {
+  "confidence": "medium",
+  "definition": "Text flag from the billing feed indicating whether this bill is part of a consolidated invoice covering multiple policies. Display only; see Consolidated Invoice List for the invoice numbers."
+ },
+ "Id": {
+  "confidence": "high",
+  "definition": "Salesforce record ID, the unique 18-character identifier Salesforce assigns to each record. Used as the join key everywhere this object is referenced, including the Data Cloud Bill model."
+ },
+ "Invoice_Date__c": {
+  "confidence": "high",
+  "definition": "Date the invoice was issued, supplied by the billing feed on nearly every bill. The Customer 360 page orders a customer's bill history by this date; synced to the Data Cloud Bill model."
+ },
+ "Invoice_Due_Date__c": {
+  "confidence": "high",
+  "definition": "Date the invoice must be paid, supplied by the billing feed on every bill. This is the anchor date for the non-payment journey: bills due in 5 days enter it, the 21-day cleared lookback keys on it, and the formula Non Pay Cancel Date adds the state grace period to it."
+ },
+ "Invoice_Number__c": {
+  "confidence": "high",
+  "definition": "Invoice number assigned by the billing system, populated on every bill. Shown on the Customer 360 bill history and carried into the non-payment test queries."
+ },
+ "Invoice_Policy_Key__c": {
+  "confidence": "medium",
+  "definition": "External ID combining the invoice and policy, populated on every bill. It is the unique key the billing feed upserts on, so one bill record exists per policy per invoice."
+ },
+ "IsDeleted": {
+  "confidence": "high",
+  "definition": "Standard flag Salesforce sets to true when the record is moved to the Recycle Bin. Deleted records are excluded from normal queries."
+ },
+ "LastActivityDate": {
+  "confidence": "high",
+  "definition": "Standard date of the most recent related task or event (completed task, or event due date). Rarely populated on this object since activities are not logged against it."
+ },
+ "LastModifiedById": {
+  "confidence": "high",
+  "definition": "Standard reference to the user who last modified the record."
+ },
+ "LastModifiedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of the last time any user or automation changed a field on the record."
+ },
+ "LastReferencedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of when the current user last viewed the record or a related list item. Per-user and used only for Recent Items."
+ },
+ "LastViewedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of when the current user last viewed the record. Per-user and used only for Recent Items."
+ },
+ "Last_4_of_CC__c": {
+  "confidence": "high",
+  "definition": "Last four digits of the card on file for the bill's payment, populated on about 89% of bills. Passed into the non-payment journey entry data so reminder emails can reference the card."
+ },
+ "Latest_Payment_Date__c": {
+  "confidence": "high",
+  "definition": "Date of the most recent payment recorded against the invoice, supplied by the billing feed on nearly every bill. The non-payment cleared and exit queries treat a payment dated on or after the due date as the bill being paid."
+ },
+ "Name": {
+  "confidence": "high",
+  "definition": "Auto-number record name Salesforce assigns to each bill. It has no business meaning; identify bills by Invoice Number or Invoice Policy Key instead."
+ },
+ "Non_Pay_Cancel_Date__c": {
+  "confidence": "high",
+  "definition": "Formula date: the invoice due date plus the state grace period from the Contact's mailing state (10 days for AZ, 14 for RI, otherwise 0). The non-payment journey entry query selects it, aliased as the cancel notice date, to time its reminders; synced to Data Cloud."
+ },
+ "Non_pay__c": {
+  "confidence": "high",
+  "definition": "Checkbox the billing feed sets when the bill went unpaid past its due date and entered non-payment status; true on about 20% of bills. Synced to Marketing Cloud and Data Cloud and used by the non-payment journey queries and the Customer 360 bill history to flag non-pay bills."
+ },
+ "Nonpay_Cancel_Notice_Created_At__c": {
+  "confidence": "high",
+  "definition": "ISO timestamp text recording when the non-payment cancellation notice was issued for this bill, set by the billing feed on about 18% of bills. Feeds the non-payment journey's T+3 and T+7 emails and SMS reminders. Note the journey entry query aliases the Non Pay Cancel Date formula under this name."
+ },
+ "Nonpay_Cancelled_At__c": {
+  "confidence": "high",
+  "definition": "ISO timestamp text recording when the policy was cancelled for non-payment of this bill, set by the billing feed on about 5% of bills. Synced to the Data Cloud Bill model as the non-pay cancellation outcome."
+ },
+ "Nonpay_Cleared_At__c": {
+  "confidence": "high",
+  "definition": "ISO timestamp text recording when the non-payment status on this bill was cleared by a successful payment, set by the billing feed on about 15% of bills. The non-payment journey's cleared query and exit logic treat a non-null value as resolved; synced to Data Cloud."
+ },
+ "OwnerId": {
+  "confidence": "high",
+  "definition": "Standard owner field: the user or queue that owns the record. Set to the integration user that loads the record and carries no business meaning on this object."
+ },
+ "Payment_Amount__c": {
+  "confidence": "medium",
+  "definition": "Legacy payment amount field. Never populated by the current billing feed; the Customer 360 page reads it but falls back to Total Payment Amount when it is blank."
+ },
+ "Payment_Date__c": {
+  "confidence": "high",
+  "definition": "Date the payment for this bill was taken, populated on about 90% of bills (unpaid bills have none). Shown on the Customer 360 bill history and synced to the Data Cloud Bill model."
+ },
+ "Payment_Method_Type__c": {
+  "confidence": "medium",
+  "definition": "Intended to hold the payment method type (card, bank account, etc.). Never populated by the billing feed; flagged for deprecation in the 2026-10-21 field audit."
+ },
+ "Payment_Status__c": {
+  "confidence": "high",
+  "definition": "Status of the bill's payment from the billing system, populated on every record; observed values are Captured and Failed. Displayed as the status on the Customer 360 bill history."
+ },
+ "Policy_Gross_Bill_Amount__c": {
+  "confidence": "high",
+  "definition": "Amount billed for this policy on the invoice after the telematics discount but before HiRoad credits, supplied by the billing feed on every bill. The Savings History capture flow uses it as the cycle's net premium."
+ },
+ "Policy_HiRoad_Credit_Amount__c": {
+  "confidence": "medium",
+  "definition": "HiRoad credits applied to this policy's portion of the invoice, supplied by the billing feed on every bill. The difference between Policy Gross and Policy Net bill amounts."
+ },
+ "Policy_Net_Bill_Amount__c": {
+  "confidence": "high",
+  "definition": "Amount actually owed for this policy on the invoice after HiRoad credits are applied, supplied by the billing feed. This is the amount quoted in the non-payment journey's T-5 reminder emails."
+ },
+ "Policy_Number__c": {
+  "confidence": "high",
+  "definition": "Policy number the bill was issued for, supplied by the billing feed. Marketing Cloud non-payment queries use it as an alternate join to Contact and exclude numbers ending in R, which are renters policies; flows also use it to link related records."
+ },
+ "Policy_Payment_Amount__c": {
+  "confidence": "medium",
+  "definition": "Intended to hold the portion of the payment applied to this policy. Never populated by the billing feed; flagged for deprecation in the 2026-10-21 field audit."
+ },
+ "Source_System__c": {
+  "confidence": "medium",
+  "definition": "Intended to record which upstream system produced the bill. Never populated by the billing feed; flagged for deprecation in the 2026-10-21 field audit."
+ },
+ "SystemModstamp": {
+  "confidence": "high",
+  "definition": "Standard system timestamp updated whenever the record is saved by a user or by the system. Marketing Cloud Connect uses it to pick up changed rows for the synced Bill data extension."
+ },
+ "Total_Gross_Bill_Amount__c": {
+  "confidence": "medium",
+  "definition": "Gross amount of the whole invoice before HiRoad credits, across every policy it consolidates, supplied by the billing feed on every bill. The Customer 360 page shows it as the bill amount."
+ },
+ "Total_HiRoad_Credit_Amount__c": {
+  "confidence": "medium",
+  "definition": "Total HiRoad credits applied to the whole invoice across every policy it consolidates, supplied by the billing feed on every bill."
+ },
+ "Total_Net_Bill_Amount__c": {
+  "confidence": "medium",
+  "definition": "Net amount due on the whole invoice after HiRoad credits, across every policy it consolidates, supplied by the billing feed on every bill."
+ },
+ "Total_Payment_Amount__c": {
+  "confidence": "high",
+  "definition": "Total amount paid against the invoice, populated on about 90% of bills (unpaid bills are blank). The non-payment cleared query treats a value above zero paid on or after the due date as evidence the bill was settled; shown on Customer 360."
+ },
+ "Transaction_Id__c": {
+  "confidence": "medium",
+  "definition": "External ID holding the billing system's transaction identifier for the payment attempt, populated on about 90% of bills. Supports idempotent upserts from the feed."
+ },
+ "Upcoming_Billing_Date__c": {
+  "confidence": "medium",
+  "definition": "Date the customer's next bill is scheduled, supplied by the billing feed on about 94% of bills. Displayed only; no automation reads it from this object."
+ }
+}

@@ -1,0 +1,190 @@
+{
+ "Account__c": {
+  "confidence": "high",
+  "definition": "Lookup to the policy Account, set by the Assign Account to Monthly Driving Stat flow by matching the policy number; populated on about 44% of rows. The Renewal Offer Capture flow reads it, and Data Cloud uses it to roll driving stats up to the household."
+ },
+ "Contact__c": {
+  "confidence": "high",
+  "definition": "Lookup to the policyholder Contact, set by flow from the customer number after the feed loads the row; populated on about 92% of records. The Customer 360 page and Data Cloud use it to attach driving history to the person."
+ },
+ "CreatedById": {
+  "confidence": "high",
+  "definition": "Standard reference to the user who created the record, normally the integration user that runs the feed."
+ },
+ "CreatedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of when Salesforce created the record, which on this feed-loaded object is when the row was first inserted by the integration."
+ },
+ "Current_Month_Best_Streak__c": {
+  "confidence": "medium",
+  "definition": "Longest streak of consecutive good-driving days (or trips) the driver achieved in the cycle, supplied by the telematics feed since mid-2024 and populated on about half of rows. Merged into the Monthly Driving Stats email as the streak callout."
+ },
+ "Id": {
+  "confidence": "high",
+  "definition": "Salesforce record ID, the unique 18-character identifier Salesforce assigns to each record. Used as the join key everywhere this object is referenced, including the Data Cloud Bill model."
+ },
+ "IsDeleted": {
+  "confidence": "high",
+  "definition": "Standard flag Salesforce sets to true when the record is moved to the Recycle Bin. Deleted records are excluded from normal queries."
+ },
+ "LastActivityDate": {
+  "confidence": "high",
+  "definition": "Standard date of the most recent related task or event (completed task, or event due date). Rarely populated on this object since activities are not logged against it."
+ },
+ "LastModifiedById": {
+  "confidence": "high",
+  "definition": "Standard reference to the user who last modified the record."
+ },
+ "LastModifiedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of the last time any user or automation changed a field on the record."
+ },
+ "LastReferencedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of when the current user last viewed the record or a related list item. Per-user and used only for Recent Items."
+ },
+ "LastViewedDate": {
+  "confidence": "high",
+  "definition": "Standard timestamp of when the current user last viewed the record. Per-user and used only for Recent Items."
+ },
+ "Name": {
+  "confidence": "medium",
+  "definition": "Record name assigned when the telematics feed loads the row. Identify rows by customer number plus cycle start rather than by this name."
+ },
+ "OwnerId": {
+  "confidence": "high",
+  "definition": "Standard owner field: the user or queue that owns the record. Set to the integration user that loads the record and carries no business meaning on this object."
+ },
+ "SystemModstamp": {
+  "confidence": "high",
+  "definition": "Standard system timestamp updated whenever the record is saved. The Monthly Driving Stats email query only picks rows whose modstamp (shifted 6 hours) falls on the current day, so it is what makes each month's feed load trigger the email."
+ },
+ "avg_hiroad_distance_miles_curr_month__c": {
+  "confidence": "high",
+  "definition": "Average miles driven by all HiRoad drivers in the cycle, supplied by the telematics feed as a benchmark. Merged into the Monthly Driving Stats email so the customer can compare their mileage to the HiRoad average."
+ },
+ "avg_hiroad_n_trips_curr_month__c": {
+  "confidence": "high",
+  "definition": "Average number of trips taken by all HiRoad drivers in the cycle, supplied by the telematics feed as a benchmark. Merged into the Monthly Driving Stats email so the customer can compare their trip count to the HiRoad average."
+ },
+ "avg_hiroad_subscore_display_distracted_d__c": {
+  "confidence": "medium",
+  "definition": "Average Distracted Driving (phone use) display subscore across all HiRoad drivers for the cycle, supplied by the telematics feed as a benchmark. Populated on about 92% of rows; not currently used by any journey or insight."
+ },
+ "avg_hiroad_subscore_display_driving_patt__c": {
+  "confidence": "medium",
+  "definition": "Average Driving Patterns display subscore across all HiRoad drivers for the cycle, supplied by the telematics feed as a benchmark. Populated on about 92% of rows; not currently used by any journey or insight."
+ },
+ "avg_hiroad_subscore_display_safe_speeds__c": {
+  "confidence": "medium",
+  "definition": "Average Safe Speeds (speeding) display subscore across all HiRoad drivers for the cycle, supplied by the telematics feed as a benchmark. Populated on about 92% of rows; not currently used by any journey or insight."
+ },
+ "avg_hiroad_subscore_display_smooth_drivi__c": {
+  "confidence": "medium",
+  "definition": "Average Smooth Driving (hard braking and acceleration) display subscore across all HiRoad drivers for the cycle, supplied by the telematics feed as a benchmark. Populated on about 92% of rows; not currently used by any journey or insight."
+ },
+ "customer_number__c": {
+  "confidence": "high",
+  "definition": "HiRoad customer number of the driver, supplied by the telematics feed on every row. It is the join key to Contact used by the Monthly Driving Stats query, the Customer 360 page, the Streak flow and the Savings History capture flow; the object has no direct Contact match on load."
+ },
+ "cycle_end__c": {
+  "confidence": "high",
+  "definition": "Last day of the monthly telematics scoring cycle this row covers, supplied by the feed on every row. Used with cycle start to order a customer's driving history on the Customer 360 page."
+ },
+ "cycle_start__c": {
+  "confidence": "high",
+  "definition": "First day of the monthly telematics scoring cycle this row covers, supplied by the feed on every row. The Customer 360 page orders driving history by it and the Savings History flow matches cycles on it; one row exists per customer per cycle start."
+ },
+ "distance_miles_in_curr_month__c": {
+  "confidence": "high",
+  "definition": "Miles the driver drove in the cycle as measured by the smartphone telematics app, supplied by the feed on every row. Shown in the Monthly Driving Stats email and on the Customer 360 driving history."
+ },
+ "driver_role__c": {
+  "confidence": "medium",
+  "definition": "Role of the driver on the policy as supplied by the telematics feed (for example the primary named insured versus an additional driver), populated on every row. Passed into the Monthly Driving Stats journey entry data."
+ },
+ "earn_discount_curr_month__c": {
+  "confidence": "high",
+  "definition": "Telematics discount percentage the driver earned for the current cycle, measured upstream by the telematics scoring engine and supplied by the feed rather than computed in Salesforce. Merged into the Monthly Driving Stats email (rows with zero are skipped) and used by the Savings History capture flow to reconstruct the earned discount rate."
+ },
+ "earn_discount_prev_month__c": {
+  "confidence": "high",
+  "definition": "Telematics discount percentage the driver earned for the previous cycle, measured upstream by the telematics scoring engine and supplied by the feed. Passed into the Monthly Driving Stats journey so the email can show the change from last month."
+ },
+ "email_verified__c": {
+  "confidence": "medium",
+  "definition": "Intended to carry whether the driver's email was verified. Never populated by the telematics feed; flagged for deprecation in the 2026-10-21 field audit."
+ },
+ "inception_date__c": {
+  "confidence": "high",
+  "definition": "Policy inception (original start) date carried on each monthly row by the telematics feed, populated on every record. Passed into the Monthly Driving Stats journey entry data."
+ },
+ "jurisdiction__c": {
+  "confidence": "high",
+  "definition": "State the policy is rated in, supplied by the telematics feed on every row. Passed into the Monthly Driving Stats journey and read by the Create Claim from Claim Flag flow."
+ },
+ "n_trips_in_curr_month__c": {
+  "confidence": "high",
+  "definition": "Number of trips the driver recorded in the cycle, supplied by the telematics feed on every row. Shown in the Monthly Driving Stats email and on the Customer 360 driving history."
+ },
+ "policy_number__c": {
+  "confidence": "high",
+  "definition": "Policy number the driving month belongs to, supplied by the telematics feed on every row. The Assign Account to Monthly Driving Stat flow uses it to set the Account lookup, and it is passed into the Monthly Driving Stats journey."
+ },
+ "subscore_display_distracted_driving_MoM__c": {
+  "confidence": "high",
+  "definition": "Text indicator of whether the Distracted Driving subscore moved up, down or held steady versus the previous cycle, supplied by the telematics feed. Passed into the Monthly Driving Stats journey to show the trend."
+ },
+ "subscore_display_distracted_driving_curr__c": {
+  "confidence": "high",
+  "definition": "Distracted Driving subscore (0-100 display score for phone use while driving) for the current cycle, supplied by the telematics feed. Shown on the Customer 360 driving history, averaged with the other three subscores for the churn-retention driving trend, and passed into the Monthly Driving Stats journey."
+ },
+ "subscore_display_distracted_driving_prev__c": {
+  "confidence": "high",
+  "definition": "Distracted Driving subscore (0-100 display score for phone use) for the previous monthly cycle, supplied by the telematics feed. Passed into the Monthly Driving Stats journey for month-over-month comparison."
+ },
+ "subscore_display_driving_patterns_MoM_di__c": {
+  "confidence": "high",
+  "definition": "Text indicator of whether the Driving Patterns subscore moved up, down or held steady versus the previous cycle, supplied by the telematics feed. Passed into the Monthly Driving Stats journey to show the trend."
+ },
+ "subscore_display_driving_patterns_curr_m__c": {
+  "confidence": "high",
+  "definition": "Driving Patterns subscore (0-100 display score covering when and how much the driver drives) for the current cycle, supplied by the telematics feed. Shown on the Customer 360 driving history, averaged with the other three subscores for the churn-retention driving trend, and passed into the Monthly Driving Stats journey."
+ },
+ "subscore_display_driving_patterns_prev_m__c": {
+  "confidence": "high",
+  "definition": "Driving Patterns subscore (0-100 display score covering when and how much the driver drives) for the previous monthly cycle, supplied by the telematics feed. Passed into the Monthly Driving Stats journey for month-over-month comparison."
+ },
+ "subscore_display_safe_speeds_MoM_directi__c": {
+  "confidence": "high",
+  "definition": "Text indicator of whether the Safe Speeds subscore moved up, down or held steady versus the previous cycle, supplied by the telematics feed. Passed into the Monthly Driving Stats journey to show the trend."
+ },
+ "subscore_display_safe_speeds_curr_month__c": {
+  "confidence": "high",
+  "definition": "Safe Speeds subscore (0-100 display score for speeding) for the current cycle, supplied by the telematics feed. Shown on the Customer 360 driving history, averaged with the other three subscores for the churn-retention driving trend, and passed into the Monthly Driving Stats journey."
+ },
+ "subscore_display_safe_speeds_prev_month__c": {
+  "confidence": "high",
+  "definition": "Safe Speeds subscore (0-100 display score for speeding) for the previous monthly cycle, supplied by the telematics feed. Passed into the Monthly Driving Stats journey for month-over-month comparison."
+ },
+ "subscore_display_smooth_driving_MoM_dire__c": {
+  "confidence": "high",
+  "definition": "Text indicator of whether the Smooth Driving subscore moved up, down or held steady versus the previous cycle, supplied by the telematics feed. Passed into the Monthly Driving Stats journey to show the trend."
+ },
+ "subscore_display_smooth_driving_curr_mon__c": {
+  "confidence": "high",
+  "definition": "Smooth Driving subscore (0-100 display score for hard braking and acceleration) for the current cycle, supplied by the telematics feed. Shown on the Customer 360 driving history, averaged with the other three subscores for the churn-retention driving trend, and passed into the Monthly Driving Stats journey."
+ },
+ "subscore_display_smooth_driving_prev_mon__c": {
+  "confidence": "high",
+  "definition": "Smooth Driving subscore (0-100 display score for hard braking and acceleration) for the previous monthly cycle, supplied by the telematics feed. Passed into the Monthly Driving Stats journey for month-over-month comparison."
+ },
+ "total_earned_discount__c": {
+  "confidence": "high",
+  "definition": "Cumulative telematics discount the driver has earned on the policy to date, as a whole number, supplied by the telematics feed on nearly every row. Merged into the Monthly Driving Stats email as the lifetime savings figure."
+ },
+ "upcoming_billing_date__c": {
+  "confidence": "high",
+  "definition": "Date of the customer's next bill at the time the cycle closed, supplied by the telematics feed on every row. The Monthly Driving Stats query sends the email only when this date is exactly 8 days out, so the stats arrive just before the bill."
+ }
+}
