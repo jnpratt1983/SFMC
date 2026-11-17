@@ -135,3 +135,25 @@ within age is still weak (AUC 0.58-0.59). Few events; the direction is right.
 **Where this leaves the model.** Use it as the propensity lens in both journeys. For Purchase the cut is 96+. For
 Drivers, whose entrants span 50-95, HIGH >= 80 and LOW < 60 stand. It is a purchase predictor, not a re-engagement
 predictor: on fresh leads the step already tells you who comes back.
+
+## Update 2026-11-17: 7-day read on two full snapshot days (corrects the 11-16 baseline)
+
+Fresh leads (0-3 days at snapshot) with a full 7-day window: n = 945, 37 purchases, 146 back. All fresh leads incl.
+partial windows: n = 2,415, 111 purchases.
+
+| Score band | n (full window) | 7-day purchase | Back to quote |
+|---|---|---|---|
+| 90 and under | 427 | 0.7% | 9.6% |
+| 91-95 | 266 | 4.9% | 21.8% |
+| 96-99 | 252 | 8.3% (10.9% on all 680 fresh leads at 96+) | 18.7% |
+
+Cross-validated AUC for 7-day purchase: quote step alone 0.78, step + age 0.77, score alone 0.77, step + age + score 0.78.
+Yesterday's "score 0.77 vs step + age 0.70" came from 668 leads and 26 buyers; with 945 leads and 37 buyers the step + age
+baseline is 0.77, so the score **matches** step + age rather than beating it, and adds about 0.02 on top. Back to quote:
+step + age 0.61, with score 0.62. Point in time on all 9,696 new-model snapshot rows: score 0.86, step 0.74, age 0.83;
+91-99 bought 4.1%, every other band 0-0.5%.
+
+**Revised call.** The score's practical value is the 96+ cut on fresh leads, which buys 8-11% against under 1% below 90
+and is sharper than any single quote step. As a ranking it is no better than the quote step, and it does not predict
+coming back. Treat it as a purchase-propensity flag for the top band, not as a general lead ranking. Recorded in the data
+dictionary Models page (lead-score.json validation list, 2026-11-17, "marginal pass"). Next read 2026-11-23 (14-day).
