@@ -157,3 +157,8 @@ step + age 0.61, with score 0.62. Point in time on all 9,696 new-model snapshot 
 and is sharper than any single quote step. As a ranking it is no better than the quote step, and it does not predict
 coming back. Treat it as a purchase-propensity flag for the top band, not as a general lead ranking. Recorded in the data
 dictionary Models page (lead-score.json validation list, 2026-11-17, "marginal pass"). Next read 2026-11-23 (14-day).
+
+**Framing note (2026-11-17, user decision).** The test is of the score, not of the score against the quote step. The
+pass line is: 7-day purchase rises monotonically across score bands on leads scored before the outcome, and the top band
+buys at several times the rate of the bottom. On the 11-17 read that holds (0.7% / 4.9% / 8.3-10.9%). Quote step and lead
+age AUCs stay in these notes as context only and are not a gate on the journey tests.
