@@ -10,9 +10,12 @@ export default function Home() {
   const totals = data.objects.reduce((a, o) => ({ j: a.j + o.stats.usedInJourneys, q: a.q + o.stats.usedInQueries, d: a.d + o.stats.usedInDataCloud, u: a.u + o.stats.unused }), { j: 0, q: 0, d: 0, u: 0 });
   return (
     <div>
-      <div className="relative overflow-hidden card p-6 sm:p-10 mb-8">
-        <div className="hero-grid absolute inset-0 opacity-60" aria-hidden />
-        <Qiwi className="absolute right-6 top-4 h-40 sm:h-56 opacity-80 hidden sm:block" />
+      <div className="relative z-10 card p-6 sm:p-10 mb-8">
+        {/* decoration is clipped in its own layer so the search results can extend below the card */}
+        <div className="absolute inset-0 overflow-hidden rounded-[12px]" aria-hidden>
+          <div className="hero-grid absolute inset-0 opacity-60" />
+          <Qiwi className="absolute right-6 top-4 h-40 sm:h-56 opacity-80 hidden sm:block" />
+        </div>
         <div className="relative max-w-2xl">
           <div className="eyebrow mb-2">Salesforce · Marketing Cloud · Data Cloud</div>
           <h1 className="h-display text-4xl sm:text-5xl">Every field, and where it does work.</h1>

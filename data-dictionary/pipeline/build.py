@@ -22,6 +22,76 @@ DMO_OVERRIDES = {"Bill__c": ["Bill__dlm"]}
 AUTO_DMO_MIN_MATCHES = 10
 TODAY = datetime.date.today().isoformat()
 
+
+# ---------------------------------------------------------------- SQL select-list lineage
+SQL_WORDS = {"select", "from", "as", "case", "when", "then", "else", "end", "and", "or", "not", "null", "is", "in", "like", "between", "distinct", "top", "over",
+             "partition", "by", "order", "asc", "desc", "cast", "convert", "varchar", "nvarchar", "char", "int", "bigint", "decimal", "numeric", "date", "datetime",
+             "float", "bit", "money", "percent", "left", "right", "on", "exists", "all", "any", "union", "true", "false", "max", "min"}
+
+def select_items(sql):
+    """Top-level SELECT items of a query (every branch of a UNION): [{out, refs:[(alias|None, column)], star:[alias|None]}].
+    `out` is the output column name; `refs` are the columns the expression reads, with the table alias when one is written."""
+    sql = re.sub(r"--[^\n]*", " ", re.sub(r"/\*.*?\*/", " ", sql or "", flags=re.S))
+    depth, i, n, marks, quote = 0, 0, len(sql), [], None
+    low = sql.lower()
+    while i < n:
+        ch = sql[i]
+        if quote:
+            if ch == quote: quote = None
+        elif ch in "'\"": quote = ch
+        elif ch == "(": depth += 1
+        elif ch == ")": depth -= 1
+        elif depth == 0 and (i == 0 or not (low[i - 1].isalnum() or low[i - 1] == "_")):
+            for kw in ("select", "from"):
+                if low.startswith(kw, i) and not (low[i + len(kw):i + len(kw) + 1].isalnum() or low[i + len(kw):i + len(kw) + 1] == "_"):
+                    marks.append((kw, i)); i += len(kw) - 1
+        i += 1
+    items = []
+    for (k1, p1), (k2, p2) in zip(marks, marks[1:]):
+        if k1 != "select" or k2 != "from":
+            continue
+        seg = re.sub(r"(?is)^\s*(distinct\s+)?(top\s+\(?\d+\)?\s+(percent\s+)?)?", "", sql[p1 + 6:p2])
+        parts, depth, quote, cur = [], 0, None, ""
+        for ch in seg:
+            if quote:
+                if ch == quote: quote = None
+            elif ch in "'\"": quote = ch
+            elif ch == "(": depth += 1
+            elif ch == ")": depth -= 1
+            if ch == "," and depth == 0 and not quote:
+                parts.append(cur); cur = ""
+            else:
+                cur += ch
+        parts.append(cur)
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+            m = re.fullmatch(r"(?:\[?(\w+)\]?\.)?\*", part)
+            if m:
+                items.append({"out": None, "refs": [], "star": [m.group(1).lower() if m.group(1) else None]}); continue
+            expr, out = part, None
+            m = re.search(r"(?is)\s+as\s+\[?([\w ]+?)\]?\s*$", part) or re.search(r"(?is)^(.*[\)\w\]'])\s+\[?(\w+)\]?\s*$", part)
+            if m and m.re.pattern.startswith("(?is)\\s+as"):
+                out, expr = m.group(1), part[:m.start()]
+            elif m and m.group(2).lower() not in SQL_WORDS:
+                out, expr = m.group(2), m.group(1)
+            m2 = re.fullmatch(r"\s*(?:\[?(\w+)\]?\.)?\[?(\w+)\]?\s*", expr)
+            if m2:
+                refs = [(m2.group(1).lower() if m2.group(1) else None, m2.group(2).lower())]
+                out = out or m2.group(2)
+            else:
+                bare = re.sub(r"'[^']*'", "''", expr)
+                refs = [(a.lower(), c.lower()) for a, c in re.findall(r"\[?(\w+)\]?\.\[?(\w+)\]?", bare)]
+                taken = {c for _, c in refs} | {a for a, _ in refs}
+                for w in re.finditer(r"(?<![\w\.@])\[?([A-Za-z_]\w*)\]?(?!\s*\()(?![\w\.])", bare):
+                    wl = w.group(1).lower()
+                    if wl not in SQL_WORDS and wl not in taken:
+                        refs.append((None, wl))
+            if out:
+                items.append({"out": out.strip().lower(), "refs": refs, "star": []})
+    return items
+
 # ---------------------------------------------------------------- helpers
 def norm(s):
     return (s or "").strip().lower()
@@ -201,7 +271,9 @@ def mc_build(fields):
                 if qualified or (unqualified and not other_alias_qualified):
                     uses.append(f["key"])
         sources = [t for t in tables]
-        query_info[qid] = {"id": qid, "name": q.get("name"), "key": q.get("key"), "targetDE": q.get("targetName"), "targetKey": (q.get("targetKey") or "").upper(),
+        alias_map = {t: t for t in tables}
+        alias_map.update({a: t for t, a in tables.items() if a})
+        query_info[qid] = {"select": select_items(sql), "aliasMap": alias_map, "id": qid, "name": q.get("name"), "key": q.get("key"), "targetDE": q.get("targetName"), "targetKey": (q.get("targetKey") or "").upper(),
                            "targetUpdateType": q.get("targetUpdateTypeName"), "sources": sources, "syncedSources": [synced[o]["name"] for o in synced_used],
                            "automations": q_autos.get(qid, []), "fields": sorted(set(uses)), "sql": sql, "modified": q.get("modifiedDate")}
     queries_by_target = defaultdict(list)
@@ -229,14 +301,60 @@ def mc_build(fields):
                     out += feeders(k, src, depth + 1, seen)
         return out
 
-    # Data extension column -> field keys (only through synced DEs, by exact name)
+    lineage_cache = {}
+    def lineage(de_key, de_name, col_l, depth=0):
+        """Field keys a data extension column is selected from, following the SQL that fills it (and staging DEs upstream).
+        Returns None when the select list cannot be traced (so the caller can fall back to name matching)."""
+        ck = ((de_key or "").upper(), norm(de_name), col_l)
+        if ck in lineage_cache:
+            return lineage_cache[ck]
+        lineage_cache[ck] = None
+        found, traced = set(), False
+        ids = set(queries_by_target.get((de_key or "").upper(), [])) | set(queries_by_target.get("NAME:" + norm(de_name), []))
+        for qid in ids:
+            qi = query_info[qid]
+            named = [it for it in qi["select"] if it["out"] == col_l]
+            refs = [r for it in named for r in it["refs"]]
+            if not named:
+                refs = [(a, col_l) for it in qi["select"] for a in it["star"]]
+            for alias, src in refs:
+                if alias is not None:
+                    tabs = [qi["aliasMap"][alias]] if alias in qi["aliasMap"] else []
+                else:
+                    tabs = list(qi["sources"]) if len(qi["sources"]) == 1 else [t for t in qi["sources"] if t in synced_by_norm and src in by_obj[synced_by_norm[t]] and by_obj[synced_by_norm[t]][src]["apiName"] in synced[synced_by_norm[t]]["cols"]]
+                    if len(tabs) != 1:
+                        tabs = []
+                for t in tabs:
+                    if t in synced_by_norm:
+                        f = by_obj[synced_by_norm[t]].get(src)
+                        if f and f["apiName"] in synced[synced_by_norm[t]]["cols"]:
+                            found.add(f["key"])
+                        traced = True
+                    elif depth < 3 and not t.startswith("_"):
+                        up = lineage(de_key_by_name.get(t), t, src, depth + 1)
+                        if up is not None:
+                            found |= up; traced = True
+        lineage_cache[ck] = found if traced else None
+        return lineage_cache[ck]
+
+    cur_entry = {"key": None, "name": None}
+
+    # Data extension column -> field keys. First by tracing the entry DE's SQL to the table the column was selected from;
+    # when that cannot be traced, by exact name on the synced objects in the chain (flagged when more than one object matches).
     def resolve_col(col, chain_objs):
         col_l = norm(col)
+        traced = lineage(cur_entry["key"], cur_entry["name"], col_l) if (cur_entry["key"] or cur_entry["name"]) else None
+        if traced:
+            return [(k, "entry data") for k in sorted(traced)]
         hits = []
         for o in chain_objs:
             f = by_obj[o].get(col_l)
             if f and f["apiName"] in synced.get(o, {}).get("cols", set()):
                 hits.append((f["key"], "entry data"))
+        if traced is not None and hits:
+            return []   # the SQL was traced and the column does not come from a Salesforce field
+        if len(hits) > 1:
+            hits = [(k, "entry data, source object not traced") for k, _ in hits]
         if hits:
             return hits
         # fallback: unique custom field name across objects that is synced
@@ -279,6 +397,27 @@ def mc_build(fields):
         walk(asset.get("views", {}))
         return out
 
+    block_refs = {}
+    try:
+        block_refs = load("mc_block_refs")
+    except FileNotFoundError:
+        pass
+    BLOCK_REF = re.compile(r'(?i)ContentBlockBy(Id|Key|Name)\s*\(\s*\\?["\']?([^"\'\\)]+)')
+    def message_texts(asset, seen=None):
+        """Texts of a message asset plus every content block it pulls in (ContentBlockById / ByKey / ByName), recursively."""
+        seen = seen if seen is not None else set()
+        out = asset_texts(asset)
+        if isinstance(asset.get("content"), str):
+            out.append(asset["content"])
+        for kind, val in set(BLOCK_REF.findall(json.dumps(asset))):
+            kind, val = kind.lower(), val.strip()
+            bid = val if kind == "id" else block_refs.get(f"{kind}:{val}")
+            fn = os.path.join(RAW, "mc_assets", f"{bid}.json")
+            if bid and str(bid) not in seen and os.path.exists(fn):
+                seen.add(str(bid))
+                out += message_texts(json.load(open(fn)), seen)
+        return out
+
     def parse_criteria_xml(x):
         cols = []
         for m in re.finditer(r'Key="([^"]+)"', x or ""):
@@ -295,6 +434,7 @@ def mc_build(fields):
         entry_de = de_by_objid.get(ev.get("dataExtensionId")) or {}
         entry_de_name = ev.get("dataExtensionName") or entry_de.get("Name")
         entry_de_key = entry_de.get("CustomerKey")
+        cur_entry.update(key=entry_de_key, name=entry_de_name)
         chain = feeders(entry_de_key, entry_de_name) if entry_de_key or entry_de_name else []
         chain_qs = [query_info[c["id"]] for c in chain]
         chain_objs = sorted({o for qi in chain_qs for o in synced if synced[o]["name"] in qi["syncedSources"]})
@@ -364,7 +504,7 @@ def mc_build(fields):
                 asset = None
                 if aid and os.path.exists(os.path.join(RAW, "mc_assets", f"{aid}.json")):
                     asset = json.load(open(os.path.join(RAW, "mc_assets", f"{aid}.json")))
-                    texts += asset_texts(asset)
+                    texts += message_texts(asset)
                 hits, cols = [], []
                 for txt in texts:
                     ex, bare = tokens_from_text(txt)
@@ -383,7 +523,7 @@ def mc_build(fields):
                 asset = None
                 if aid and os.path.exists(os.path.join(RAW, "mc_assets", f"{aid}.json")):
                     asset = json.load(open(os.path.join(RAW, "mc_assets", f"{aid}.json")))
-                    texts = asset_texts(asset)
+                    texts = message_texts(asset)
                 hits, cols = [], []
                 for txt in texts:
                     ex, bare = tokens_from_text(txt)
@@ -454,7 +594,7 @@ def mc_build(fields):
     for qi in query_info.values():
         for k in qi["fields"]:
             by_key[k]["sfmc"]["queries"].append({"id": qi["id"], "name": qi["name"], "targetDE": qi["targetDE"], "automations": [a["name"] for a in qi["automations"]]})
-    queries_out = [{k: v for k, v in qi.items() if k != "sql"} | {"sqlPreview": (qi["sql"] or "")[:4000]} for qi in query_info.values() if qi["fields"]]
+    queries_out = [{k: v for k, v in qi.items() if k not in ("sql", "select", "aliasMap")} | {"sqlPreview": (qi["sql"] or "")[:4000]} for qi in query_info.values() if qi["fields"]]
     queries_out.sort(key=lambda q: (q["name"] or "").lower())
     return journeys_out, queries_out, synced, load("mc_journeys_list")
 

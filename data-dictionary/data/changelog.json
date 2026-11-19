@@ -1,5 +1,26 @@
 [
  {
+  "date": "2026-11-19",
+  "previous": "2026-11-11",
+  "fieldsAdded": [
+   "Lead.Converting_Source__c",
+   "Lead.Original_Source__c",
+   "Lead.Policy_Number__c"
+  ],
+  "fieldsRemoved": [],
+  "cisAdded": [],
+  "cisRemoved": [],
+  "journeysAdded": [],
+  "journeysRemoved": [],
+  "segmentsAdded": [],
+  "segmentsRemoved": [],
+  "fieldLabels": {
+   "Lead.Converting_Source__c": "Converting Source",
+   "Lead.Original_Source__c": "Original Source",
+   "Lead.Policy_Number__c": "Policy Number"
+  }
+ },
+ {
   "date": "2026-11-11",
   "previous": "2026-11-10",
   "fieldsAdded": [],
