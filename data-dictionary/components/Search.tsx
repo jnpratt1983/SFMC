@@ -48,7 +48,7 @@ export function Search({ autoFocus = false, big = false }: { autoFocus?: boolean
       if (score && r.t === "field") score += 3;
       return { r, score };
     }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score || a.r.n.localeCompare(b.r.n));
-    return scored.slice(0, 12).map((x) => x.r);
+    return scored.slice(0, 30).map((x) => x.r);
   }, [q]);
 
 
@@ -63,7 +63,7 @@ export function Search({ autoFocus = false, big = false }: { autoFocus?: boolean
           else if (e.key === "Escape") { setOpen(false); ref.current?.blur(); }
         }} aria-label="Search" />
       {open && q.trim() && (
-        <div className="absolute z-30 mt-1 w-full card shadow-lg overflow-hidden" role="listbox">
+        <div className="absolute z-30 mt-1 w-full card shadow-lg overflow-y-auto max-h-[60vh]" role="listbox">
           {results.length === 0 && <div className="px-3 py-2 text-sm text-ink-3">No matches</div>}
           {results.map((r, i) => (
             <a key={r.t + r.k} href={href(r)} role="option" aria-selected={i === sel} onMouseEnter={() => setSel(i)} onMouseDown={(e) => { e.preventDefault(); router.push(href(r)); setOpen(false); }}

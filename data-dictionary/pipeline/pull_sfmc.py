@@ -1,9 +1,63 @@
 """Pull Marketing Cloud journeys, event definitions, automations, queries, data extensions and message assets."""
-import os, json
+import os, json, re
 from common import save, log, RAW
 from mc_client import MC, simple
 
 JOURNEY_STATUSES = {"Published", "Sent"}   # journeys whose field usage is reported
+
+
+BLOCK_REF = re.compile(r'(?i)ContentBlockBy(Id|Key|Name)\s*\(\s*\\?["\']?([^"\'\\)]+)')
+
+
+def pull_blocks(m, max_depth=4, roots=None):
+    """Fetch content blocks that emails / pushes / texts pull in with ContentBlockById, ByKey or ByName (AMPscript) or as
+    `<div data-type="slot">` references, following blocks that reference other blocks. Saved next to the message assets as
+    mc_assets/<id>.json; key and name references are recorded in mc_block_refs.json as "key:<k>" / "name:<n>" -> asset id."""
+    adir = os.path.join(RAW, "mc_assets")
+    refs_path = os.path.join(RAW, "mc_block_refs.json")
+    refs = json.load(open(refs_path)) if os.path.exists(refs_path) else {}
+    done, fetched, fresh = set(), 0, set()
+
+    def fetch(aid):
+        nonlocal fetched
+        fn = os.path.join(adir, f"{aid}.json")
+        if str(aid) not in fresh:
+            fresh.add(str(aid))
+            s, r = m.get(f"/asset/v1/content/assets/{aid}")
+            if s != 200:
+                return None
+            json.dump(r, open(fn, "w"))
+            fetched += 1
+        return fn
+
+    def lookup(kind, val):
+        k = f"{kind}:{val}"
+        if k not in refs:
+            prop = "customerKey" if kind == "key" else "name"
+            s, r = m.post("/asset/v1/content/assets/query", {"query": {"property": prop, "simpleOperator": "equal", "value": val.split("\\")[-1]}, "fields": ["id", "name"]})
+            its = r.get("items", []) if isinstance(r, dict) else []
+            refs[k] = its[0]["id"] if its else None
+        return refs[k]
+
+    frontier = [os.path.join(adir, f"{a}.json") for a in roots] if roots else [os.path.join(adir, f) for f in os.listdir(adir) if f.endswith(".json")]
+    frontier = [f for f in frontier if os.path.exists(f)]
+    for _ in range(max_depth):
+        nxt = []
+        for fn in frontier:
+            if fn in done:
+                continue
+            done.add(fn)
+            for kind, val in set(BLOCK_REF.findall(open(fn).read())):
+                kind, val = kind.lower(), val.strip()
+                aid = val if kind == "id" and val.isdigit() else lookup(kind, val) if kind in ("key", "name") else None
+                got = fetch(aid) if aid else None
+                if got and got not in done:
+                    nxt.append(got)
+        frontier = nxt
+        if not frontier:
+            break
+    json.dump(refs, open(refs_path, "w"), indent=0)
+    log("content blocks fetched", fetched, "key/name refs", len(refs))
 
 
 def main():
@@ -85,10 +139,12 @@ def main():
     # message assets used by the reported journeys
     os.makedirs(os.path.join(RAW, "mc_assets"), exist_ok=True)
     legacy = {}
+    pulled = set()
     def asset(aid):
         fn = os.path.join(RAW, "mc_assets", f"{aid}.json")
-        if os.path.exists(fn):
+        if aid in pulled:   # once per run; always re-fetched across runs so edited emails are picked up
             return
+        pulled.add(aid)
         s, r = m.get(f"/asset/v1/content/assets/{aid}")
         if s == 200:
             json.dump(r, open(fn, "w"))
@@ -111,6 +167,7 @@ def main():
             elif a["type"] in ("PUSHNOTIFICATIONACTIVITY", "SMSSYNC") and ca.get("assetId"):
                 asset(ca["assetId"])
     save("mc_legacy_map", legacy)
+    pull_blocks(m, roots=pulled)
 
 
 if __name__ == "__main__":
