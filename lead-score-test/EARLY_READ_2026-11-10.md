@@ -221,3 +221,8 @@ Three clocks were checked on open leads created since 11-10 (3,063 leads):
    snapshot, so they already exclude those buyers.
 3. Observational reads (this document) keep using the first snapshot on or after creation as the point-in-time score;
    it is the same number the gated feeder would have seen unless Einstein re-scored the lead later the same day.
+
+**Does the score gate change the read? (2026-11-20)** No. Rebuilt on the population a gated feeder would take (entered at
+creation + 3.5h, first snapshot within 24h, not bought or declined by then; n = 1,258, 80 purchases): 96-99 bought 16.5%,
+91-95 4.4%, 90 and under 0.4%. Only 2 leads bought between the gate and the snapshot, so excluding pre-snapshot buyers
+changes nothing (16.0 / 4.4 / 0.4% on the same leads). The earliest-scored leads show the sharpest separation.
