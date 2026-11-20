@@ -189,3 +189,33 @@ partial windows: n = 3,292, 171 purchases (5.2%).
 **Call.** Yes, the score predicts propensity to buy on fresh leads, and the bands are stable enough to use: 96+ is the
 buyer band, 91-95 is warm, 90 and under is cold. That is the cut the Purchase journey test uses. Next read 2026-11-23
 (14-day window).
+
+## Point-in-time check (2026-11-20): is the score we use the score at journey entry?
+
+Three clocks were checked on open leads created since 11-10 (3,063 leads):
+
+- **Einstein's live score, the nightly copy `Lead_Score__c`, and the 05:00 Pacific snapshot are identical** on every lead
+  that has all three (3,030 and 2,060 comparisons, 100% equal, no band crossings). Einstein does not move a score during
+  the day; it scores in a few runs per day (update stamps seen at 23:00, 04:00-05:00, 10:00, 17:00 UTC). The Apex batch
+  runs daily at 08:06 UTC, but the copy appears together with the live score, so whatever writes it runs with Einstein.
+- **A new lead has no score for its first hours.** First score arrives a median 3.5 hours after creation (p10 1.4h, p90 6.7h);
+  no lead under 4 hours old had one.
+- **Journeys take the lead within the first hour.** Leads first reach the Purchase feeder step (6.0) a median 0.7h after
+  creation (79% within 1h, 100% within 6h); Drivers (3.0-3.5) the same (83% within 1h). So at the minute of entry, most
+  entrants are **unscored**. There is no "score at entry" to be right or wrong about; the first score exists a few hours later.
+- **What the reads use** is the first 05:00 Pacific snapshot on or after the lead's creation: a median 17.7h after creation
+  (p10 8.7h, p90 63h; 72% within 24h). Between that snapshot and the next day 66% of fresh leads change score and 8.5%
+  cross the 96 cut, so the day the score is taken matters.
+- The signal is sharpest on the earliest score: fresh leads whose read score was taken within 24h of creation bought
+  14-17% at 96-99 vs 0.3-4% below 90; where the first new-model snapshot came 2-4 days after creation (leads created
+  just before the 11-09 retrain) the 96-99 rate drops to 4-7%.
+
+**Consequences for the test plan**
+
+1. Entry score = the **first snapshot on or after** entry (not on or before). Same day as entry for leads created before
+   05:00 Pacific, next morning otherwise. Recorded in the plan's harness.
+2. Any journey decision on the score (the routing version of Scenario 2, or a future Purchase version) must sit behind a
+   wait of at least 8 hours and read **Contact Data** (the synced Lead, refreshed every 15 minutes), not Journey Data
+   (the entry snapshot, which is null for most entrants). The Update Contact step into `AC_JourneyTest_Log` at that
+   point records the exact score the journey acted on.
+3. Unscored at entry is the normal state, not an exception, so the feeder queries must not gate on `Lead_Score__c`.

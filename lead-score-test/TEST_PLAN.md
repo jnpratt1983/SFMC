@@ -25,6 +25,8 @@ two scenarios run in two different journeys (Scenario 1 in Purchase, Scenario 2 
 
 | 7-day read, five full snapshot days (2026-11-20; 1,710 fresh leads with full windows, 88 buyers; 3,292 with any window, 171 buyers): 7-day purchase by score 96-99 = 13.0%, 91-95 = 4.3%, 90 and under = 0.4-0.7%; monotonic on every snapshot day. Back to quote 8% -> 20% across bands, flat from 91 up. Older leads: purchase rises with score inside the 4-14 day buckets on 22 events | `EARLY_READ_2026-11-10.md`, updates 11-16 to 11-20 | The score predicts purchase on fresh leads; bands are stable. Purchase journey cut 96+; Drivers HIGH >= 80, LOW < 60. Quote step and lead age reported as context only (user decision 2026-11-17) |
 
+| Point-in-time check (2026-11-20): live Einstein score = nightly `Lead_Score__c` = 05:00 snapshot (100% identical; Einstein scores in a few runs a day). First score arrives a median 3.5h after creation; leads enter the journeys a median 0.7h after creation, so entrants are unscored at entry. Reads use the first snapshot on/after creation (median 18h). Day-to-day, 66% of fresh leads change score and 8.5% cross the 96 cut | `EARLY_READ_2026-11-10.md`, PIT section | Entry score = first snapshot on/after entry. Score-based journey decisions wait >= 8h and read Contact Data |
+
 Primary outcome everywhere: `purchased__c` true (first true in LeadHistory, or `Purchased_Date__c`) within 30 days of entry (user decision 2026-11-09).
 Secondary outcome everywhere: **back to quote** = a new Lead with the same email or cookie ID (or a quote-step/session change on the lead itself inside its first 24 hours) within 7 days of entry; base rate 4-8% on fresh leads, so it reads in weeks rather than months.
 
@@ -74,15 +76,18 @@ to Salesforce for a test; a new test is a new set of campaigns.
    arm (adds the lead to the arm's campaign) -> Join back into the existing paths or into the variant path. Decision splits
    read Journey Data (the entry DE columns). Exit criterion stays purchase/declined. Entry mode stays single entry.
    Arm = campaign membership; entry time = CampaignMember.CreatedDate.
-4. **Entry values** are not stamped anywhere. Entry score = latest `Lead_Score_Snapshot__c` row on or before the entry time
-   (the journey itself only ever sees the nightly copy, so this is the same value). Entry PLE and discount tier = the Lead
-   export values; both are fixed once the quote is rated. Segment (HIGH_PROP x HIGH_PLE x TIER) is computed at read time.
+4. **Entry values** are not stamped on the Lead. Entry score = the **first** `Lead_Score_Snapshot__c` row on or after the entry
+   time (a lead enters within an hour of creation and Einstein scores it a median 3.5h later, so the score at the minute of
+   entry is null for most entrants; the 05:00 Pacific snapshot that follows is the first point-in-time score, a median 18h
+   after entry). Entry PLE and discount tier = the Lead export values; both are fixed once the quote is rated. Segment
+   (HIGH_PROP x HIGH_PLE x TIER) is computed at read time. Any journey decision that reads the score must wait at least 8
+   hours and read Contact Data (the synced Lead), with the Update Contact step logging the value it acted on.
 5. **Feeder queries**: add `Lead_Score__c`, `Lead_Score_Last_Update__c`, `Five_Year_PLE__c` (and for Purchase
    `Projected_First_Month_Bill__c`, `First_Month_Discount_Amount__c`, already selected) to `AC_Purchase_v4` -> `AC_Purchase_v5`
    and `AC_Drivers_v5` -> `AC_Drivers_v6`; add the same columns to the entry DEs `AC_Purchase_AF_02182026` and
    `AC_DriversQuote_AF_04252024`. In `AC_Drivers_v6` also exclude leads already in the journey (guards against the
-   ES1 re-entry loop seen in Coverages and suspected in Vehicles). Unscored entrants (today ~8%) are randomized like everyone
-   else and read as their own band.
+   ES1 re-entry loop seen in Coverages and suspected in Vehicles). Entrants are unscored at the minute of entry (Einstein scores a few hours after creation), so the feeder
+   never gates on `Lead_Score__c`; leads still unscored at the first snapshot are read as their own band.
 6. **Mirror DE** `AC_JourneyTest_Log` (Update Contact activity on each arm: subscriber key, journey, arm, entry score) as the
    Marketing Cloud-side copy for QA and for the SMS cost read.
 7. **Read**: CampaignMember (arm, entry time) x `Lead_Score_Snapshot__c` (entry score) x Lead export (purchase, PLE,
