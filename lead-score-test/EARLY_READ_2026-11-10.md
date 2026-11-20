@@ -162,3 +162,30 @@ dictionary Models page (lead-score.json validation list, 2026-11-17, "marginal p
 pass line is: 7-day purchase rises monotonically across score bands on leads scored before the outcome, and the top band
 buys at several times the rate of the bottom. On the 11-17 read that holds (0.7% / 4.9% / 8.3-10.9%). Quote step and lead
 age AUCs stay in these notes as context only and are not a gate on the journey tests.
+
+## Update 2026-11-20: five snapshot days with full 7-day windows
+
+Fresh leads (0-3 days at scoring) with a full 7-day window: n = 1,710, 88 purchases, 280 back. All fresh leads incl.
+partial windows: n = 3,292, 171 purchases (5.2%).
+
+| Score band | n | 7-day purchase | Back to quote |
+|---|---|---|---|
+| 1-60 | 176 | 0.6% | 8.0% |
+| 61-80 | 248 | 0.4% | 10.5% |
+| 81-90 | 301 | 0.7% | 13.0% |
+| 91-95 | 508 | 4.3% | 20.3% |
+| 96-99 | 477 | 13.0% | 20.5% |
+
+- Purchase is monotonic across the bands and the gap has widened as the sample grew: 96-99 buys 13.0% against 0.4-0.7%
+  below 90, about 20x. 91-95 sits at 4.3%. On all fresh leads with any window 96-99 is 11.9%.
+- By snapshot day the 96-99 rate runs 7.5 / 8.6 / 13.3 / 20.0 / 22.1% and 90-and-under runs 0.0 / 0.6 / 0.8 / 1.1 / 0.0%.
+  The ordering holds on every day; the 96-99 level varies because each day is 65-185 leads.
+- Back to quote also rises with score (8% to 20%) but flattens from 91 up; this remains the weaker outcome.
+- Point in time on all 15,324 new-model snapshot rows: 91-99 bought 5.0% in 7 days, 84-90 0.7%, everything else 0-0.6%;
+  AUC 0.87 (context: quote step 0.76, lead age 0.81).
+- Older leads (4-30 days, n = 6,551, 22 purchases): purchase rises with score inside the 4-7 and 8-14 day buckets
+  (0.0 / 0.5 / 1.7% and 0.4 / 0.4 / 1.1% by tercile); 15-30 days is flat. Back to quote follows (4-7 days: 4.0 / 5.7 / 7.4%).
+
+**Call.** Yes, the score predicts propensity to buy on fresh leads, and the bands are stable enough to use: 96+ is the
+buyer band, 91-95 is warm, 90 and under is cold. That is the cut the Purchase journey test uses. Next read 2026-11-23
+(14-day window).
