@@ -210,12 +210,14 @@ Three clocks were checked on open leads created since 11-10 (3,063 leads):
   14-17% at 96-99 vs 0.3-4% below 90; where the first new-model snapshot came 2-4 days after creation (leads created
   just before the 11-09 retrain) the 96-99 rate drops to 4-7%.
 
-**Consequences for the test plan**
+**Consequences for the test plan (user decision 2026-11-20: a lead enters the test only once it has a score)**
 
-1. Entry score = the **first snapshot on or after** entry (not on or before). Same day as entry for leads created before
-   05:00 Pacific, next morning otherwise. Recorded in the plan's harness.
-2. Any journey decision on the score (the routing version of Scenario 2, or a future Purchase version) must sit behind a
-   wait of at least 8 hours and read **Contact Data** (the synced Lead, refreshed every 15 minutes), not Journey Data
-   (the entry snapshot, which is null for most entrants). The Update Contact step into `AC_JourneyTest_Log` at that
-   point records the exact score the journey acted on.
-3. Unscored at entry is the normal state, not an exception, so the feeder queries must not gate on `Lead_Score__c`.
+1. The test feeders add `Lead_Score__c IS NOT NULL`. Entry then happens at the first scoring run plus at most 15 minutes
+   (median ~3.5h after creation), and the `Lead_Score__c` column in the entry DE is the exact point-in-time entry score.
+   The Update Contact step logs it, so the read does not depend on the next morning's snapshot.
+2. Both arms sit behind the same gate, so the entry delay is shared. Leads who buy inside the first few hours never
+   enter: at step 6 that is ~16% of arrivals and 56% of that step's purchases; at steps 3.0-3.5 about 1% of arrivals.
+   The base rates used for power (13% Purchase, ~1.2% Drivers) were measured on leads still open at their first
+   snapshot, so they already exclude those buyers.
+3. Observational reads (this document) keep using the first snapshot on or after creation as the point-in-time score;
+   it is the same number the gated feeder would have seen unless Einstein re-scored the lead later the same day.
